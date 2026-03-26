@@ -1,0 +1,221 @@
+// main.dart
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:freelancer_platform/models/project_model.dart';
+import 'package:freelancer_platform/models/proposal_model.dart';
+import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
+import 'package:freelancer_platform/screens/payment/payment_screen.dart';
+import 'package:freelancer_platform/screens/wallet/wallet_screen.dart';
+import 'package:freelancer_platform/screens/workspace/add_reminder_screen.dart';
+import 'package:freelancer_platform/screens/workspace/connect_github_screen.dart';
+import 'package:freelancer_platform/screens/rating/add_rating_screen.dart';
+import 'package:freelancer_platform/screens/workspace/calendar_screen.dart';
+import 'package:freelancer_platform/screens/contract/my_contracts_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/signup_screen.dart';
+import 'screens/auth/verify_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/freelancer/profile_screen.dart';
+import 'screens/freelancer/project_details_screen.dart';
+import 'screens/freelancer/submit_proposal_screen.dart';
+import 'screens/freelancer/my_proposals_screen.dart';
+import 'screens/freelancer/my_projects_screen.dart';
+import 'screens/client/client_dashboard_screen.dart';
+import 'screens/client/create_project_screen.dart';
+import 'screens/client/project_details_screen.dart' as client;
+import 'screens/client/project_proposals_screen.dart';
+import 'screens/client/edit_project_screen.dart';
+import 'theme/app_theme.dart';
+import 'utils/token_storage.dart';
+import 'services/api_service.dart';
+import 'screens/contract/contract_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'screens/chat/chats_list_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: "assets/.env");
+
+  if (!kIsWeb) {
+    try {
+      Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
+      await Stripe.instance.applySettings(); 
+      print('✅ Stripe initialized');
+    } catch (e) {
+      print('❌ Stripe init error: $e');
+    }
+  }
+
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
+
+  final savedToken = await TokenStorage.getToken();
+  final savedRole = await TokenStorage.getUserRole();
+  ApiService.token = savedToken;
+
+  runApp(FreelancerApp(initialRole: savedRole));
+}
+
+class FreelancerApp extends StatelessWidget {
+  final String? initialRole;
+  const FreelancerApp({super.key, this.initialRole});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Freelancer Platform',
+      theme: AppTheme.lightTheme,
+      initialRoute: _getInitialRoute(),
+      routes: {
+        '/login': (_) => const LoginScreen(),
+        '/signup': (_) => const SignupScreen(),
+        '/verify': (_) => const VerifyScreen(),
+        '/forgot': (_) => ForgotPasswordScreen(),
+        '/home': (_) => HomeScreen(),
+
+        '/freelancer/home': (_) => const FreelancerHomeScreen(),
+        '/freelancer/my-proposals': (_) => const MyProposalsScreen(),
+        '/freelancer/my-projects': (_) => const MyProjectsScreen(),
+
+        '/projects': (_) => const FreelancerHomeScreen(),
+
+        '/client/dashboard': (_) => const ClientDashboard(),
+        '/client/create-project': (_) => const CreateProjectScreen(),
+       
+        '/my-contracts': (context) {
+          final userRole =
+              ModalRoute.of(context)!.settings.arguments as String? ?? 'client';
+          return MyContractsScreen(userRole: userRole);
+        },
+      },
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/freelancer/project-details':
+            final projectId = settings.arguments as int;
+            return MaterialPageRoute(
+              builder: (_) => ProjectDetailsScreen(projectId: projectId),
+            );
+
+          case '/freelancer/submit-proposal':
+            final project = settings.arguments as Project;
+            return MaterialPageRoute(
+              builder: (_) => SubmitProposalScreen(project: project),
+            );
+
+          case '/client/project-details':
+            final projectId = settings.arguments as int;
+            return MaterialPageRoute(
+              builder: (_) => client.ProjectDetailsScreen(projectId: projectId),
+            );
+
+          case '/client/project-proposals':
+            final projectId = settings.arguments as int;
+            return MaterialPageRoute(
+              builder: (_) => ProjectProposalsScreen(projectId: projectId),
+            );
+
+          case '/client/edit-project':
+            final project = settings.arguments as Project;
+            return MaterialPageRoute(
+              builder: (_) => EditProjectScreen(project: project),
+            );
+
+          case '/chats':
+            return MaterialPageRoute(builder: (_) => const ChatsListScreen());
+
+        
+          case '/contract':
+            final args = settings.arguments as Map<String, dynamic>;
+            final contractId = args['contractId'] as int;
+            final userRole = args['userRole'] as String;
+
+            return MaterialPageRoute(
+              builder: (_) =>
+                  ContractScreen(contractId: contractId, userRole: userRole),
+            );
+
+case '/add-rating':
+  final args = settings.arguments as Map<String, dynamic>;
+  return MaterialPageRoute(
+    builder: (_) => AddRatingScreen(
+      contractId: args['contractId'],
+      projectTitle: args['projectTitle'],
+      otherPartyName: args['otherPartyName'],
+      role: args['role'],
+    ),
+  );
+
+
+case '/calendar':
+  return MaterialPageRoute(
+    builder: (_) => const CalendarScreen(),
+  );
+
+case '/add-reminder':
+  final contractId = settings.arguments as int;
+  return MaterialPageRoute(
+    builder: (_) => AddReminderScreen(contractId: contractId),
+  );
+
+case '/wallet':
+  final userRole = settings.arguments as String? ?? 'client';
+  return MaterialPageRoute(
+    builder: (_) => WalletScreen(userRole: userRole),
+  );
+
+case '/negotiation':
+  final proposal = settings.arguments as Proposal;
+  return MaterialPageRoute(
+    builder: (_) => NegotiationScreen(proposal: proposal),
+  );
+
+case '/payment':
+  final args = settings.arguments as Map<String, dynamic>;
+  return MaterialPageRoute(
+    builder: (_) => PaymentScreen(
+      contractId: args['contractId'],
+      paymentIntent: args['paymentIntent'],
+    ),
+  );
+case '/connect-github':
+  final contractId = settings.arguments as int;
+  return MaterialPageRoute(
+    builder: (_) => ConnectGithubScreen(contractId: contractId),
+  );
+
+          default:
+            return MaterialPageRoute(
+              builder: (_) =>
+                  const Scaffold(body: Center(child: Text('Route not found'))),
+            );
+        }
+      },
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Page not found'))),
+        );
+      },
+    );
+  }
+
+  String _getInitialRoute() {
+    if (ApiService.token != null) {
+      if (initialRole == 'freelancer') {
+        return '/freelancer/home';
+      } else if (initialRole == 'client') {
+        return '/client/dashboard';
+      }
+    }
+    return '/login';
+  }
+}
+
+final supabase = Supabase.instance.client;
