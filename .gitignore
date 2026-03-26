@@ -1,0 +1,84 @@
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Flutter specific - Environment files
+frontend/assets/.env
+frontend/assets/.env.*
+!frontend/assets/.env.example
+
+# Node modules
+node_modules/
+backend/node_modules/
+
+# VS Code
+.vscode/
+.vscode/*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build files
+dist/
+build/
+.next/
+out/
+
+# Backend specific
+backend/uploads/
+backend/temp/
+backend/storage/
+backend/node_modules/
+
+# IDE files
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+.nyc_output/
+
+# Database files
+*.sqlite
+*.db
+
+# Backup files
+*.bak
+*.backup
+
+# Firebase secrets
+backend/firebase/*.json
+
+# Tesseract trained data
+backend/*.traineddata
+
+# Flutter specific
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/build/
+frontend/ios/
+frontend/macos/
+frontend/android/
+frontend/web/
+frontend/windows/
+frontend/linux/
+
+# Flutter generated files
+frontend/pubspec.lock
+
+# Important: Keep pubspec.yaml but not pubspec.lock
+!frontend/pubspec.yaml
