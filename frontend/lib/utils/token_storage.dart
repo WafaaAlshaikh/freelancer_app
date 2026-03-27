@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class TokenStorage {
   static const String tokenKey = "auth_token";
   static const String userRoleKey = "user_role";
-  static const String supabaseUserIdKey = "supabase_user_id"; 
+  static const String userIdKey = "user_id";  // <-- أضف هذا
+  static const String supabaseUserIdKey = "supabase_user_id";
 
   // ========== Token APIs ==========
   static Future<void> saveToken(String token) async {
@@ -22,6 +23,24 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(tokenKey);
     print('✅ Token cleared');
+  }
+
+  // ========== User ID APIs ==========
+  static Future<void> saveUserId(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(userIdKey, userId.toString());
+    print('✅ User ID saved: $userId');
+  }
+
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(userIdKey);
+  }
+
+  static Future<void> clearUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(userIdKey);
+    print('✅ User ID cleared');
   }
 
   // ========== User Role APIs ==========
@@ -66,21 +85,6 @@ class TokenStorage {
     return token != null && token.isNotEmpty;
   }
 
-  static Future<bool> isSupabaseLoggedIn() async {
-    final userId = await getSupabaseUserId();
-    return userId != null && userId.isNotEmpty;
-  }
-
-  // ========== Get All Stored Data ==========
-  static Future<Map<String, dynamic>> getAllData() async {
-    final prefs = await SharedPreferences.getInstance();
-    return {
-      'token': prefs.getString(tokenKey),
-      'userRole': prefs.getString(userRoleKey),
-      'supabaseUserId': prefs.getString(supabaseUserIdKey),
-    };
-  }
-
   // ========== Clear All Data ==========
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
@@ -88,9 +92,11 @@ class TokenStorage {
     print('✅ All data cleared');
   }
 
+  // ========== Clear Auth Data ==========
   static Future<void> clearAuthData() async {
     await clearToken();
     await clearUserRole();
+    await clearUserId();
     await clearSupabaseUserId();
     print('✅ Auth data cleared');
   }

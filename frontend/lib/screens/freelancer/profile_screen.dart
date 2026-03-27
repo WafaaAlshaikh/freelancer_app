@@ -436,7 +436,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
 
   Future<void> _openChatWithClient(int clientId, String clientName, String? clientAvatar) async {
     try {
-      final chatId = await _chatService.createChat(clientId.toString());
+      final chatId = await ChatService.createChat(clientId.toString() as int);
       
       if (mounted) {
         Navigator.pushNamed(

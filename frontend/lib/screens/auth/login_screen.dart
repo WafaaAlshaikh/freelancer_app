@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:freelancer_platform/services/socket_service.dart';
 import '../../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (res['token'] != null) {
+      await SocketService.instance.init();
       Fluttertoast.showToast(msg: res['message']);
 
       final userRole = res['user']?['role'];

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:freelancer_platform/models/project_model.dart';
 import 'package:freelancer_platform/models/proposal_model.dart';
+import 'package:freelancer_platform/screens/chat/chat_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
 import 'package:freelancer_platform/screens/payment/payment_screen.dart';
 import 'package:freelancer_platform/screens/wallet/wallet_screen.dart';
@@ -34,6 +35,8 @@ import 'screens/contract/contract_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/chat/chats_list_screen.dart';
+import 'services/socket_service.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +60,15 @@ void main() async {
 
   final savedToken = await TokenStorage.getToken();
   final savedRole = await TokenStorage.getUserRole();
+  final savedUserId = await TokenStorage.getUserId();
   ApiService.token = savedToken;
+
+  print('🔌 Initializing SocketService...');
+  await SocketService.instance.init();
+  
+  await Future.delayed(const Duration(seconds: 1));
+  
+  print('✅ App initialized with userId: $savedUserId');
 
   runApp(FreelancerApp(initialRole: savedRole));
 }
@@ -88,6 +99,8 @@ class FreelancerApp extends StatelessWidget {
 
         '/client/dashboard': (_) => const ClientDashboard(),
         '/client/create-project': (_) => const CreateProjectScreen(),
+
+        '/chats': (_) => const ChatsListScreen(),
        
         '/my-contracts': (context) {
           final userRole =
@@ -127,10 +140,15 @@ class FreelancerApp extends StatelessWidget {
               builder: (_) => EditProjectScreen(project: project),
             );
 
-          case '/chats':
-            return MaterialPageRoute(builder: (_) => const ChatsListScreen());
-
-        
+          case '/chat':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                chatId: args['chatId'],
+                otherUser: args['otherUser'],
+              ),
+            );
+            
           case '/contract':
             final args = settings.arguments as Map<String, dynamic>;
             final contractId = args['contractId'] as int;

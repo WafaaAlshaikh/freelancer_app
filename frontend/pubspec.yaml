@@ -53,6 +53,8 @@ dependencies:
   skeletonizer: ^1.0.0
   flutter_stripe: ^12.4.0
   url_launcher: ^6.2.0
+  socket_io_client: ^2.0.3
+  flutter_dotenv: ^5.1.0
 
 
 dev_dependencies:

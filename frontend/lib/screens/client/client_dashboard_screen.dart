@@ -1,5 +1,6 @@
 // screens/client/client_dashboard_screen.dart
 import 'package:flutter/material.dart';
+import 'package:freelancer_platform/screens/chat/chats_list_screen.dart';
 import '../../services/api_service.dart';
 import '../../models/project_model.dart';
 import 'create_project_screen.dart';
@@ -71,7 +72,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
             })
             .whereType<Project>()
             .toList();
-              loading = false;
+        loading = false;
       });
 
       await fetchAISuggestions();
@@ -112,6 +113,28 @@ class _ClientDashboardState extends State<ClientDashboard> {
               ).then((_) => fetchMyProjects());
             },
           ),
+
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xff14A800).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.chat_bubble_outline,
+                color: Color(0xff14A800), 
+              ),
+              onPressed: () {
+                print('🔵 Chat button pressed!'); 
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatsListScreen()),
+                );
+              },
+            ),
+          ),
+
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: () async {
@@ -248,7 +271,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       ],
                     ),
 
-               
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -261,7 +283,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                               Navigator.pushNamed(
                                 context,
                                 '/my-contracts',
-                                arguments: 'client', 
+                                arguments: 'client',
                               );
                             },
                           ),
