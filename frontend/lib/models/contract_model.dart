@@ -73,7 +73,7 @@ class Contract {
 
   factory Contract.fromJson(Map<String, dynamic> json) {
     print('📥 Contract fromJson: $json');
-    
+
     double parseToDouble(dynamic value) {
       if (value == null) return 0.0;
       if (value is double) return value;
@@ -87,9 +87,9 @@ class Contract {
     List<Map<String, dynamic>> parseMilestones(dynamic data) {
       print('🔍 Raw milestones: $data');
       print('🔍 Milestones type: ${data.runtimeType}');
-      
+
       if (data == null) return [];
-      
+
       if (data is List) {
         return data.map((e) {
           if (e is Map) {
@@ -98,7 +98,7 @@ class Contract {
           return <String, dynamic>{};
         }).toList();
       }
-      
+
       if (data is String && data.isNotEmpty) {
         try {
           final parsed = jsonDecode(data);
@@ -109,7 +109,7 @@ class Contract {
           print('Error parsing milestones: $e');
         }
       }
-      
+
       return [];
     }
 
@@ -148,20 +148,20 @@ class Contract {
       agreedAmount: parseToDouble(json['agreed_amount']),
       contractDocument: json['contract_document'],
       termsAgreed: json['terms_agreed'],
-      clientSignedAt: json['client_signed_at'] != null 
-          ? DateTime.parse(json['client_signed_at']) 
+      clientSignedAt: json['client_signed_at'] != null
+          ? DateTime.parse(json['client_signed_at'])
           : null,
-      freelancerSignedAt: json['freelancer_signed_at'] != null 
-          ? DateTime.parse(json['freelancer_signed_at']) 
+      freelancerSignedAt: json['freelancer_signed_at'] != null
+          ? DateTime.parse(json['freelancer_signed_at'])
           : null,
-      signedAt: json['signed_at'] != null 
-          ? DateTime.parse(json['signed_at']) 
+      signedAt: json['signed_at'] != null
+          ? DateTime.parse(json['signed_at'])
           : null,
-      startDate: json['start_date'] != null 
-          ? DateTime.parse(json['start_date']) 
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'])
           : null,
-      endDate: json['end_date'] != null 
-          ? DateTime.parse(json['end_date']) 
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'])
           : null,
       status: json['status'],
       terms: json['terms'],
@@ -175,14 +175,12 @@ class Contract {
       freelancerReview: json['freelancer_review'],
       clientRating: json['client_rating'],
       freelancerRating: json['freelancer_rating'],
-      project: json['Project'] != null 
-          ? Project.fromJson(json['Project']) 
+      project: json['Project'] != null
+          ? Project.fromJson(json['Project'])
           : null,
-      client: json['client'] != null 
-          ? User.fromJson(json['client']) 
-          : null,
-      freelancer: json['freelancer'] != null 
-          ? User.fromJson(json['freelancer']) 
+      client: json['client'] != null ? User.fromJson(json['client']) : null,
+      freelancer: json['freelancer'] != null
+          ? User.fromJson(json['freelancer'])
           : null,
       githubRepo: json['github_repo'],
       githubBranch: json['github_branch'],
@@ -245,7 +243,9 @@ class Contract {
   double get totalProgress {
     if (milestones == null || milestones!.isEmpty) return 0.0;
     final total = milestones!.length;
-    final completed = milestones!.where((m) => m['status'] == 'completed').length;
+    final completed = milestones!
+        .where((m) => m['status'] == 'completed')
+        .length;
     return total > 0 ? completed / total : 0.0;
   }
 

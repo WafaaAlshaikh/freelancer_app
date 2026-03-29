@@ -22,6 +22,10 @@ import {
   getWallet,
   createCheckoutSession,
   handlePaymentSuccess,
+  createDirectPayment,
+  manualConfirmPayment,
+  getClientDashboardOverview,
+  getClientProfile,
 } from "../controllers/clientController.js";
 
 const router = express.Router();
@@ -63,5 +67,13 @@ router.post("/wallet/withdraw", requestWithdrawal);
 // Stripe Checkout
 router.post("/contracts/:contractId/create-checkout", createCheckoutSession);
 router.get("/payment/success", handlePaymentSuccess);
+router.get("/payment/cancel", (req, res) => {
+  res.redirect(`${process.env.FRONTEND_URL}/contract/${req.query.contract_id}?payment=cancelled`);
+});
+router.post("/contracts/:contractId/create-direct-payment", createDirectPayment);
+
+router.post("/contracts/:contractId/manual-confirm", protect, authorizeRoles("client"), manualConfirmPayment);
+router.get("/dashboard/overview", getClientDashboardOverview);
+router.get("/profile", getClientProfile);
 
 export default router;

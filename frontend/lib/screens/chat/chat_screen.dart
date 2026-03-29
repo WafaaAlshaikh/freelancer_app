@@ -177,12 +177,11 @@ class _ChatScreenState extends State<ChatScreen> {
     _isSending = true;
     _messageController.clear();
 
-    // Ensure connected before sending
     if (!_socket.isConnected) {
       final connected = await _socket.ensureConnection();
       if (!connected) {
         Fluttertoast.showToast(msg: 'Could not connect. Please try again.');
-        _messageController.text = content; // restore text
+        _messageController.text = content;
         _isSending = false;
         return;
       }

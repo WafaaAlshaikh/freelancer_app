@@ -1,10 +1,12 @@
 // lib/screens/payment/payment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_dotenv/flutter_dotenv.dart' show dotenv;
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
+import 'dart:html' as html;
 
 class PaymentScreen extends StatefulWidget {
   final int contractId;
@@ -22,6 +24,7 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isProcessing = false;
+  bool _confirming = false;
 
   @override
   void initState() {
@@ -31,8 +34,37 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  Future<void> _confirmPaymentManually() async {
+    setState(() => _confirming = true);
+
+    try {
+      final result = await ApiService.manualConfirmPayment(widget.contractId);
+
+      if (result['success'] == true) {
+        Fluttertoast.showToast(msg: '✅ Payment confirmed!');
+        if (mounted) {
+          Navigator.pushReplacementNamed(
+            context,
+            '/contract',
+            arguments: {'contractId': widget.contractId, 'userRole': 'client'},
+          );
+        }
+      } else {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Failed to confirm payment',
+        );
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _confirming = false);
+      }
+    }
+  }
+
   Future<void> _initPaymentSheet() async {
-    if (kIsWeb) return; 
+    if (kIsWeb) return;
     try {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
@@ -87,32 +119,55 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isProcessing = true);
 
     try {
+      print('🔍 Creating checkout session for contract: ${widget.contractId}');
+      print('🔍 Payment Intent ID: ${widget.paymentIntent['paymentIntentId']}');
+
       final checkoutUrl = await ApiService.createCheckoutSession(
         contractId: widget.contractId,
         paymentIntentId: widget.paymentIntent['paymentIntentId'],
       );
 
-      if (checkoutUrl != null) {
+      print('🔍 Checkout URL received: $checkoutUrl');
+
+      if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
         final uri = Uri.parse(checkoutUrl);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        print('🔍 Opening URL: $uri');
+
+        if (kIsWeb) {
+          html.window.open(checkoutUrl, '_blank');
 
           Fluttertoast.showToast(
-            msg: 'Complete payment in your browser',
-            timeInSecForIosWeb: 3, 
+            msg: 'Complete payment in the new tab',
+            timeInSecForIosWeb: 3,
             gravity: ToastGravity.BOTTOM,
             backgroundColor: Colors.blue,
             textColor: Colors.white,
           );
 
-          Navigator.pop(context);
+          Future.delayed(const Duration(seconds: 5), () {
+            if (mounted) {
+              Navigator.pushReplacementNamed(
+                context,
+                '/contract',
+                arguments: {
+                  'contractId': widget.contractId,
+                  'userRole': 'client',
+                },
+              );
+            }
+          });
         } else {
-          throw Exception('Could not launch checkout URL');
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            throw Exception('Could not launch checkout URL: $checkoutUrl');
+          }
         }
       } else {
-        throw Exception('No checkout URL returned');
+        throw Exception('No checkout URL returned from server');
       }
     } catch (e) {
+      print('❌ Payment error: $e');
       if (mounted) {
         Fluttertoast.showToast(msg: 'Payment failed: $e');
       }
@@ -125,7 +180,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final amount = (widget.paymentIntent['amount'] ?? 0);
+    double amount = 0.0;
+    if (widget.paymentIntent['amount'] != null) {
+      final amountValue = widget.paymentIntent['amount'];
+      if (amountValue is double) {
+        amount = amountValue;
+      } else if (amountValue is int) {
+        amount = amountValue.toDouble();
+      } else if (amountValue is String) {
+        amount = double.tryParse(amountValue) ?? 0.0;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -274,6 +339,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
               ),
             ),
+            if (kIsWeb)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: OutlinedButton(
+                    onPressed: _confirming ? null : _confirmPaymentManually,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xff14A800)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _confirming
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            'Confirm Payment (Manual)',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
 
             Text(

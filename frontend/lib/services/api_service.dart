@@ -117,6 +117,58 @@ class ApiService {
 
   // ===== Client APIs =====
 
+static Future<Map<String, dynamic>> getClientDashboardOverview() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$BASE_URL/client/dashboard/overview'),
+      headers: headers,
+    );
+    
+    print('📊 Dashboard Overview Response Status: ${response.statusCode}');
+    print('📊 Dashboard Overview Response Body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    
+    print('❌ Dashboard overview error: ${response.statusCode} ${response.body}');
+    
+    // Return empty data structure instead of throwing error
+    return {
+      'stats': {
+        'totalProjects': 0,
+        'openProjects': 0,
+        'inProgressProjects': 0,
+        'completedProjects': 0,
+        'totalProposals': 0,
+        'pendingProposals': 0,
+        'acceptedProposals': 0,
+        'totalSpent': 0,
+        'escrowHeld': 0,
+        'totalReleased': 0,
+        'proposalAcceptRate': 0,
+      },
+      'monthlySpending': [],
+      'statusBreakdown': [],
+      'recentProposals': [],
+      'activeContracts': [],
+      'recentActivity': [],
+      'topFreelancers': [],
+    };
+  } catch (e) {
+    print('❌ Error in getClientDashboardOverview: $e');
+    return {
+      'stats': {},
+      'monthlySpending': [],
+      'statusBreakdown': [],
+      'recentProposals': [],
+      'activeContracts': [],
+      'recentActivity': [],
+      'topFreelancers': [],
+    };
+  }
+}
+
   // Dashboard Stats
   static Future<Map<String, dynamic>> getClientDashboardStats() async {
     try {
@@ -1161,30 +1213,6 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> updateMilestoneProgress({
-    required int contractId,
-    required int milestoneIndex,
-    required double progress,
-    String? status,
-  }) async {
-    try {
-      final response = await http.put(
-        Uri.parse(
-          '$BASE_URL/freelancer/contracts/$contractId/milestones/$milestoneIndex/progress',
-        ),
-        headers: headers,
-        body: jsonEncode({
-          'progress': progress,
-          if (status != null) 'status': status,
-        }),
-      );
-      return jsonDecode(response.body);
-    } catch (e) {
-      print('Error updating milestone progress: $e');
-      return {'message': 'Connection error'};
-    }
-  }
-
   static Future<Map<String, dynamic>> getWallet() async {
     try {
       final response = await http.get(
@@ -1261,16 +1289,160 @@ class ApiService {
       print('📄 Body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception(
-          'Server error ${response.statusCode}: ${response.body}',
-        );
+        print('❌ Server error: ${response.statusCode}');
+        return null;
       }
 
       final data = jsonDecode(response.body);
-      return data['checkoutUrl'];
+      print('🔍 Parsed data: $data');
+
+      if (data['checkoutUrl'] != null &&
+          data['checkoutUrl'].toString().isNotEmpty) {
+        print('✅ Checkout URL: ${data['checkoutUrl']}');
+        return data['checkoutUrl'];
+      } else {
+        print('❌ No checkout URL in response');
+        return null;
+      }
     } catch (e) {
       print('❌ Error creating checkout session: $e');
       return null;
     }
   }
+
+  static Future<Map<String, dynamic>> updateMilestoneProgress({
+    required int contractId,
+    required int milestoneIndex,
+    required double progress,
+    String? status,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/milestones/progress'),
+        headers: headers,
+        body: jsonEncode({
+          'contractId': contractId,
+          'milestoneIndex': milestoneIndex,
+          'progress': progress,
+          if (status != null) 'status': status,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('❌ Error updating milestone progress: $e');
+      return {'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> approveMilestone({
+    required int contractId,
+    required int milestoneIndex,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '$BASE_URL/milestones/$contractId/milestones/$milestoneIndex/approve',
+        ),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('❌ Error approving milestone: $e');
+      return {'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createDirectPaymentIntent({
+    required int contractId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '$BASE_URL/client/contracts/$contractId/create-direct-payment',
+        ),
+        headers: headers,
+      );
+
+      print('📡 Direct Payment Response Status: ${response.statusCode}');
+      print('📄 Direct Payment Response Body: ${response.body}');
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('❌ Error creating direct payment intent: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createEscrowPaymentIntent({
+    required int contractId,
+  }) async {
+    return createDirectPaymentIntent(contractId: contractId);
+  }
+
+static Future<Map<String, dynamic>> manualConfirmPayment(int contractId) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$BASE_URL/client/contracts/$contractId/manual-confirm'),
+      headers: headers,
+    );
+    print('📡 Manual confirm response: ${response.body}');
+    return jsonDecode(response.body);
+  } catch (e) {
+    print('❌ Error in manualConfirmPayment: $e');
+    return {'success': false, 'message': 'Connection error'};
+  }
+}
+
+// static Future<Map<String, dynamic>> getClientDashboardOverview() async {
+//   try {
+//     final response = await http.get(
+//       Uri.parse('$BASE_URL/client/dashboard/overview'),
+//       headers: headers,
+//     );
+//     if (response.statusCode == 200) {
+//       return jsonDecode(response.body);
+//     }
+//     print('❌ Dashboard overview error: ${response.statusCode} ${response.body}');
+//     return {};
+//   } catch (e) {
+//     print('❌ getClientDashboardOverview: $e');
+//     return {};
+//   }
+// }
+ 
+static Future<Map<String, dynamic>> getProjectsSummary({
+  String? status,
+  int limit = 10,
+  int offset = 0,
+}) async {
+  try {
+    final params = <String, String>{
+      'limit': '$limit',
+      'offset': '$offset',
+      if (status != null && status != 'all') 'status': status,
+    };
+    final uri = Uri.parse('$BASE_URL/client/dashboard/projects-summary')
+        .replace(queryParameters: params);
+    final response = await http.get(uri, headers: headers);
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    return {'projects': [], 'total': 0};
+  } catch (e) {
+    print('❌ getProjectsSummary: $e');
+    return {'projects': [], 'total': 0};
+  }
+}
+ 
+static Future<Map<String, dynamic>> getClientProfile() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$BASE_URL/client/profile'),
+      headers: headers,
+    );
+    return jsonDecode(response.body);
+  } catch (e) {
+    print('Error getting client profile: $e');
+    return {'name': 'Client', 'avatar': null};
+  }
+}
+
 }

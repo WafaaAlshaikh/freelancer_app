@@ -1,5 +1,11 @@
 // services/contractService.js
-import { Contract, Project, User, Wallet, Transaction } from "../models/index.js";
+import {
+  Contract,
+  Project,
+  User,
+  Wallet,
+  Transaction,
+} from "../models/index.js";
 import { Op } from "sequelize";
 import NotificationService from "./notificationService.js";
 class ContractService {
@@ -18,11 +24,45 @@ class ContractService {
         throw new Error("Contract already exists for this project");
       }
 
+      const defaultMilestones = [
+        {
+          title: "Project Start",
+          description: "Begin work on project",
+          amount: Math.round(agreed_amount * 0.3),
+          due_date: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          status: "pending",
+          progress: 0,
+        },
+        {
+          title: "Milestone 1",
+          description: "First deliverable",
+          amount: Math.round(agreed_amount * 0.4),
+          due_date: new Date(
+            Date.now() + 14 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          status: "pending",
+          progress: 0,
+        },
+        {
+          title: "Final Delivery",
+          description: "Complete project",
+          amount: Math.round(agreed_amount * 0.3),
+          due_date: new Date(
+            Date.now() + 21 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          status: "pending",
+          progress: 0,
+        },
+      ];
+
       const contractDocument = this.generateContractDocument({
         projectId,
         freelancerId,
         clientId,
         agreed_amount,
+        milestones: defaultMilestones, 
       });
 
       const contract = await Contract.create({
@@ -33,29 +73,7 @@ class ContractService {
         contract_document: contractDocument,
         status: "draft",
         terms: "Standard terms and conditions apply.",
-        milestones: JSON.stringify([
-          {
-            title: "Project Start",
-            description: "Begin work on project",
-            amount: Math.round(agreed_amount * 0.3),
-            due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            status: "pending",
-          },
-          {
-            title: "Milestone 1",
-            description: "First deliverable",
-            amount: Math.round(agreed_amount * 0.4),
-            due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-            status: "pending",
-          },
-          {
-            title: "Final Delivery",
-            description: "Complete project",
-            amount: Math.round(agreed_amount * 0.3),
-            due_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-            status: "pending",
-          },
-        ]),
+        milestones: JSON.stringify(defaultMilestones),
       });
 
       await NotificationService.createNotification({
@@ -87,7 +105,6 @@ class ContractService {
       throw error;
     }
   }
-
 
   static generateContractDocument({
     projectId,
@@ -145,7 +162,6 @@ class ContractService {
   `;
   }
 
-
   static async signContractByClient(contractId, clientId) {
     const contract = await Contract.findOne({
       where: { id: contractId, ClientId: clientId },
@@ -182,7 +198,6 @@ class ContractService {
     return contract;
   }
 
-  
   static async signContractByFreelancer(contractId, freelancerId) {
     const contract = await Contract.findOne({
       where: { id: contractId, FreelancerId: freelancerId },
@@ -216,7 +231,6 @@ class ContractService {
     return contract;
   }
 
-
   static async createContractFromNegotiation({
     proposalId,
     freelancerId,
@@ -227,11 +241,11 @@ class ContractService {
   }) {
     try {
       const existingContract = await Contract.findOne({
-        where: { ProjectId: projectId }
+        where: { ProjectId: projectId },
       });
 
       if (existingContract) {
-        throw new Error('Contract already exists for this project');
+        throw new Error("Contract already exists for this project");
       }
 
       const contractDocument = this.generateContractDocument({
@@ -248,27 +262,27 @@ class ContractService {
         ClientId: clientId,
         agreed_amount: agreedAmount,
         contract_document: contractDocument,
-        status: 'draft',
-        terms: 'Standard terms and conditions apply.',
+        status: "draft",
+        terms: "Standard terms and conditions apply.",
         milestones: JSON.stringify(milestones),
-        payment_status: 'pending',
-        escrow_status: 'pending',
+        payment_status: "pending",
+        escrow_status: "pending",
       });
 
       await NotificationService.createNotification({
         userId: freelancerId,
-        type: 'contract_created',
-        title: 'Contract Ready for Review',
-        body: 'The client has created a contract. Please review the milestones.',
-        data: { contractId: contract.id, screen: 'contract' },
+        type: "contract_created",
+        title: "Contract Ready for Review",
+        body: "The client has created a contract. Please review the milestones.",
+        data: { contractId: contract.id, screen: "contract" },
       });
 
       await NotificationService.createNotification({
         userId: clientId,
-        type: 'contract_created',
-        title: 'Contract Created',
-        body: 'Contract has been created. Waiting for freelancer signature.',
-        data: { contractId: contract.id, screen: 'contract' },
+        type: "contract_created",
+        title: "Contract Created",
+        body: "Contract has been created. Waiting for freelancer signature.",
+        data: { contractId: contract.id, screen: "contract" },
       });
 
       return contract;
@@ -277,67 +291,100 @@ class ContractService {
     }
   }
 
+  static generateContractDocument({
+    projectId,
+    freelancerId,
+    clientId,
+    agreed_amount,
+    milestones = null,
+  }) {
+    const date = new Date().toLocaleDateString("en-US");
+    const safeAmount = agreed_amount || 0;
 
-  static generateContractDocument({ projectId, freelancerId, clientId, agreedAmount, milestones }) {
-    const date = new Date().toLocaleDateString('en-US');
-    
-    const milestonesHtml = milestones.map((m, i) => `
-      <li>
-        <strong>Milestone ${i + 1}: ${m.title}</strong><br>
-        Description: ${m.description}<br>
-        Amount: $${m.amount}<br>
-        Due Date: ${new Date(m.due_date).toLocaleDateString()}
-      </li>
-    `).join('');
+    let milestonesHtml = "";
+    let milestonesSection = "";
 
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
-          h1 { color: #14A800; text-align: center; }
-          h2 { color: #333; margin-top: 20px; }
-          .milestones { background: #f5f5f5; padding: 15px; border-radius: 8px; }
-          .signature { margin-top: 50px; }
-        </style>
-      </head>
-      <body>
-        <h1>FREELANCE CONTRACT AGREEMENT</h1>
-        
-        <p><strong>Date:</strong> ${date}</p>
-        
-        <h2>Parties</h2>
-        <p><strong>Client ID:</strong> ${clientId}</p>
-        <p><strong>Freelancer ID:</strong> ${freelancerId}</p>
-        
-        <h2>Project Details</h2>
-        <p><strong>Project ID:</strong> ${projectId}</p>
-        <p><strong>Total Contract Amount:</strong> $${agreedAmount}</p>
-        
+    if (milestones && milestones.length > 0) {
+      milestonesHtml = milestones
+        .map(
+          (m, i) => `
+        <li>
+          <strong>Milestone ${i + 1}: ${m.title}</strong><br>
+          Description: ${m.description}<br>
+          Amount: $${m.amount}<br>
+          Due Date: ${new Date(m.due_date).toLocaleDateString()}
+        </li>
+      `,
+        )
+        .join("");
+
+      milestonesSection = `
         <h2>Milestones</h2>
         <div class="milestones">
           <ul>
             ${milestonesHtml}
           </ul>
         </div>
-        
-        <h2>Payment Terms</h2>
-        <p>Payments will be released from escrow upon approval of each milestone.</p>
-        
-        <h2>Signatures</h2>
-        <div class="signature">
-          <p>_________________________ : Client Signature</p>
-          <p>_________________________ : Freelancer Signature</p>
-        </div>
-        
-        <p><small>This contract was generated electronically.</small></p>
-      </body>
-      </html>
-    `;
+      `;
+    }
+
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        h1 { color: #14A800; text-align: center; }
+        h2 { color: #333; margin-top: 20px; }
+        .signature { margin-top: 50px; }
+        .terms { margin: 20px 0; }
+        .terms p { margin: 10px 0; }
+        .milestones { background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <h1>FREELANCE CONTRACT AGREEMENT</h1>
+      
+      <p><strong>Date:</strong> ${date}</p>
+      
+      <h2>Parties</h2>
+      <p><strong>Client ID:</strong> ${clientId}</p>
+      <p><strong>Freelancer ID:</strong> ${freelancerId}</p>
+      
+      <h2>Project Details</h2>
+      <p><strong>Project ID:</strong> ${projectId}</p>
+      <p><strong>Contract Amount:</strong> $${safeAmount}</p>
+      
+      ${
+        milestonesSection ||
+        `
+      <h2>Payment Structure</h2>
+      <div class="terms">
+        <p><strong>Payment Schedule:</strong> The total amount of $${safeAmount} will be paid in milestones based on project progress.</p>
+      </div>
+      `
+      }
+      
+      <h2>Terms and Conditions</h2>
+      <div class="terms">
+        <p><strong>1. Scope of Work:</strong> The Freelancer agrees to complete the project as described in the project details.</p>
+        <p><strong>2. Payment:</strong> The Client agrees to pay the total amount of $${safeAmount} according to the milestone schedule.</p>
+        <p><strong>3. Delivery:</strong> The Freelancer agrees to deliver the work according to the agreed timeline.</p>
+        <p><strong>4. Intellectual Property:</strong> Upon full payment, all rights transfer to the Client.</p>
+        <p><strong>5. Confidentiality:</strong> Both parties agree to keep all project information confidential.</p>
+      </div>
+      
+      <h2>Signatures</h2>
+      <div class="signature">
+        <p>_________________________ : Client Signature</p>
+        <p>_________________________ : Freelancer Signature</p>
+      </div>
+      
+      <p><small>This contract was generated electronically on the platform.</small></p>
+    </body>
+    </html>
+  `;
   }
 }
-
-
 
 export default ContractService;

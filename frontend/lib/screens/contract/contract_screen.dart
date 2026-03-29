@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import 'contract_sign_screen.dart';
 import '../rating/add_rating_screen.dart';
 import '../workspace/connect_github_screen.dart';
+import '../payment/payment_screen.dart';
 
 class ContractScreen extends StatefulWidget {
   final int contractId;
@@ -52,6 +53,54 @@ class _ContractScreenState extends State<ContractScreen> {
     } catch (e) {
       setState(() => loading = false);
       Fluttertoast.showToast(msg: "Error loading contract");
+    }
+  }
+
+  bool get needsPayment {
+    if (contract == null) return false;
+    return contract!.status == 'active' &&
+        contract!.escrowStatus == 'pending' &&
+        widget.userRole == 'client';
+  }
+
+  bool get isEscrowFunded {
+    return contract?.escrowStatus == 'funded';
+  }
+
+  Future<void> _initiatePayment() async {
+    if (contract == null) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final paymentIntent = await ApiService.createEscrowPaymentIntent(
+        contractId: widget.contractId,
+      );
+
+      if (paymentIntent['clientSecret'] != null) {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentScreen(
+              contractId: widget.contractId,
+              paymentIntent: paymentIntent,
+            ),
+          ),
+        );
+
+        if (result == true) {
+          fetchContract();
+        }
+      } else {
+        Fluttertoast.showToast(
+          msg: paymentIntent['message'] ?? 'Error creating payment',
+        );
+      }
+    } catch (e) {
+      print('Error initiating payment: $e');
+      Fluttertoast.showToast(msg: 'Error: $e');
+    } finally {
+      setState(() => _isProcessing = false);
     }
   }
 
@@ -179,6 +228,40 @@ class _ContractScreenState extends State<ContractScreen> {
     );
   }
 
+  String _formatAmount(dynamic amount) {
+    if (amount == null) return '0.00';
+
+    double parsedAmount;
+    if (amount is double) {
+      parsedAmount = amount;
+    } else if (amount is int) {
+      parsedAmount = amount.toDouble();
+    } else if (amount is String) {
+      parsedAmount = double.tryParse(amount) ?? 0.0;
+    } else {
+      parsedAmount = 0.0;
+    }
+
+    return parsedAmount.toStringAsFixed(2);
+  }
+
+  String _formatAmountInt(dynamic amount) {
+    if (amount == null) return '0';
+
+    double parsedAmount;
+    if (amount is double) {
+      parsedAmount = amount;
+    } else if (amount is int) {
+      parsedAmount = amount.toDouble();
+    } else if (amount is String) {
+      parsedAmount = double.tryParse(amount) ?? 0.0;
+    } else {
+      parsedAmount = 0.0;
+    }
+
+    return parsedAmount.toStringAsFixed(0);
+  }
+
   @override
   Widget build(BuildContext context) {
     print('🎯 ContractScreen - userRole: ${widget.userRole}');
@@ -277,7 +360,7 @@ class _ContractScreenState extends State<ContractScreen> {
                           ),
                         ),
                         Text(
-                          "\$${contract!.agreedAmount?.toStringAsFixed(0)}",
+                          "\$${_formatAmountInt(contract!.agreedAmount)}", // ✅ استخدم الدالة الجديدة
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -607,6 +690,134 @@ class _ContractScreenState extends State<ContractScreen> {
                       ],
                     ),
                   ),
+                  // lib/screens/contract/contract_screen.dart
+                  // القسم الكامل مع التصحيح
+
+                  // ✅ قسم الدفع - للعميل فقط
+                  if (widget.userRole == 'client' &&
+                      contract?.status == 'active')
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.attach_money,
+                                    color: isEscrowFunded
+                                        ? Colors.green
+                                        : Colors.orange,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      isEscrowFunded
+                                          ? '✅ Escrow Funded'
+                                          : '💰 Payment Required',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: isEscrowFunded
+                                            ? Colors.green
+                                            : Colors.orange,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                isEscrowFunded
+                                    ? 'The payment is secured in escrow. Milestone payments will be released upon approval.'
+                                    : 'To activate this contract and start working, please deposit the contract amount into escrow.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              if (!isEscrowFunded)
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _isProcessing
+                                        ? null
+                                        : _initiatePayment,
+                                    icon: _isProcessing
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(Icons.lock_clock),
+                                    label: Text(
+                                      _isProcessing
+                                          ? 'Processing...'
+                                          : 'Pay \$${_formatAmount(contract?.agreedAmount)}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xff14A800),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (isEscrowFunded)
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.green.shade200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green.shade700,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Payment secured: \$${_formatAmount(contract?.agreedAmount)} in escrow',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.green.shade700,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
 
                   const SizedBox(height: 24),
 
@@ -780,40 +991,48 @@ class _ContractScreenState extends State<ContractScreen> {
   }
 
   Widget _buildMilestoneCard(Map<String, dynamic> milestone, int index) {
+    double getAmount(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
     final isCompleted = milestone['status'] == 'completed';
     final isApproved = milestone['status'] == 'approved';
-    final isPending = milestone['status'] == 'pending';
-    print('🎯 Building milestone $index: $milestone');
+    final isPending =
+        milestone['status'] == 'pending' ||
+        milestone['status'] == 'in_progress';
+    final progress = getAmount(milestone['progress']);
+    final amount = getAmount(milestone['amount']);
 
     Color statusColor;
     IconData statusIcon;
-    double progress = 0.0;
+    String statusText;
 
-    switch (milestone['status']?.toString() ?? 'pending') {
-      case 'completed':
-        statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
-        progress = 100.0;
-        break;
-      case 'in_progress':
-        statusColor = Colors.blue;
-        statusIcon = Icons.access_time;
-        progress = 50.0;
-        break;
-      default:
-        statusColor = Colors.orange;
-        statusIcon = Icons.radio_button_unchecked;
-        progress = 0.0;
+    if (isApproved) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+      statusText = 'Paid ✓';
+    } else if (isCompleted) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.pending;
+      statusText = 'Completed - Awaiting Approval';
+    } else if (isPending) {
+      statusColor = Colors.blue;
+      statusIcon = Icons.radio_button_unchecked;
+      statusText = 'In Progress';
+    } else {
+      statusColor = Colors.grey;
+      statusIcon = Icons.block;
+      statusText = 'Not Started';
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 4, 
-      color: Theme.of(context).cardColor, 
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade300), 
-      ),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -831,121 +1050,140 @@ class _ContractScreenState extends State<ContractScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    milestone['title'] ?? 'Milestone ${index + 1}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87, 
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            Text(
-              milestone['description'] ?? '',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade800, 
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.attach_money,
-                      size: 18,
-                      color: Colors.green.shade700,
-                    ),
-                    Text(
-                      '\$${milestone['amount']}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                if (milestone['due_date'] != null)
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        _formatDateShort(DateTime.parse(milestone['due_date'])),
+                        milestone['title'] ?? 'Milestone ${index + 1}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        statusText,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade700,
+                          color: statusColor,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '\$${amount.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ),
               ],
             ),
 
             const SizedBox(height: 12),
 
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Progress',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      '${progress.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
+            if (milestone['description'] != null &&
+                milestone['description'].toString().isNotEmpty)
+              Text(
+                milestone['description'],
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade700,
+                  height: 1.4,
                 ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress / 100,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                    minHeight: 8,
+              ),
+
+            const SizedBox(height: 12),
+
+            if (milestone['due_date'] != null)
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: Colors.grey.shade500,
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Due: ${_formatDateShort(DateTime.parse(milestone['due_date']))}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+
+            const SizedBox(height: 12),
+
+            if (!isApproved)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Progress',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        '${progress.toInt()}%',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress / 100,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
+              ),
+
             if (widget.userRole == 'freelancer' && !isCompleted && !isApproved)
               Padding(
-                padding: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.only(top: 16),
                 child: Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _completeMilestone(index),
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _completeMilestone(index),
                         icon: const Icon(Icons.check_circle, size: 18),
-                        label: const Text("Mark as Completed"),
+                        label: Text(
+                          progress >= 100
+                              ? 'Mark as Completed'
+                              : 'Update Progress',
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xff14A800),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
@@ -955,23 +1193,28 @@ class _ContractScreenState extends State<ContractScreen> {
 
             if (widget.userRole == 'client' && isCompleted && !isApproved)
               Padding(
-                padding: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.only(top: 16),
                 child: Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _approveMilestone(index),
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _approveMilestone(index),
                         icon: const Icon(Icons.attach_money, size: 18),
                         label: Text(
-                          'Approve & Release \$${milestone['amount']}',
-                          style: const TextStyle(fontSize: 12),
+                          'Approve & Release \$${amount.toStringAsFixed(0)}',
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _requestRevision(index),
@@ -979,6 +1222,10 @@ class _ContractScreenState extends State<ContractScreen> {
                         label: const Text("Request Changes"),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
@@ -988,14 +1235,26 @@ class _ContractScreenState extends State<ContractScreen> {
 
             if (isApproved)
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green.shade700,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
-                    const Text(
-                      "Payment Released",
-                      style: TextStyle(color: Colors.green),
+                    Text(
+                      'Payment released on ${_formatDateShort(milestone['approved_at'] != null ? DateTime.parse(milestone['approved_at']) : DateTime.now())}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade700,
+                      ),
                     ),
                   ],
                 ),
@@ -1017,9 +1276,15 @@ class _ContractScreenState extends State<ContractScreen> {
         status: 'completed',
       );
 
-      if (result['message'] != null) {
-        Fluttertoast.showToast(msg: '✅ Milestone marked as completed');
+      if (result['success'] == true || result['message'] != null) {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? '✅ Milestone marked as completed',
+        );
         fetchContract();
+      } else {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Error completing milestone',
+        );
       }
     } catch (e) {
       Fluttertoast.showToast(msg: 'Error: $e');
@@ -1029,12 +1294,53 @@ class _ContractScreenState extends State<ContractScreen> {
   }
 
   Future<void> _approveMilestone(int index) async {
+    final milestone = contract!.milestones![index];
+    double getAmount(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
+    final amount = getAmount(milestone['amount']);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Approve Milestone'),
-        content: const Text(
-          'Are you sure you want to approve this milestone? The payment will be released to the freelancer.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to approve "${milestone['title']}"?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.attach_money, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Text(
+                    '\$${amount.toStringAsFixed(2)} will be released to the freelancer',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'This action cannot be undone.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -1043,7 +1349,9 @@ class _ContractScreenState extends State<ContractScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff14A800),
+            ),
             child: const Text('Approve & Release'),
           ),
         ],
@@ -1055,16 +1363,20 @@ class _ContractScreenState extends State<ContractScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final result = await ApiService.releaseMilestone(
+      final result = await ApiService.approveMilestone(
         contractId: widget.contractId,
         milestoneIndex: index,
       );
 
-      if (result['message'] != null) {
+      if (result['success'] == true) {
         Fluttertoast.showToast(
-          msg: '✅ Milestone approved and payment released',
+          msg: result['message'] ?? '✅ Milestone approved and payment released',
         );
         fetchContract();
+      } else {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Error approving milestone',
+        );
       }
     } catch (e) {
       Fluttertoast.showToast(msg: 'Error: $e');
