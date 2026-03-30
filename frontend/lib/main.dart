@@ -37,7 +37,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/chat/chats_list_screen.dart';
 import 'services/socket_service.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -46,7 +45,7 @@ void main() async {
   if (!kIsWeb) {
     try {
       Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
-      await Stripe.instance.applySettings(); 
+      await Stripe.instance.applySettings();
       print('✅ Stripe initialized');
     } catch (e) {
       print('❌ Stripe init error: $e');
@@ -65,9 +64,9 @@ void main() async {
 
   print('🔌 Initializing SocketService...');
   await SocketService.instance.init();
-  
+
   await Future.delayed(const Duration(seconds: 1));
-  
+
   print('✅ App initialized with userId: $savedUserId');
 
   runApp(FreelancerApp(initialRole: savedRole));
@@ -100,8 +99,8 @@ class FreelancerApp extends StatelessWidget {
         '/client/dashboard': (_) => const ClientDashboard(),
         '/client/create-project': (_) => const CreateProjectScreen(),
 
-        '/chats': (_) => const ChatsListScreen(),
-       
+        '/chats': (_) => ChatsListScreen(),
+
         '/my-contracts': (context) {
           final userRole =
               ModalRoute.of(context)!.settings.arguments as String? ?? 'client';
@@ -144,11 +143,13 @@ class FreelancerApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (_) => ChatScreen(
-                chatId: args['chatId'],
-                otherUser: args['otherUser'],
+                chatId: int.parse(args['chatId'].toString()),
+                otherUserId: int.parse(args['otherUserId'].toString()),
+                otherUserName: args['otherUserName'],
+                otherUserAvatar: args['otherUserAvatar'],
               ),
             );
-            
+
           case '/contract':
             final args = settings.arguments as Map<String, dynamic>;
             final contractId = args['contractId'] as int;
@@ -159,54 +160,51 @@ class FreelancerApp extends StatelessWidget {
                   ContractScreen(contractId: contractId, userRole: userRole),
             );
 
-case '/add-rating':
-  final args = settings.arguments as Map<String, dynamic>;
-  return MaterialPageRoute(
-    builder: (_) => AddRatingScreen(
-      contractId: args['contractId'],
-      projectTitle: args['projectTitle'],
-      otherPartyName: args['otherPartyName'],
-      role: args['role'],
-    ),
-  );
+          case '/add-rating':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => AddRatingScreen(
+                contractId: args['contractId'],
+                projectTitle: args['projectTitle'],
+                otherPartyName: args['otherPartyName'],
+                role: args['role'],
+              ),
+            );
 
+          case '/calendar':
+            return MaterialPageRoute(builder: (_) => const CalendarScreen());
 
-case '/calendar':
-  return MaterialPageRoute(
-    builder: (_) => const CalendarScreen(),
-  );
+          case '/add-reminder':
+            final contractId = settings.arguments as int;
+            return MaterialPageRoute(
+              builder: (_) => AddReminderScreen(contractId: contractId),
+            );
 
-case '/add-reminder':
-  final contractId = settings.arguments as int;
-  return MaterialPageRoute(
-    builder: (_) => AddReminderScreen(contractId: contractId),
-  );
+          case '/wallet':
+            final userRole = settings.arguments as String? ?? 'client';
+            return MaterialPageRoute(
+              builder: (_) => WalletScreen(userRole: userRole),
+            );
 
-case '/wallet':
-  final userRole = settings.arguments as String? ?? 'client';
-  return MaterialPageRoute(
-    builder: (_) => WalletScreen(userRole: userRole),
-  );
+          case '/negotiation':
+            final proposal = settings.arguments as Proposal;
+            return MaterialPageRoute(
+              builder: (_) => NegotiationScreen(proposal: proposal),
+            );
 
-case '/negotiation':
-  final proposal = settings.arguments as Proposal;
-  return MaterialPageRoute(
-    builder: (_) => NegotiationScreen(proposal: proposal),
-  );
-
-case '/payment':
-  final args = settings.arguments as Map<String, dynamic>;
-  return MaterialPageRoute(
-    builder: (_) => PaymentScreen(
-      contractId: args['contractId'],
-      paymentIntent: args['paymentIntent'],
-    ),
-  );
-case '/connect-github':
-  final contractId = settings.arguments as int;
-  return MaterialPageRoute(
-    builder: (_) => ConnectGithubScreen(contractId: contractId),
-  );
+          case '/payment':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => PaymentScreen(
+                contractId: args['contractId'],
+                paymentIntent: args['paymentIntent'],
+              ),
+            );
+          case '/connect-github':
+            final contractId = settings.arguments as int;
+            return MaterialPageRoute(
+              builder: (_) => ConnectGithubScreen(contractId: contractId),
+            );
 
           default:
             return MaterialPageRoute(

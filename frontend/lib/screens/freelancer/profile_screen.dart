@@ -17,19 +17,13 @@ import 'my_proposals_screen.dart';
 import 'my_projects_screen.dart';
 import 'projects_tab.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PortfolioCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback? onTap;
-  
 
-  const PortfolioCard({
-    super.key,
-    required this.item,
-    this.onTap,
-  });
+  const PortfolioCard({super.key, required this.item, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +50,9 @@ class PortfolioCard extends StatelessWidget {
           children: [
             if (images.isNotEmpty)
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: images.length == 1
                     ? CachedNetworkImage(
                         imageUrl: images[0],
@@ -66,12 +62,17 @@ class PortfolioCard extends StatelessWidget {
                         placeholder: (context, url) => Container(
                           height: 200,
                           color: Colors.grey.shade200,
-                          child: const Center(child: CircularProgressIndicator()),
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
                         ),
                         errorWidget: (context, url, error) => Container(
                           height: 200,
                           color: Colors.grey.shade200,
-                          child: const Icon(Icons.image_not_supported, size: 50),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                          ),
                         ),
                       )
                     : SizedBox(
@@ -91,7 +92,7 @@ class PortfolioCard extends StatelessWidget {
                         ),
                       ),
               ),
-            
+
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -105,50 +106,57 @@ class PortfolioCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   Text(
                     item['description'] ?? '',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   if (technologies.isNotEmpty)
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: technologies.map((tech) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          tech,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blue.shade700,
-                          ),
-                        ),
-                      )).toList(),
+                      children: technologies
+                          .map(
+                            (tech) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                tech,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                   const SizedBox(height: 12),
-                  
+
                   Row(
                     children: [
-                      if (item['project_url'] != null && item['project_url'].toString().isNotEmpty)
+                      if (item['project_url'] != null &&
+                          item['project_url'].toString().isNotEmpty)
                         _buildLinkButton(
                           icon: Icons.open_in_browser,
                           label: 'Live Demo',
                           url: item['project_url'],
                         ),
-                      if (item['github_url'] != null && item['github_url'].toString().isNotEmpty)
+                      if (item['github_url'] != null &&
+                          item['github_url'].toString().isNotEmpty)
                         const SizedBox(width: 12),
-                      if (item['github_url'] != null && item['github_url'].toString().isNotEmpty)
+                      if (item['github_url'] != null &&
+                          item['github_url'].toString().isNotEmpty)
                         _buildLinkButton(
                           icon: Icons.code,
                           label: 'GitHub',
@@ -165,7 +173,11 @@ class PortfolioCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLinkButton({required IconData icon, required String label, required String url}) {
+  Widget _buildLinkButton({
+    required IconData icon,
+    required String label,
+    required String url,
+  }) {
     return GestureDetector(
       onTap: () {
         // TODO: Open URL
@@ -183,10 +195,7 @@ class PortfolioCard extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
             ),
           ],
         ),
@@ -215,7 +224,7 @@ class RatingStars extends StatelessWidget {
         ...List.generate(5, (index) {
           final starValue = index + 1;
           double fill;
-          
+
           if (rating >= starValue) {
             fill = 1;
           } else if (rating > index && rating < starValue) {
@@ -223,7 +232,7 @@ class RatingStars extends StatelessWidget {
           } else {
             fill = 0;
           }
-          
+
           return SizedBox(
             width: size,
             height: size,
@@ -269,37 +278,35 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
 
   final ChatService _chatService = ChatService();
   final AuthService _authService = AuthService();
-  
+
   bool loadingProfile = true;
   bool loadingProjects = true;
   bool loadingSuggestions = true;
   bool loadingContracts = true;
   bool loadingPortfolio = true;
-  
+
   late TabController tabController;
-  
+
   final int _unreadMessages = 3;
   Future<void> _loadUnreadNotificationsCount() async {
-  try {
-    final result = await ApiService.getUnreadCount();
-    setState(() {
-      _unreadNotificationsCount = result['unreadCount'] ?? 0;
-    });
-  } catch (e) {
-    print('Error loading unread count: $e');
+    try {
+      final result = await ApiService.getUnreadCount();
+      setState(() {
+        _unreadNotificationsCount = result['unreadCount'] ?? 0;
+      });
+    } catch (e) {
+      print('Error loading unread count: $e');
+    }
   }
-}
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 6, vsync: this);
-    
+
     _loadAllData();
     _loadUnreadNotificationsCount();
   }
-
-
 
   @override
   void dispose() {
@@ -337,7 +344,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     try {
       final data = await ApiService.getAllProjects();
       setState(() {
-        recommendedProjects = data.map((json) => Project.fromJson(json)).toList();
+        recommendedProjects = data
+            .map((json) => Project.fromJson(json))
+            .toList();
         recommendedProjects = recommendedProjects.take(5).toList();
         loadingProjects = false;
       });
@@ -373,14 +382,16 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
       print('📥 Fetching active contracts for freelancer...');
       final data = await ApiService.getFreelancerContracts();
       print('✅ Contracts fetched: ${data.length}');
-      
+
       setState(() {
         activeContracts = data
             .map((json) => Contract.fromJson(json))
-            .where((contract) => 
-                contract.status == 'active' || 
-                contract.status == 'pending_freelancer' || 
-                contract.status == 'pending_client')
+            .where(
+              (contract) =>
+                  contract.status == 'active' ||
+                  contract.status == 'pending_freelancer' ||
+                  contract.status == 'pending_client',
+            )
             .toList();
         loadingContracts = false;
       });
@@ -413,51 +424,129 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
         loadingPortfolio = false;
       });
     } catch (e) {
+      void navigateToEditProfile() async {
+        if (loadingProfile) {
+          Fluttertoast.showToast(msg: "Loading profile, please wait...");
+          return;
+        }
+
+        if (profile == null) {
+          print('Profile is null, cannot navigate');
+          Fluttertoast.showToast(
+            msg: "Profile not loaded yet. Please refresh.",
+          );
+          return;
+        }
+
+        print('Navigating to EditProfileScreen with profile: ${profile?.name}');
+
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EditProfileScreen(profile: profile!),
+          ),
+        );
+
+        if (result == true) {
+          await fetchProfile();
+          await fetchPortfolio();
+        }
+      }
+
       print('Error fetching portfolio: $e');
       setState(() => loadingPortfolio = false);
     }
   }
 
   void navigateToEditProfile() async {
-    if (profile == null) return;
+    if (profile == null) {
+      print('Profile is null, cannot navigate');
+      Fluttertoast.showToast(msg: "Loading profile...");
+      return;
+    }
+
+    print('Navigating to EditProfileScreen with profile: ${profile?.name}');
 
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => EditProfileScreen(profile: profile!),
-      ),
+      MaterialPageRoute(builder: (_) => EditProfileScreen(profile: profile!)),
     );
 
     if (result == true) {
-      fetchProfile();
-      fetchPortfolio();
+      await fetchProfile();
+      await fetchPortfolio();
     }
   }
 
-  Future<void> _openChatWithClient(int clientId, String clientName, String? clientAvatar) async {
+  Future<void> _openChatWithClient(
+    int? clientId,
+    String clientName,
+    String? clientAvatar,
+  ) async {
+    if (clientId == null || clientId == 0) {
+      Fluttertoast.showToast(
+        msg:
+            "Cannot start chat: Client information is not available for this project.",
+        backgroundColor: Colors.orange,
+      );
+      print('❌ Invalid client ID: $clientId');
+      return;
+    }
+    if (clientId == null || clientId == 0) {
+      Fluttertoast.showToast(msg: "Cannot start chat: Client ID is missing");
+      print('❌ Invalid client ID: $clientId');
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
     try {
-      final chatId = await ChatService.createChat(clientId.toString() as int);
-      
+      print('📱 Opening chat with client ID: $clientId');
+
+      final result = await ChatService.createChat(clientId);
+
+      if (mounted) Navigator.pop(context);
+
+      int? chatId;
+      if (result['success'] == true) {
+        chatId = result['chat']?['id'];
+      } else {
+        chatId = result['id'];
+      }
+
+      if (chatId == null || chatId == 0) {
+        Fluttertoast.showToast(msg: "Failed to create chat. Please try again.");
+        return;
+      }
+
       if (mounted) {
+        print('✅ Navigating to chat with ID: $chatId, other user: $clientId');
+
         Navigator.pushNamed(
           context,
           '/chat',
           arguments: {
             'chatId': chatId,
-            'otherUserId': clientId.toString(),
-            'otherUserName': clientName,
+            'otherUserId': clientId,
+            'otherUserName': clientName.isNotEmpty ? clientName : 'Client',
             'otherUserAvatar': clientAvatar,
           },
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "خطأ في فتح المحادثة: $e");
+      if (mounted) Navigator.pop(context);
+      print('❌ Error opening chat: $e');
+      Fluttertoast.showToast(msg: "Error opening chat: ${e.toString()}");
     }
   }
 
   double get profileCompletion {
     int completed = 0;
-    int total = 9; 
+    int total = 9;
 
     if (profile?.name != null && profile!.name!.isNotEmpty) completed++;
     if (profile?.title != null && profile!.title!.isNotEmpty) completed++;
@@ -481,11 +570,27 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
   String _getCurrentDate() {
     final now = DateTime.now();
     final weekdays = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
     ];
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
 
     return '${weekdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day} ${now.year}';
@@ -503,9 +608,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                 onPressed: () => Navigator.pop(context, false),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: const Text("Logout"),
                 onPressed: () => Navigator.pop(context, true),
               ),
@@ -519,18 +622,18 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     if (contract.milestones == null || contract.milestones!.isEmpty) {
       return 'No deadline';
     }
-    
+
     final milestones = contract.milestones!;
-    final futureMilestones = milestones.where((m) => 
-      m['status'] != 'completed' && m['due_date'] != null
-    ).toList();
-    
+    final futureMilestones = milestones
+        .where((m) => m['status'] != 'completed' && m['due_date'] != null)
+        .toList();
+
     if (futureMilestones.isEmpty) return 'Finalizing';
-    
+
     try {
       final nextDue = DateTime.parse(futureMilestones.first['due_date']);
       final days = nextDue.difference(DateTime.now()).inDays;
-      
+
       if (days < 0) return 'Overdue';
       if (days == 0) return 'Due today';
       return '$days days left';
@@ -538,7 +641,6 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
       return 'No deadline';
     }
   }
-
 
   Widget _statItem(IconData icon, String value, String label, Color color) {
     return Column(
@@ -552,10 +654,14 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
           child: Icon(icon, color: color, size: 18),
         ),
         const SizedBox(height: 6),
-        Text(value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        Text(label,
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+        ),
       ],
     );
   }
@@ -563,12 +669,12 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
   Widget _buildQuickStats() {
     final totalProposals = stats?['totalProposals'] ?? 0;
     final acceptedProposals = stats?['acceptedProposals'] ?? 0;
-    final jobSuccessScore = totalProposals > 0 
+    final jobSuccessScore = totalProposals > 0
         ? (acceptedProposals / totalProposals * 100).toInt()
         : 0;
-    
+
     final totalEarnings = stats?['totalEarnings'] ?? 12500;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -583,18 +689,30 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _statItem(Icons.work, 
-                stats?['activeProjects']?.toString() ?? "0", 
-                "Active", Colors.blue),
-              _statItem(Icons.send, 
-                stats?['totalProposals']?.toString() ?? "0", 
-                "Proposals", Colors.orange),
-              _statItem(Icons.star, 
-                profile?.rating?.toStringAsFixed(1) ?? "0.0", 
-                "Rating", Colors.amber),
-              _statItem(Icons.trending_up,
+              _statItem(
+                Icons.work,
+                stats?['activeProjects']?.toString() ?? "0",
+                "Active",
+                Colors.blue,
+              ),
+              _statItem(
+                Icons.send,
+                stats?['totalProposals']?.toString() ?? "0",
+                "Proposals",
+                Colors.orange,
+              ),
+              _statItem(
+                Icons.star,
+                profile?.rating?.toStringAsFixed(1) ?? "0.0",
+                "Rating",
+                Colors.amber,
+              ),
+              _statItem(
+                Icons.trending_up,
                 "$jobSuccessScore%",
-                "JSS", Colors.green),
+                "JSS",
+                Colors.green,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -603,15 +721,19 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _statItem(Icons.attach_money, 
-                "\$${totalEarnings}", 
-                "Earnings", Colors.green),
-              _statItem(Icons.access_time, 
-                "2h", 
-                "Response", Colors.orange),
-              _statItem(Icons.percent,
+              _statItem(
+                Icons.attach_money,
+                "\$${totalEarnings}",
+                "Earnings",
+                Colors.green,
+              ),
+              _statItem(Icons.access_time, "2h", "Response", Colors.orange),
+              _statItem(
+                Icons.percent,
                 "${profileCompletion.toStringAsFixed(0)}%",
-                "Profile", Colors.purple),
+                "Profile",
+                Colors.purple,
+              ),
             ],
           ),
         ],
@@ -619,20 +741,27 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     );
   }
 
-
   Widget _buildProfileCompletionCard() {
+    if (profile == null) return const SizedBox.shrink();
+
     double completion = profileCompletion;
     if (completion >= 100) return const SizedBox.shrink();
 
     List<String> missingItems = [];
-    if (profile?.name == null || profile!.name!.isEmpty) missingItems.add("Full Name");
-    if (profile?.title == null || profile!.title!.isEmpty) missingItems.add("Title");
+    if (profile?.name == null || profile!.name!.isEmpty)
+      missingItems.add("Full Name");
+    if (profile?.title == null || profile!.title!.isEmpty)
+      missingItems.add("Title");
     if (profile?.bio == null || profile!.bio!.isEmpty) missingItems.add("Bio");
-    if (profile?.avatar == null || profile!.avatar!.isEmpty) missingItems.add("Profile Photo");
-    if (profile?.skills == null || profile!.skills!.isEmpty) missingItems.add("Skills");
-    if (profile?.cvUrl == null || profile!.cvUrl!.isEmpty) missingItems.add("CV");
+    if (profile?.avatar == null || profile!.avatar!.isEmpty)
+      missingItems.add("Profile Photo");
+    if (profile?.skills == null || profile!.skills!.isEmpty)
+      missingItems.add("Skills");
+    if (profile?.cvUrl == null || profile!.cvUrl!.isEmpty)
+      missingItems.add("CV");
     if (portfolioItems.isEmpty) missingItems.add("Portfolio Items");
-    if (profile?.hourlyRate == null || profile!.hourlyRate! <= 0) missingItems.add("Hourly Rate");
+    if (profile?.hourlyRate == null || profile!.hourlyRate! <= 0)
+      missingItems.add("Hourly Rate");
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -677,9 +806,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                 onPressed: navigateToEditProfile,
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(20))),
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                  ),
                 ),
                 child: Text(
                   "Complete Now",
@@ -724,7 +857,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
         ),
       );
     }
-    
+
     if (activeContracts.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -742,7 +875,11 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
             Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.refresh, size: 18, color: Colors.grey.shade600),
+                  icon: Icon(
+                    Icons.refresh,
+                    size: 18,
+                    color: Colors.grey.shade600,
+                  ),
                   onPressed: fetchActiveContracts,
                 ),
                 TextButton(
@@ -778,7 +915,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
 
     double progress = 0;
     if (contract.milestones != null && contract.milestones!.isNotEmpty) {
-      final completed = contract.milestones!.where((m) => m['status'] == 'completed').length;
+      final completed = contract.milestones!
+          .where((m) => m['status'] == 'completed')
+          .length;
       progress = completed / contract.milestones!.length;
     } else {
       progress = contract.status == 'active' ? 0.5 : 0.2;
@@ -789,10 +928,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
         Navigator.pushNamed(
           context,
           '/contract',
-          arguments: {
-            'contractId': contract.id,
-            'userRole': 'freelancer',
-          },
+          arguments: {'contractId': contract.id, 'userRole': 'freelancer'},
         );
       },
       child: Container(
@@ -804,7 +940,11 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -816,7 +956,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                 Expanded(
                   child: Text(
                     project.title ?? 'Untitled',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -951,7 +1094,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     if (loadingSuggestions) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     if (aiSuggestedProjects.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -970,7 +1113,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
           ],
         ),
         const SizedBox(height: 12),
-        ...aiSuggestedProjects.take(3).map((project) => _buildProjectCard(project)),
+        ...aiSuggestedProjects
+            .take(3)
+            .map((project) => _buildProjectCard(project)),
       ],
     );
   }
@@ -979,7 +1124,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     if (loadingProjects) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     if (recommendedProjects.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -1004,7 +1149,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     }
 
     return Column(
-      children: recommendedProjects.map((project) => _buildProjectCard(project)).toList(),
+      children: recommendedProjects
+          .map((project) => _buildProjectCard(project))
+          .toList(),
     );
   }
 
@@ -1017,7 +1164,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
         ),
       );
     }
-    
+
     if (portfolioItems.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -1054,7 +1201,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
         ),
       );
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1069,12 +1216,16 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
           ],
         ),
         const SizedBox(height: 12),
-        ...portfolioItems.take(2).map((item) => PortfolioCard(
-          item: item,
-          onTap: () {
-            // TODO: Show portfolio detail dialog
-          },
-        )),
+        ...portfolioItems
+            .take(2)
+            .map(
+              (item) => PortfolioCard(
+                item: item,
+                onTap: () {
+                  // TODO: Show portfolio detail dialog
+                },
+              ),
+            ),
         if (portfolioItems.length > 2)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1101,6 +1252,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
   }
 
   Widget _buildProjectCard(Project project) {
+    final hasValidClient =
+        project.client != null &&
+        project.client!.id != null &&
+        project.client!.id! > 0;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1118,7 +1273,11 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -1130,22 +1289,31 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                 Expanded(
                   child: Text(
                     project.title ?? 'Untitled',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 if (project.matchScore != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: _getMatchScoreColor(project.matchScore!).withOpacity(0.1),
+                      color: _getMatchScoreColor(
+                        project.matchScore!,
+                      ).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome, 
-                          size: 12, 
-                          color: _getMatchScoreColor(project.matchScore!)
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 12,
+                          color: _getMatchScoreColor(project.matchScore!),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -1174,7 +1342,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                   child: project.client?.avatar == null
                       ? Text(
                           project.client?.name?[0].toUpperCase() ?? 'C',
-                          style: const TextStyle(fontSize: 10, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                          ),
                         )
                       : null,
                 ),
@@ -1231,14 +1402,20 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                 runSpacing: 6,
                 children: project.skills!.take(3).map((skill) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       skill,
-                      style: TextStyle(fontSize: 10, color: Colors.blue.shade700),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.blue.shade700,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -1250,18 +1427,32 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: Colors.grey.shade500,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${project.duration} days',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    Icon(Icons.location_on, size: 14, color: Colors.grey.shade500),
+                    Icon(
+                      Icons.location_on,
+                      size: 14,
+                      color: Colors.grey.shade500,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Remote',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
@@ -1281,8 +1472,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     );
   }
 
-  Widget _buildMessageCard(String sender, String content, String time,
-      {bool isUnread = false, String? avatar}) {
+  Widget _buildMessageCard(
+    String sender,
+    String content,
+    String time, {
+    bool isUnread = false,
+    String? avatar,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
@@ -1302,8 +1498,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                 backgroundColor: Colors.blueGrey.shade300,
                 backgroundImage: avatar != null ? NetworkImage(avatar) : null,
                 child: avatar == null
-                    ? Text(sender.isNotEmpty ? sender[0].toUpperCase() : '?',
-                        style: const TextStyle(color: Colors.white, fontSize: 16))
+                    ? Text(
+                        sender.isNotEmpty ? sender[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      )
                     : null,
               ),
               if (isUnread)
@@ -1334,13 +1535,15 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(content,
-                    style: TextStyle(
-                      color: isUnread ? Colors.black87 : Colors.black54,
-                      fontSize: 13,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  content,
+                  style: TextStyle(
+                    color: isUnread ? Colors.black87 : Colors.black54,
+                    fontSize: 13,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -1396,10 +1599,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     return RefreshIndicator(
       onRefresh: _loadAllData,
       displacement: 40,
-  color: const Color(0xff14A800),
-  backgroundColor: Colors.white,
-  child: SingleChildScrollView(
-    physics: const AlwaysScrollableScrollPhysics(),
+      color: const Color(0xff14A800),
+      backgroundColor: Colors.white,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -1439,7 +1642,6 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
             _buildProfileCompletionCard(),
             _buildQuickStats(),
 
-
             const SizedBox(height: 20),
 
             Container(
@@ -1447,7 +1649,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 6),
+                ],
               ),
               child: TextField(
                 decoration: InputDecoration(
@@ -1517,12 +1721,27 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
               ],
             ),
 
-            _buildMessageCard("Ahmed", "Hi! Are you available for a quick chat?", "2h",
-                isUnread: true, avatar: null),
-            _buildMessageCard("Sara", "I reviewed your proposal, let's discuss", "5h",
-                isUnread: false, avatar: null),
-            _buildMessageCard("Mohammed", "Great work on the project!", "1d",
-                isUnread: false, avatar: null),
+            _buildMessageCard(
+              "Ahmed",
+              "Hi! Are you available for a quick chat?",
+              "2h",
+              isUnread: true,
+              avatar: null,
+            ),
+            _buildMessageCard(
+              "Sara",
+              "I reviewed your proposal, let's discuss",
+              "5h",
+              isUnread: false,
+              avatar: null,
+            ),
+            _buildMessageCard(
+              "Mohammed",
+              "Great work on the project!",
+              "1d",
+              isUnread: false,
+              avatar: null,
+            ),
 
             const SizedBox(height: 20),
           ],
@@ -1531,18 +1750,18 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
     );
   }
 
-
   Widget _buildReminders() {
     List<Map<String, dynamic>> reminders = [];
-    
+
     for (var contract in activeContracts) {
       if (contract.milestones != null) {
         for (var milestone in contract.milestones!) {
-          if (milestone['status'] != 'completed' && milestone['due_date'] != null) {
+          if (milestone['status'] != 'completed' &&
+              milestone['due_date'] != null) {
             try {
               final dueDate = DateTime.parse(milestone['due_date']);
               final daysLeft = dueDate.difference(DateTime.now()).inDays;
-              
+
               if (daysLeft <= 3 && daysLeft >= 0) {
                 reminders.add({
                   'title': milestone['title'],
@@ -1552,13 +1771,12 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
                   'contractId': contract.id,
                 });
               }
-            } catch (e) {
-            }
+            } catch (e) {}
           }
         }
       }
     }
-    
+
     if (profileCompletion < 80) {
       reminders.insert(0, {
         'title': 'Complete your profile',
@@ -1567,11 +1785,11 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
         'priority': 'high',
       });
     }
-    
+
     if (reminders.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     reminders = reminders.take(3).toList();
 
     return Container(
@@ -1636,7 +1854,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
               children: [
                 Text(
                   reminder['title'],
-                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1658,7 +1879,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
               reminder['priority'] == 'high' ? 'Urgent' : 'Normal',
               style: TextStyle(
                 fontSize: 10,
-                color: reminder['priority'] == 'high' ? Colors.red : Colors.grey,
+                color: reminder['priority'] == 'high'
+                    ? Colors.red
+                    : Colors.grey,
               ),
             ),
           ),
@@ -1714,7 +1937,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(skill, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
+          Text(
+            skill,
+            style: TextStyle(color: color, fontWeight: FontWeight.w500),
+          ),
           const SizedBox(width: 4),
           Text(count, style: TextStyle(color: color, fontSize: 11)),
         ],
@@ -1724,6 +1950,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (loadingProfile) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Freelancer Dashboard")),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final avatarUrl = _getAvatarUrl(profile?.avatar);
 
     return Scaffold(
@@ -1738,7 +1971,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
             child: CircleAvatar(
               radius: 18,
               backgroundColor: Colors.grey.shade400,
-              backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+              backgroundImage: avatarUrl.isNotEmpty
+                  ? NetworkImage(avatarUrl)
+                  : null,
               child: avatarUrl.isEmpty
                   ? Text(
                       profile?.name?.isNotEmpty == true
@@ -1792,7 +2027,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
             icon: const Icon(Icons.search),
             onPressed: () => tabController.animateTo(1),
           ),
-          
+
           IconButton(
             icon: Stack(
               children: [
@@ -1826,53 +2061,57 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const ChatsListScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => ChatsListScreen()),
               );
             },
           ),
-          
+
           Stack(
             children: [
               IconButton(
-      icon: const Icon(Icons.notifications_none),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const NotificationsScreen(),
+                icon: const Icon(Icons.notifications_none),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  ).then((_) => _loadUnreadNotificationsCount());
+                },
+              ),
+              if (_unreadNotificationsCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      _unreadNotificationsCount > 99
+                          ? '99+'
+                          : '$_unreadNotificationsCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ).then((_) => _loadUnreadNotificationsCount());
-      },
-    ),
-    if (_unreadNotificationsCount > 0)
-      Positioned(
-        right: 8,
-        top: 8,
-        child: Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: Colors.red,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-          child: Text(
-            _unreadNotificationsCount > 99 ? '99+' : '$_unreadNotificationsCount',
-            style: const TextStyle(color: Colors.white, fontSize: 10),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-  ],
-),
           IconButton(
-  icon: const Icon(Icons.share),
-  onPressed: () async {
-    final shareUrl = "${dotenv.env['FRONTEND_URL']}/freelancer/${profile?.id}";
-    await Share.share("Check out my profile: $shareUrl");
-  },
-),
+            icon: const Icon(Icons.share),
+            onPressed: () async {
+              final shareUrl =
+                  "${dotenv.env['FRONTEND_URL']}/freelancer/${profile?.id}";
+              await Share.share("Check out my profile: $shareUrl");
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {

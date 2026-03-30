@@ -1,4 +1,4 @@
-// lib/models/user_model.dart
+// models/user_model.dart
 class User {
   final int? id;
   final String? name;
@@ -6,23 +6,17 @@ class User {
   final String? role;
   final String? avatar;
 
-  User({
-    this.id,
-    this.name,
-    this.email,
-    this.role,
-    this.avatar,
-  });
+  User({this.id, this.name, this.email, this.role, this.avatar});
 
   factory User.fromJson(Map<String, dynamic> json) {
     print('📥 User.fromJson: $json');
 
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      role: json['role'],
-      avatar: json['avatar'],
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
+      name: json['name']?.toString(),
+      email: json['email']?.toString(),
+      role: json['role']?.toString(),
+      avatar: json['avatar']?.toString(),
     );
   }
 

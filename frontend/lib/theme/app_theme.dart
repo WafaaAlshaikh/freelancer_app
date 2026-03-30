@@ -1,36 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-
   static const Color primary = Color(0xffE6C4A4);
   static const Color background = Color(0xffEFE7DF);
   static const Color field = Color(0xffF5F5F5);
 
   static ThemeData lightTheme = ThemeData(
-
-    fontFamily: "Poppins",
+    fontFamily: GoogleFonts.notoSans().fontFamily,
+    textTheme: GoogleFonts.notoSansTextTheme(),
+    appBarTheme: const AppBarTheme(
+      elevation: 0,
+      centerTitle: false,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+    ),
 
     scaffoldBackgroundColor: background,
 
     elevatedButtonTheme: ElevatedButtonThemeData(
-
       style: ElevatedButton.styleFrom(
-
         backgroundColor: primary,
         elevation: 0,
 
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
 
         minimumSize: const Size(double.infinity, 50),
-
       ),
-
     ),
 
     inputDecorationTheme: InputDecorationTheme(
-
       filled: true,
       fillColor: field,
 
@@ -38,9 +37,6 @@ class AppTheme {
         borderRadius: BorderRadius.circular(30),
         borderSide: BorderSide.none,
       ),
-
     ),
-
   );
-
 }

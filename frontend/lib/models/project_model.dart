@@ -21,8 +21,8 @@ class Project {
   DateTime? updatedAt;
   User? client;
   List<dynamic>? attachments;
-  int? matchScore; 
-  bool? hasApplied; 
+  int? matchScore;
+  bool? hasApplied;
 
   Project({
     this.id,
@@ -45,6 +45,9 @@ class Project {
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
+    print('📦 Project.fromJson - Keys: ${json.keys}');
+    print('📦 Client data: ${json['client'] ?? json['User']}');
+
     List<String> skillsList = [];
     if (json['skills'] != null) {
       if (json['skills'] is List) {
@@ -61,6 +64,27 @@ class Project {
       }
     }
 
+    User? client;
+    if (json['client'] != null) {
+      try {
+        client = User.fromJson(json['client']);
+        print('✅ Client parsed: ID=${client?.id}, Name=${client?.name}');
+      } catch (e) {
+        print('❌ Error parsing client: $e');
+      }
+    } else if (json['User'] != null) {
+      try {
+        client = User.fromJson(json['User']);
+        print(
+          '✅ Client parsed from User: ID=${client?.id}, Name=${client?.name}',
+        );
+      } catch (e) {
+        print('❌ Error parsing User: $e');
+      }
+    } else {
+      print('⚠️ No client data in project');
+    }
+
     return Project(
       id: json['id'],
       title: json['title'],
@@ -70,17 +94,17 @@ class Project {
       category: json['category'],
       skills: skillsList,
       status: json['status'],
-      userId: json['UserId'],
+      userId: json['UserId'] ?? json['user_id'],
       views: json['views'],
       proposalsCount: json['proposalsCount'] ?? json['proposals_count'],
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
           : null,
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
           : null,
-      client: json['User'] != null ? User.fromJson(json['User']) : null,
-      attachments: json['attachments'] != null 
+      client: client,
+      attachments: json['attachments'] != null
           ? (json['attachments'] is List ? json['attachments'] : [])
           : [],
       matchScore: json['matchScore'],
@@ -124,6 +148,7 @@ class Project {
         return Colors.grey;
     }
   }
+
   Color get matchScoreColor {
     if (matchScore == null) return Colors.grey;
     if (matchScore! >= 80) return Colors.green;

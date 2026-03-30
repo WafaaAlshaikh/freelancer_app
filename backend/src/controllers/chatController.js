@@ -11,8 +11,16 @@ const generateUniqueChatId = (userId1, userId2) => {
 
 export const createChat = async (req, res) => {
   try {
-    const { otherUserId } = req.body;
+    const otherUserId = req.body.other_user_id || req.body.otherUserId;
     const currentUserId = req.user.id;
+
+    console.log(
+      "📱 Create chat - currentUser:",
+      currentUserId,
+      "otherUser:",
+      otherUserId,
+    );
+    console.log("📦 Request body:", req.body);
 
     if (!otherUserId) {
       return res.status(400).json({ message: "Other user ID is required" });
@@ -36,21 +44,24 @@ export const createChat = async (req, res) => {
         },
         status: "active",
       });
+      console.log("✅ New chat created with ID:", chat.id);
+    } else {
+      console.log("✅ Existing chat found with ID:", chat.id);
     }
 
     const participants = await User.findAll({
       where: { id: { [Op.in]: chat.participant_ids } },
-      attributes: ['id', 'name', 'avatar'],
+      attributes: ["id", "name", "avatar"],
     });
 
     res.status(201).json({
       success: true,
       chat: {
+        id: chat.id,
         ...chat.toJSON(),
         participants,
       },
     });
-
   } catch (err) {
     console.error("Error in createChat:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -65,39 +76,39 @@ export const getUserChats = async (req, res) => {
       where: {
         [Op.and]: [
           sequelize.literal(`JSON_CONTAINS(participant_ids, '[${userId}]')`),
-          { status: "active" }
-        ]
+          { status: "active" },
+        ],
       },
-      order: [['last_message_time', 'DESC']],
+      order: [["last_message_time", "DESC"]],
     });
 
     const chatsWithParticipants = await Promise.all(
       chats.map(async (chat) => {
         const participants = await User.findAll({
           where: { id: { [Op.in]: chat.participant_ids } },
-          attributes: ['id', 'name', 'avatar'],
+          attributes: ["id", "name", "avatar"],
         });
 
-        const otherParticipant = participants.find(p => p.id !== userId);
+        const otherParticipant = participants.find((p) => p.id !== userId);
         const unreadCount = chat.unread_counts?.[userId] || 0;
 
         const lastMessages = await Message.findAll({
           where: { chat_id: chat.id },
-          order: [['createdAt', 'DESC']],
+          order: [["createdAt", "DESC"]],
           limit: 3,
         });
 
         const lastMessagesWithSenders = await Promise.all(
           lastMessages.map(async (msg) => {
             const sender = await User.findByPk(msg.sender_id, {
-              attributes: ['id', 'name', 'avatar'],
+              attributes: ["id", "name", "avatar"],
             });
             return {
               ...msg.toJSON(),
               sender_name: sender?.name,
               sender_avatar: sender?.avatar,
             };
-          })
+          }),
         );
 
         return {
@@ -112,11 +123,10 @@ export const getUserChats = async (req, res) => {
           createdAt: chat.createdAt,
           updatedAt: chat.updatedAt,
         };
-      })
+      }),
     );
 
     res.json(chatsWithParticipants);
-
   } catch (err) {
     console.error("Error in getUserChats:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -138,9 +148,9 @@ export const getChatMessages = async (req, res) => {
       where: {
         id: chatId,
         [Op.and]: [
-          sequelize.literal(`JSON_CONTAINS(participant_ids, '[${userId}]')`)
-        ]
-      }
+          sequelize.literal(`JSON_CONTAINS(participant_ids, '[${userId}]')`),
+        ],
+      },
     });
 
     if (!isParticipant) {
@@ -149,7 +159,7 @@ export const getChatMessages = async (req, res) => {
 
     const messages = await Message.findAll({
       where: { chat_id: chatId },
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
@@ -157,16 +167,16 @@ export const getChatMessages = async (req, res) => {
     const messagesWithSenders = await Promise.all(
       messages.map(async (message) => {
         const sender = await User.findByPk(message.sender_id, {
-          attributes: ['id', 'name', 'avatar'],
+          attributes: ["id", "name", "avatar"],
         });
-        
+
         return {
           ...message.toJSON(),
           sender_name: sender?.name,
           sender_avatar: sender?.avatar,
           is_read_by_me: message.read_by.includes(userId),
         };
-      })
+      }),
     );
 
     if (chat.unread_counts?.[userId] > 0) {
@@ -180,7 +190,6 @@ export const getChatMessages = async (req, res) => {
       total: messages.length,
       hasMore: messages.length === parseInt(limit),
     });
-
   } catch (err) {
     console.error("Error in getChatMessages:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -193,7 +202,9 @@ export const sendMessage = async (req, res) => {
     const senderId = req.user.id;
 
     if (!chatId || !content) {
-      return res.status(400).json({ message: "Chat ID and content are required" });
+      return res
+        .status(400)
+        .json({ message: "Chat ID and content are required" });
     }
 
     const chat = await Chat.findByPk(chatId);
@@ -205,7 +216,7 @@ export const sendMessage = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const receiverId = chat.participant_ids.find(id => id !== senderId);
+    const receiverId = chat.participant_ids.find((id) => id !== senderId);
 
     const message = await Message.create({
       chat_id: chatId,
@@ -227,19 +238,19 @@ export const sendMessage = async (req, res) => {
     });
 
     const sender = await User.findByPk(senderId, {
-      attributes: ['id', 'name', 'avatar'],
+      attributes: ["id", "name", "avatar"],
     });
 
     await NotificationService.createNotification({
       userId: receiverId,
-      type: 'message',
+      type: "message",
       title: `New message from ${sender?.name}`,
-      body: content.length > 100 ? content.substring(0, 100) + '...' : content,
+      body: content.length > 100 ? content.substring(0, 100) + "..." : content,
       data: {
         chatId: chat.id,
         messageId: message.id,
         senderId: senderId,
-        screen: 'chat',
+        screen: "chat",
       },
     });
 
@@ -252,7 +263,6 @@ export const sendMessage = async (req, res) => {
         is_read_by_me: false,
       },
     });
-
   } catch (err) {
     console.error("Error in sendMessage:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -286,7 +296,7 @@ export const markMessagesAsRead = async (req, res) => {
             is_read: readBy.length === chat.participant_ids.length,
           });
         }
-      })
+      }),
     );
 
     const newUnreadCounts = { ...chat.unread_counts };
@@ -294,7 +304,6 @@ export const markMessagesAsRead = async (req, res) => {
     await chat.update({ unread_counts: newUnreadCounts });
 
     res.json({ success: true, message: "Messages marked as read" });
-
   } catch (err) {
     console.error("Error in markMessagesAsRead:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -312,13 +321,14 @@ export const deleteMessage = async (req, res) => {
     }
 
     if (message.sender_id !== userId) {
-      return res.status(403).json({ message: "You can only delete your own messages" });
+      return res
+        .status(403)
+        .json({ message: "You can only delete your own messages" });
     }
 
     await message.destroy();
 
     res.json({ success: true, message: "Message deleted" });
-
   } catch (err) {
     console.error("Error in deleteMessage:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -332,8 +342,8 @@ export const getUnreadCount = async (req, res) => {
     const chats = await Chat.findAll({
       where: {
         [Op.and]: [
-          sequelize.literal(`JSON_CONTAINS(participant_ids, '[${userId}]')`)
-        ]
+          sequelize.literal(`JSON_CONTAINS(participant_ids, '[${userId}]')`),
+        ],
       },
     });
 
@@ -342,13 +352,11 @@ export const getUnreadCount = async (req, res) => {
     }, 0);
 
     res.json({ unreadCount: totalUnread });
-
   } catch (err) {
     console.error("Error in getUnreadCount:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
 
 export const createChatFromContract = async (req, res) => {
   try {
@@ -360,9 +368,8 @@ export const createChatFromContract = async (req, res) => {
       return res.status(404).json({ message: "Contract not found" });
     }
 
-    const otherUserId = contract.ClientId === userId 
-      ? contract.FreelancerId 
-      : contract.ClientId;
+    const otherUserId =
+      contract.ClientId === userId ? contract.FreelancerId : contract.ClientId;
 
     const uniqueId = generateUniqueChatId(userId, otherUserId);
     let chat = await Chat.findOne({ where: { unique_id: uniqueId } });
@@ -380,7 +387,6 @@ export const createChatFromContract = async (req, res) => {
       success: true,
       chatId: chat.id,
     });
-
   } catch (err) {
     console.error("Error in createChatFromContract:", err);
     res.status(500).json({ message: "Server error", error: err.message });

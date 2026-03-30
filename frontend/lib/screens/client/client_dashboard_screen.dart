@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'enhanced_client_profile_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:freelancer_platform/screens/client/client_profile_screen.dart';
@@ -38,7 +39,8 @@ class DashboardOverview {
     required this.topFreelancers,
   });
 
-  factory DashboardOverview.fromJson(Map<String, dynamic> j) => DashboardOverview(
+  factory DashboardOverview.fromJson(Map<String, dynamic> j) =>
+      DashboardOverview(
         stats: _Stats.fromJson(j['stats'] ?? {}),
         monthlySpending: ((j['monthlySpending'] ?? []) as List)
             .map((e) => _MonthlyPoint.fromJson(e))
@@ -82,18 +84,18 @@ class _Stats {
   });
 
   factory _Stats.fromJson(Map<String, dynamic> j) => _Stats(
-        totalProjects: j['totalProjects'] ?? 0,
-        openProjects: j['openProjects'] ?? 0,
-        inProgressProjects: j['inProgressProjects'] ?? 0,
-        completedProjects: j['completedProjects'] ?? 0,
-        totalProposals: j['totalProposals'] ?? 0,
-        pendingProposals: j['pendingProposals'] ?? 0,
-        acceptedProposals: j['acceptedProposals'] ?? 0,
-        totalSpent: _d(j['totalSpent']),
-        escrowHeld: _d(j['escrowHeld']),
-        totalReleased: _d(j['totalReleased']),
-        proposalAcceptRate: j['proposalAcceptRate'] ?? 0,
-      );
+    totalProjects: j['totalProjects'] ?? 0,
+    openProjects: j['openProjects'] ?? 0,
+    inProgressProjects: j['inProgressProjects'] ?? 0,
+    completedProjects: j['completedProjects'] ?? 0,
+    totalProposals: j['totalProposals'] ?? 0,
+    pendingProposals: j['pendingProposals'] ?? 0,
+    acceptedProposals: j['acceptedProposals'] ?? 0,
+    totalSpent: _d(j['totalSpent']),
+    escrowHeld: _d(j['escrowHeld']),
+    totalReleased: _d(j['totalReleased']),
+    proposalAcceptRate: j['proposalAcceptRate'] ?? 0,
+  );
 
   static double _d(dynamic v) {
     if (v == null) return 0;
@@ -133,12 +135,12 @@ class _StatusSlice {
   final String label;
   final int value;
   final String color;
-  _StatusSlice(
-      {required this.label, required this.value, required this.color});
+  _StatusSlice({required this.label, required this.value, required this.color});
   factory _StatusSlice.fromJson(Map<String, dynamic> j) => _StatusSlice(
-      label: j['label'] ?? '',
-      value: j['value'] ?? 0,
-      color: j['color'] ?? '#888');
+    label: j['label'] ?? '',
+    value: j['value'] ?? 0,
+    color: j['color'] ?? '#888',
+  );
 }
 
 class _ProposalItem {
@@ -250,13 +252,18 @@ class _FreelancerChip {
   final String name;
   final String? avatar;
   final double? rating;
-  _FreelancerChip(
-      {required this.id, required this.name, this.avatar, this.rating});
+  _FreelancerChip({
+    required this.id,
+    required this.name,
+    this.avatar,
+    this.rating,
+  });
   factory _FreelancerChip.fromJson(Map<String, dynamic> j) => _FreelancerChip(
-      id: j['id'] ?? 0,
-      name: j['name'] ?? '',
-      avatar: j['avatar'],
-      rating: j['rating']?.toDouble());
+    id: j['id'] ?? 0,
+    name: j['name'] ?? '',
+    avatar: j['avatar'],
+    rating: j['rating']?.toDouble(),
+  );
 }
 
 class _AIFreelancerSuggestion {
@@ -311,15 +318,14 @@ class ClientProfile {
   });
 
   factory ClientProfile.fromJson(Map<String, dynamic> j) => ClientProfile(
-        id: j['id'] ?? 0,
-        name: j['name'] ?? 'Client',
-        avatar: j['avatar'],
-        email: j['email'],
-        company: j['company'],
-        phone: j['phone'],
-      );
+    id: j['id'] ?? 0,
+    name: j['name'] ?? 'Client',
+    avatar: j['avatar'],
+    email: j['email'],
+    company: j['company'],
+    phone: j['phone'],
+  );
 }
-
 
 class SearchDialog extends StatefulWidget {
   final Function(String) onSearch;
@@ -403,7 +409,6 @@ class _SearchDialogState extends State<SearchDialog> {
   }
 }
 
-
 class ClientDashboard extends StatefulWidget {
   const ClientDashboard({super.key});
 
@@ -443,8 +448,10 @@ class _ClientDashboardState extends State<ClientDashboard>
     _loadDashboard();
     _loadMyProjects();
     _loadUnread();
-    _refreshTimer =
-        Timer.periodic(const Duration(seconds: 60), (_) => _loadDashboard(silent: true));
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _loadDashboard(silent: true),
+    );
   }
 
   @override
@@ -528,7 +535,9 @@ class _ClientDashboardState extends State<ClientDashboard>
       );
 
       if (openProject.id != null) {
-        final result = await ApiService.getSuggestedFreelancers(openProject.id!);
+        final result = await ApiService.getSuggestedFreelancers(
+          openProject.id!,
+        );
         if (mounted) {
           setState(() {
             final suggestions = result['suggestions'];
@@ -543,16 +552,18 @@ class _ClientDashboardState extends State<ClientDashboard>
           });
         }
       } else {
-        if (mounted) setState(() {
+        if (mounted)
+          setState(() {
+            _aiSuggestions = [];
+            _loadingSuggestions = false;
+          });
+      }
+    } catch (e) {
+      if (mounted)
+        setState(() {
           _aiSuggestions = [];
           _loadingSuggestions = false;
         });
-      }
-    } catch (e) {
-      if (mounted) setState(() {
-        _aiSuggestions = [];
-        _loadingSuggestions = false;
-      });
     }
   }
 
@@ -578,8 +589,7 @@ class _ClientDashboardState extends State<ClientDashboard>
 
   String _initials(String name) {
     final parts = name.trim().split(' ');
-    if (parts.length >= 2)
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     if (name.isNotEmpty) return name[0].toUpperCase();
     return '?';
   }
@@ -595,13 +605,17 @@ class _ClientDashboardState extends State<ClientDashboard>
   double _calculateProfileCompletion() {
     int completed = 0;
     int total = 5;
-    
-    if (_clientProfile?.name != null && _clientProfile!.name.isNotEmpty) completed++;
-    if (_clientProfile?.avatar != null && _clientProfile!.avatar!.isNotEmpty) completed++;
-    if (_clientProfile?.email != null && _clientProfile!.email!.isNotEmpty) completed++;
-    if (_clientProfile?.company != null && _clientProfile!.company!.isNotEmpty) completed++;
+
+    if (_clientProfile?.name != null && _clientProfile!.name.isNotEmpty)
+      completed++;
+    if (_clientProfile?.avatar != null && _clientProfile!.avatar!.isNotEmpty)
+      completed++;
+    if (_clientProfile?.email != null && _clientProfile!.email!.isNotEmpty)
+      completed++;
+    if (_clientProfile?.company != null && _clientProfile!.company!.isNotEmpty)
+      completed++;
     if (_myProjects.isNotEmpty) completed++;
-    
+
     return total > 0 ? (completed / total * 100) : 0;
   }
 
@@ -676,13 +690,13 @@ class _ClientDashboardState extends State<ClientDashboard>
   }
 
   void _navigateToProfile() {
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const ClientProfileScreen()),
-  ).then((_) {
-    _loadClientProfile(); 
-  });
-}
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ClientProfileScreen()),
+    ).then((_) {
+      _loadClientProfile();
+    });
+  }
 
   void _navigateToSettings() {
     // TODO: Navigate to settings screen
@@ -709,7 +723,9 @@ class _ClientDashboardState extends State<ClientDashboard>
   void _navigateToContracts() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const MyContractsScreen(userRole: 'client')),
+      MaterialPageRoute(
+        builder: (_) => const MyContractsScreen(userRole: 'client'),
+      ),
     );
   }
 
@@ -739,11 +755,16 @@ class _ClientDashboardState extends State<ClientDashboard>
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.person_outline),
+              leading: const Icon(Icons.person),
               title: const Text('Profile'),
               onTap: () {
                 Navigator.pop(context);
-                _navigateToProfile();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EnhancedClientProfileScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -783,7 +804,7 @@ class _ClientDashboardState extends State<ClientDashboard>
     final greeting = _getGreeting();
     final firstName = _clientProfile?.name?.split(' ').first ?? 'User';
     final avatarUrl = _getAvatarUrl(_clientProfile?.avatar);
-    
+
     return Column(
       children: [
         Container(
@@ -791,7 +812,14 @@ class _ClientDashboardState extends State<ClientDashboard>
           child: Row(
             children: [
               GestureDetector(
-                onTap: _navigateToProfile,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EnhancedClientProfileScreen(),
+                    ),
+                  );
+                },
                 child: Container(
                   width: 52,
                   height: 52,
@@ -820,7 +848,9 @@ class _ClientDashboardState extends State<ClientDashboard>
                               child: SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
                             errorWidget: (_, __, ___) => Center(
@@ -876,16 +906,14 @@ class _ClientDashboardState extends State<ClientDashboard>
               ),
               _buildIconButton(Icons.search, _showSearchDialog),
               const SizedBox(width: 8),
-              _buildIconButtonWithBadge(
-                Icons.notifications_none,
-                () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                  ).then((_) => _loadUnread());
-                },
-                badgeCount: _unread,
-              ),
+              _buildIconButtonWithBadge(Icons.notifications_none, () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationsScreen(),
+                  ),
+                ).then((_) => _loadUnread());
+              }, badgeCount: _unread),
               const SizedBox(width: 8),
               _buildIconButton(Icons.more_vert, _showMenuDialog),
             ],
@@ -895,7 +923,11 @@ class _ClientDashboardState extends State<ClientDashboard>
     );
   }
 
-  Widget _buildIconButton(IconData icon, VoidCallback onTap, {Color? iconColor}) {
+  Widget _buildIconButton(
+    IconData icon,
+    VoidCallback onTap, {
+    Color? iconColor,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -917,8 +949,11 @@ class _ClientDashboardState extends State<ClientDashboard>
     );
   }
 
-  Widget _buildIconButtonWithBadge(IconData icon, VoidCallback onTap,
-      {int badgeCount = 0}) {
+  Widget _buildIconButtonWithBadge(
+    IconData icon,
+    VoidCallback onTap, {
+    int badgeCount = 0,
+  }) {
     return Stack(
       children: [
         _buildIconButton(icon, onTap),
@@ -963,10 +998,17 @@ class _ClientDashboardState extends State<ClientDashboard>
           ),
           const SizedBox(width: 12),
           _buildQuickAction(
-            icon: Icons.search,
-            label: 'Find Work',
-            color: _info,
-            onTap: _navigateToFindWork,
+            icon: Icons.person,
+            label: 'Profile',
+            color: Colors.blue,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EnhancedClientProfileScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(width: 12),
           _buildQuickAction(
@@ -1025,7 +1067,7 @@ class _ClientDashboardState extends State<ClientDashboard>
   Widget _buildProfileCompletionCard() {
     final completion = _calculateProfileCompletion();
     if (completion >= 100) return const SizedBox.shrink();
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -1083,7 +1125,14 @@ class _ClientDashboardState extends State<ClientDashboard>
           ),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: _navigateToProfile,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EnhancedClientProfileScreen(),
+                ),
+              );
+            },
             style: TextButton.styleFrom(
               backgroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1100,8 +1149,6 @@ class _ClientDashboardState extends State<ClientDashboard>
       ),
     );
   }
-
- 
 
   Widget _buildCompactStatsGrid(_Stats s) {
     return SingleChildScrollView(
@@ -1201,10 +1248,7 @@ class _ClientDashboardState extends State<ClientDashboard>
           ),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 9,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1284,15 +1328,9 @@ class _ClientDashboardState extends State<ClientDashboard>
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: _gray),
-        ),
+        Text(label, style: TextStyle(fontSize: 10, color: _gray)),
       ],
     );
   }
@@ -1388,7 +1426,7 @@ class _ClientDashboardState extends State<ClientDashboard>
               children: [
                 _buildHeader(),
                 _buildQuickActions(),
-                if (_calculateProfileCompletion() < 100) 
+                if (_calculateProfileCompletion() < 100)
                   _buildProfileCompletionCard(),
                 if (_data != null) ...[
                   _buildCompactStatsGrid(_data!.stats),
@@ -1427,12 +1465,14 @@ class _ClientDashboardState extends State<ClientDashboard>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_primary, _primaryDark],
-                  ),
+                  gradient: LinearGradient(colors: [_primary, _primaryDark]),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  size: 16,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -1454,7 +1494,8 @@ class _ClientDashboardState extends State<ClientDashboard>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: _aiSuggestions.length,
-            itemBuilder: (context, index) => _buildCompactAICard(_aiSuggestions[index]),
+            itemBuilder: (context, index) =>
+                _buildCompactAICard(_aiSuggestions[index]),
           ),
         ),
       ],
@@ -1480,7 +1521,10 @@ class _ClientDashboardState extends State<ClientDashboard>
                   children: [
                     Text(
                       freelancer.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1535,7 +1579,10 @@ class _ClientDashboardState extends State<ClientDashboard>
               const SizedBox(width: 4),
               Text(
                 freelancer.rating.toStringAsFixed(1),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(width: 12),
               Icon(Icons.work, size: 12, color: _gray),
@@ -1546,14 +1593,21 @@ class _ClientDashboardState extends State<ClientDashboard>
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: _primary,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
                   'View',
-                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -1568,7 +1622,10 @@ class _ClientDashboardState extends State<ClientDashboard>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Expanded(flex: 2, child: _buildCompactSpendingChart(d.monthlySpending)),
+          Expanded(
+            flex: 2,
+            child: _buildCompactSpendingChart(d.monthlySpending),
+          ),
           const SizedBox(width: 12),
           Expanded(child: _buildCompactDonut(d.statusBreakdown)),
         ],
@@ -1583,10 +1640,10 @@ class _ClientDashboardState extends State<ClientDashboard>
       }
       return p;
     }).toList();
-    
+
     final hasValidData = cleanPts.any((p) => p.total > 0);
-    final maxY = hasValidData 
-        ? cleanPts.map((p) => p.total).reduce(math.max) * 1.2 
+    final maxY = hasValidData
+        ? cleanPts.map((p) => p.total).reduce(math.max) * 1.2
         : 100.0;
 
     return Container(
@@ -1604,7 +1661,10 @@ class _ClientDashboardState extends State<ClientDashboard>
             height: 100,
             child: !hasValidData
                 ? Center(
-                    child: Text('No spending data', style: TextStyle(fontSize: 11, color: _gray)),
+                    child: Text(
+                      'No spending data',
+                      style: TextStyle(fontSize: 11, color: _gray),
+                    ),
                   )
                 : BarChart(
                     BarChartData(
@@ -1616,7 +1676,8 @@ class _ClientDashboardState extends State<ClientDashboard>
                             showTitles: true,
                             getTitlesWidget: (v, m) {
                               final i = v.toInt();
-                              if (i < 0 || i >= cleanPts.length) return const SizedBox();
+                              if (i < 0 || i >= cleanPts.length)
+                                return const SizedBox();
                               return Text(
                                 cleanPts[i].label,
                                 style: TextStyle(fontSize: 8, color: _gray),
@@ -1624,9 +1685,15 @@ class _ClientDashboardState extends State<ClientDashboard>
                             },
                           ),
                         ),
-                        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        leftTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                       ),
                       gridData: FlGridData(show: false),
                       borderData: FlBorderData(show: false),
@@ -1636,11 +1703,15 @@ class _ClientDashboardState extends State<ClientDashboard>
                           x: i,
                           barRods: [
                             BarChartRodData(
-                              toY: cleanPts[i].total.isNaN ? 0 : cleanPts[i].total,
+                              toY: cleanPts[i].total.isNaN
+                                  ? 0
+                                  : cleanPts[i].total,
                               color: _primary,
                               width: 16,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                            )
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(4),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1705,7 +1776,10 @@ class _ClientDashboardState extends State<ClientDashboard>
                       ),
                       Text(
                         '${s.value}',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -1730,15 +1804,21 @@ class _ClientDashboardState extends State<ClientDashboard>
           child: _buildSectionHeader('Active Contracts', 'View All', () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const MyContractsScreen(userRole: 'client')),
+              MaterialPageRoute(
+                builder: (_) => const MyContractsScreen(userRole: 'client'),
+              ),
             );
           }),
         ),
         const SizedBox(height: 12),
-        ...contracts.take(3).map((c) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildCompactContractCard(c),
-        )),
+        ...contracts
+            .take(3)
+            .map(
+              (c) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildCompactContractCard(c),
+              ),
+            ),
         const SizedBox(height: 16),
       ],
     );
@@ -1753,7 +1833,12 @@ class _ClientDashboardState extends State<ClientDashboard>
         children: [
           Row(
             children: [
-              _buildAvatar(c.freelancerName ?? 'F', c.freelancerAvatar, 44, _primary),
+              _buildAvatar(
+                c.freelancerName ?? 'F',
+                c.freelancerAvatar,
+                44,
+                _primary,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1761,7 +1846,10 @@ class _ClientDashboardState extends State<ClientDashboard>
                   children: [
                     Text(
                       c.projectTitle ?? 'Project',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1776,7 +1864,10 @@ class _ClientDashboardState extends State<ClientDashboard>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _statusColor(c.status).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -1820,7 +1911,11 @@ class _ClientDashboardState extends State<ClientDashboard>
               const SizedBox(width: 8),
               Text(
                 '${c.progress}%',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _primary),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _primary,
+                ),
               ),
             ],
           ),
@@ -1838,14 +1933,21 @@ class _ClientDashboardState extends State<ClientDashboard>
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildSectionHeader('Recent Proposals', 'View All',
-              () => setState(() => _selectedTab = 2)),
+          child: _buildSectionHeader(
+            'Recent Proposals',
+            'View All',
+            () => setState(() => _selectedTab = 2),
+          ),
         ),
         const SizedBox(height: 12),
-        ...proposals.take(3).map((p) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildCompactProposalCard(p),
-        )),
+        ...proposals
+            .take(3)
+            .map(
+              (p) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildCompactProposalCard(p),
+              ),
+            ),
         const SizedBox(height: 16),
       ],
     );
@@ -1866,7 +1968,10 @@ class _ClientDashboardState extends State<ClientDashboard>
               children: [
                 Text(
                   p.freelancerName ?? 'Freelancer',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
                 Text(
                   '\$${p.price} • ${p.deliveryTime} days',
@@ -1878,8 +1983,8 @@ class _ClientDashboardState extends State<ClientDashboard>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: p.status == 'accepted' 
-                  ? _success.withOpacity(0.1) 
+              color: p.status == 'accepted'
+                  ? _success.withOpacity(0.1)
                   : _warning.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -1939,7 +2044,10 @@ class _ClientDashboardState extends State<ClientDashboard>
                         children: [
                           Text(
                             n.title,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -2014,11 +2122,25 @@ class _ClientDashboardState extends State<ClientDashboard>
     final stats = _data?.stats;
     return Row(
       children: [
-        Expanded(child: _buildMiniStat('Open', '${stats?.openProjects ?? 0}', _info)),
+        Expanded(
+          child: _buildMiniStat('Open', '${stats?.openProjects ?? 0}', _info),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildMiniStat('Active', '${stats?.inProgressProjects ?? 0}', _warning)),
+        Expanded(
+          child: _buildMiniStat(
+            'Active',
+            '${stats?.inProgressProjects ?? 0}',
+            _warning,
+          ),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildMiniStat('Done', '${stats?.completedProjects ?? 0}', _success)),
+        Expanded(
+          child: _buildMiniStat(
+            'Done',
+            '${stats?.completedProjects ?? 0}',
+            _success,
+          ),
+        ),
       ],
     );
   }
@@ -2031,12 +2153,13 @@ class _ClientDashboardState extends State<ClientDashboard>
         children: [
           Text(
             value,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: color),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, color: _gray),
-          ),
+          Text(label, style: TextStyle(fontSize: 11, color: _gray)),
         ],
       ),
     );
@@ -2075,7 +2198,10 @@ class _ClientDashboardState extends State<ClientDashboard>
               Expanded(
                 child: Text(
                   project.title ?? 'Untitled',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2088,7 +2214,11 @@ class _ClientDashboardState extends State<ClientDashboard>
                 ),
                 child: Text(
                   statusText,
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
                 ),
               ),
             ],
@@ -2107,7 +2237,10 @@ class _ClientDashboardState extends State<ClientDashboard>
               const SizedBox(width: 4),
               Text(
                 '\$${project.budget?.toStringAsFixed(0) ?? '0'}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(width: 16),
               Icon(Icons.access_time, size: 12, color: _gray),
@@ -2122,7 +2255,8 @@ class _ClientDashboardState extends State<ClientDashboard>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProjectProposalsScreen(projectId: project.id!),
+                      builder: (_) =>
+                          ProjectProposalsScreen(projectId: project.id!),
                     ),
                   );
                 },
@@ -2166,9 +2300,17 @@ class _ClientDashboardState extends State<ClientDashboard>
     final s = _data?.stats;
     return Row(
       children: [
-        Expanded(child: _buildMiniStat('Total', '${s?.totalProposals ?? 0}', _primary)),
+        Expanded(
+          child: _buildMiniStat('Total', '${s?.totalProposals ?? 0}', _primary),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildMiniStat('Pending', '${s?.pendingProposals ?? 0}', _warning)),
+        Expanded(
+          child: _buildMiniStat(
+            'Pending',
+            '${s?.pendingProposals ?? 0}',
+            _warning,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Container(
@@ -2181,7 +2323,11 @@ class _ClientDashboardState extends State<ClientDashboard>
               children: [
                 Text(
                   '${s?.proposalAcceptRate ?? 0}%',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
                 const Text(
                   'Accept Rate',
@@ -2195,12 +2341,20 @@ class _ClientDashboardState extends State<ClientDashboard>
     );
   }
 
-  Widget _buildSectionHeader(String title, [String? action, VoidCallback? onAction]) {
+  Widget _buildSectionHeader(
+    String title, [
+    String? action,
+    VoidCallback? onAction,
+  ]) {
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
         ),
         const Spacer(),
         if (action != null && onAction != null)
@@ -2208,14 +2362,23 @@ class _ClientDashboardState extends State<ClientDashboard>
             onTap: onAction,
             child: Text(
               action,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _primary),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: _primary,
+              ),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildAvatar(String name, String? avatarUrl, double size, Color color) {
+  Widget _buildAvatar(
+    String name,
+    String? avatarUrl,
+    double size,
+    Color color,
+  ) {
     final url = _getAvatarUrl(avatarUrl);
     return Container(
       width: size,

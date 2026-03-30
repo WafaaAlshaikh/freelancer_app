@@ -19,9 +19,9 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   List<ChatModel> chats = [];
   bool loading = true;
   int unreadCount = 0;
-  
+
   final SocketService _socket = SocketService.instance;
-  
+
   StreamSubscription? _chatsSubscription;
   StreamSubscription? _newMessageSubscription;
 
@@ -40,14 +40,13 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
         _updateUnreadCount(updatedChats);
       });
     });
-    
-  
+
     _newMessageSubscription = _socket.onNewMessage.listen((message) {
       if (!mounted) return;
       _updateUnreadCountFromMessage(message);
     });
   }
-  
+
   void _updateUnreadCountFromMessage(Message message) {
     final chatIndex = chats.indexWhere((c) => c.id == message.chatId);
     if (chatIndex != -1 && mounted) {
@@ -75,13 +74,13 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
 
   Future<void> _loadChats() async {
     if (!mounted) return;
-    
+
     setState(() => loading = true);
-    
+
     try {
       final loadedChats = await ChatService.getUserChats();
       if (!mounted) return;
-      
+
       setState(() {
         chats = loadedChats;
         _updateUnreadCount(loadedChats);
@@ -143,24 +142,22 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       ),
       body: loading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xff14A800),
-              ),
+              child: CircularProgressIndicator(color: Color(0xff14A800)),
             )
           : chats.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadChats,
-                  color: const Color(0xff14A800),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: chats.length,
-                    itemBuilder: (context, index) {
-                      final chat = chats[index];
-                      return _buildChatCard(chat);
-                    },
-                  ),
-                ),
+          ? _buildEmptyState()
+          : RefreshIndicator(
+              onRefresh: _loadChats,
+              color: const Color(0xff14A800),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: chats.length,
+                itemBuilder: (context, index) {
+                  final chat = chats[index];
+                  return _buildChatCard(chat);
+                },
+              ),
+            ),
     );
   }
 
@@ -193,10 +190,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
           const SizedBox(height: 8),
           Text(
             'Start a conversation from a project',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -223,7 +217,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
     final isUnread = chat.unreadCount > 0;
     final lastMessage = chat.lastMessage ?? 'No messages yet';
     final lastMessageTime = chat.lastMessageTime;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -234,18 +228,20 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       child: InkWell(
         onTap: () async {
           _socket.markAsRead(chat.id);
-          
-          if (otherUser != null) {
+
+          if (otherUser != null && otherUser.id != null) {
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => ChatScreen(
                   chatId: chat.id,
-                  otherUser: otherUser,
+                  otherUserId: otherUser.id!,
+                  otherUserName: otherUser.name ?? 'User',
+                  otherUserAvatar: otherUser.avatar,
                 ),
               ),
             );
-            
+
             if (result == true && mounted) {
               _loadChats();
             }
@@ -261,10 +257,13 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: Colors.grey.shade300,
-                    backgroundImage: otherUser?.avatar != null && otherUser!.avatar!.isNotEmpty
+                    backgroundImage:
+                        otherUser?.avatar != null &&
+                            otherUser!.avatar!.isNotEmpty
                         ? NetworkImage(otherUser.avatar!)
                         : null,
-                    child: otherUser?.avatar == null || otherUser!.avatar!.isEmpty
+                    child:
+                        otherUser?.avatar == null || otherUser!.avatar!.isEmpty
                         ? Text(
                             otherUser?.name?.isNotEmpty == true
                                 ? otherUser!.name![0].toUpperCase()
@@ -293,7 +292,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 ],
               ),
               const SizedBox(width: 12),
-              
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +304,9 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                             otherUser?.name ?? 'Unknown User',
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                              fontWeight: isUnread
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
                               color: Colors.black87,
                             ),
                             maxLines: 1,
@@ -317,7 +318,9 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                             _formatTime(lastMessageTime),
                             style: TextStyle(
                               fontSize: 11,
-                              color: isUnread ? Colors.black54 : Colors.grey.shade500,
+                              color: isUnread
+                                  ? Colors.black54
+                                  : Colors.grey.shade500,
                             ),
                           ),
                       ],
@@ -332,15 +335,22 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
-                              color: isUnread ? Colors.black87 : Colors.grey.shade600,
-                              fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
+                              color: isUnread
+                                  ? Colors.black87
+                                  : Colors.grey.shade600,
+                              fontWeight: isUnread
+                                  ? FontWeight.w500
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
                         if (isUnread)
                           Container(
                             margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xff14A800),
                               borderRadius: BorderRadius.circular(12),
@@ -369,7 +379,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
-    
+
     if (difference.inDays > 7) {
       return '${time.day}/${time.month}';
     } else if (difference.inDays > 0) {

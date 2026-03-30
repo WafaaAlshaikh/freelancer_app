@@ -23,6 +23,19 @@ class SocketService {
   final _readReceiptController =
       StreamController<Map<String, dynamic>>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
+  final _messageDeletedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _messageEditedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _reactionController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _messageErrorController =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  Stream<Map<String, dynamic>> get onMessageDeleted =>
+      _messageDeletedController.stream;
+  Stream<Map<String, dynamic>> get onMessageEdited =>
+      _messageEditedController.stream;
 
   Stream<List<ChatModel>> get onChatsUpdate => _chatsController.stream;
   Stream<Message> get onNewMessage => _newMessageController.stream;
@@ -30,6 +43,9 @@ class SocketService {
   Stream<Map<String, dynamic>> get onReadReceipt =>
       _readReceiptController.stream;
   Stream<bool> get onConnectionChange => _connectionController.stream;
+  Stream<Map<String, dynamic>> get onReaction => _reactionController.stream;
+  Stream<Map<String, dynamic>> get onMessageError =>
+      _messageErrorController.stream;
 
   SocketService._();
 
@@ -122,6 +138,38 @@ class SocketService {
     _socket!.on('pong', (data) {
       if (_isDisposed) return;
       print('🏓 Socket pong received');
+    });
+
+    _socket!.on('message_deleted', (data) {
+      if (_isDisposed) return;
+      print('🗑️ Message deleted: $data');
+      if (data != null) {
+        _messageDeletedController.add(data);
+      }
+    });
+
+    _socket!.on('message_edited', (data) {
+      if (_isDisposed) return;
+      print('✏️ Message edited: $data');
+      if (data != null) {
+        _messageEditedController.add(data);
+      }
+    });
+
+    _socket!.on('message_reaction', (data) {
+      if (_isDisposed) return;
+      print('😊 Message reaction: $data');
+      if (data != null) {
+        _reactionController.add(data);
+      }
+    });
+
+    _socket!.on('message_error', (data) {
+      if (_isDisposed) return;
+      print('❌ Socket message_error: $data');
+      if (data != null) {
+        _messageErrorController.add(data);
+      }
     });
 
     _socket!.on('chats_list', (data) {
@@ -237,30 +285,6 @@ class SocketService {
     );
   }
 
-  void sendMessage({
-    required int chatId,
-    required String content,
-    String type = 'text',
-    String? mediaUrl,
-  }) {
-    if (!_isConnected) {
-      print('⚠️ Cannot send message: Not connected');
-      Fluttertoast.showToast(
-        msg: 'Not connected to chat server. Please check your connection.',
-        backgroundColor: Colors.red,
-      );
-      return;
-    }
-
-    print('📤 Sending message to chat $chatId: $content');
-    _socket!.emit('send_message', {
-      'chatId': chatId,
-      'content': content,
-      'type': type,
-      'mediaUrl': mediaUrl,
-    });
-  }
-
   void sendTyping(int chatId, bool isTyping) {
     if (_isConnected && _socket != null) {
       print('✍️ Sending typing event for chat $chatId: $isTyping');
@@ -272,6 +296,71 @@ class SocketService {
     if (_isConnected && _socket != null) {
       print('✅ Marking chat $chatId as read');
       _socket!.emit('mark_read', {'chatId': chatId});
+    }
+  }
+
+  void sendMessage({
+    required int chatId,
+    required String content,
+    String type = 'text',
+    String? mediaUrl,
+    String? fileName,
+    int? replyTo,
+  }) {
+    if (!_isConnected) {
+      print('⚠️ Cannot send message: Not connected');
+      Fluttertoast.showToast(
+        msg: 'Not connected to chat server',
+        backgroundColor: Colors.orange,
+      );
+      return;
+    }
+
+    if (_socket == null) {
+      print('⚠️ Cannot send message: Socket is null');
+      return;
+    }
+
+    print('📤 Sending message to chat $chatId: $content');
+    print('📤 Reply to: $replyTo');
+
+    final messageData = {'chatId': chatId, 'content': content, 'type': type};
+
+    if (replyTo != null) {
+      messageData['replyToId'] = replyTo;
+    }
+
+    if (mediaUrl != null) messageData['mediaUrl'] = mediaUrl;
+    if (fileName != null) messageData['fileName'] = fileName;
+
+    _socket!.emit('send_message', messageData);
+    print('✅ Message sent');
+  }
+
+  void sendReaction(int messageId, String reaction) {
+    if (_isConnected && _socket != null) {
+      print('😊 Sending reaction for message $messageId: $reaction');
+      _socket!.emit('send_reaction', {
+        'messageId': messageId,
+        'reaction': reaction,
+      });
+    } else {
+      print('⚠️ Cannot send reaction: Not connected');
+    }
+  }
+
+  void editMessage(int messageId, String content) {
+    if (_isConnected && _socket != null) {
+      _socket!.emit('edit_message', {
+        'messageId': messageId,
+        'content': content,
+      });
+    }
+  }
+
+  void deleteMessage(int messageId) {
+    if (_isConnected && _socket != null) {
+      _socket!.emit('delete_message', {'messageId': messageId});
     }
   }
 

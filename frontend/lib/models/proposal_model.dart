@@ -37,7 +37,7 @@ class Proposal {
   });
 
   factory Proposal.fromJson(Map<String, dynamic> json) {
-    print('📥 Proposal.fromJson: $json'); 
+    print('📥 Proposal.fromJson: $json');
 
     List<String> parseSkills(dynamic data) {
       if (data == null) return [];
@@ -77,22 +77,22 @@ class Proposal {
       projectId: json['ProjectId'],
       userId: json['UserId'],
       price: _parseDouble(json['price']),
-      deliveryTime: json['delivery_time'] is int 
-          ? json['delivery_time'] 
+      deliveryTime: json['delivery_time'] is int
+          ? json['delivery_time']
           : int.tryParse(json['delivery_time']?.toString() ?? '0'),
       proposalText: json['proposal_text'],
       status: json['status'],
-      createdAt: json['createdAt'] != null 
-          ? DateTime.tryParse(json['createdAt']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'])
           : null,
-      project: json['project'] != null 
-          ? Project.fromJson(json['project']) 
+      project: json['project'] != null
+          ? Project.fromJson(json['project'])
           : null,
-      freelancer: json['freelancer'] != null 
-          ? User.fromJson(json['freelancer']) 
+      freelancer: json['freelancer'] != null
+          ? User.fromJson(json['freelancer'])
           : null,
-      freelancerProfile: json['profile'] != null 
-          ? FreelancerProfile.fromJson(json['profile']) 
+      freelancerProfile: json['profile'] != null
+          ? FreelancerProfile.fromJson(json['profile'])
           : null,
       milestones: parseMilestones(json['milestones']),
       contractId: json['contractId'],

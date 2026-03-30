@@ -13,6 +13,10 @@ import Portfolio from "./Portfolio.js";
 import Notification from "./Notification.js";
 import Transaction from "./Transaction.js";
 import Chat from "./Chat.js";
+import ClientProfile from "./ClientProfile.js";
+
+User.hasOne(ClientProfile, { foreignKey: "UserId" });
+ClientProfile.belongsTo(User, { foreignKey: "UserId" });
 
 User.hasMany(Notification, { foreignKey: "userId" });
 Notification.belongsTo(User, { foreignKey: "userId" });
@@ -90,4 +94,5 @@ export {
   Notification,
   Transaction,
   Chat,
+  ClientProfile,
 };

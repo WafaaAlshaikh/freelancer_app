@@ -117,59 +117,59 @@ class ApiService {
 
   // ===== Client APIs =====
 
-static Future<Map<String, dynamic>> getClientDashboardOverview() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$BASE_URL/client/dashboard/overview'),
-      headers: headers,
-    );
-    
-    print('📊 Dashboard Overview Response Status: ${response.statusCode}');
-    print('📊 Dashboard Overview Response Body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    
-    print('❌ Dashboard overview error: ${response.statusCode} ${response.body}');
-    
-    // Return empty data structure instead of throwing error
-    return {
-      'stats': {
-        'totalProjects': 0,
-        'openProjects': 0,
-        'inProgressProjects': 0,
-        'completedProjects': 0,
-        'totalProposals': 0,
-        'pendingProposals': 0,
-        'acceptedProposals': 0,
-        'totalSpent': 0,
-        'escrowHeld': 0,
-        'totalReleased': 0,
-        'proposalAcceptRate': 0,
-      },
-      'monthlySpending': [],
-      'statusBreakdown': [],
-      'recentProposals': [],
-      'activeContracts': [],
-      'recentActivity': [],
-      'topFreelancers': [],
-    };
-  } catch (e) {
-    print('❌ Error in getClientDashboardOverview: $e');
-    return {
-      'stats': {},
-      'monthlySpending': [],
-      'statusBreakdown': [],
-      'recentProposals': [],
-      'activeContracts': [],
-      'recentActivity': [],
-      'topFreelancers': [],
-    };
-  }
-}
+  static Future<Map<String, dynamic>> getClientDashboardOverview() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/client/dashboard/overview'),
+        headers: headers,
+      );
 
-  // Dashboard Stats
+      print('📊 Dashboard Overview Response Status: ${response.statusCode}');
+      print('📊 Dashboard Overview Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+
+      print(
+        '❌ Dashboard overview error: ${response.statusCode} ${response.body}',
+      );
+
+      return {
+        'stats': {
+          'totalProjects': 0,
+          'openProjects': 0,
+          'inProgressProjects': 0,
+          'completedProjects': 0,
+          'totalProposals': 0,
+          'pendingProposals': 0,
+          'acceptedProposals': 0,
+          'totalSpent': 0,
+          'escrowHeld': 0,
+          'totalReleased': 0,
+          'proposalAcceptRate': 0,
+        },
+        'monthlySpending': [],
+        'statusBreakdown': [],
+        'recentProposals': [],
+        'activeContracts': [],
+        'recentActivity': [],
+        'topFreelancers': [],
+      };
+    } catch (e) {
+      print('❌ Error in getClientDashboardOverview: $e');
+      return {
+        'stats': {},
+        'monthlySpending': [],
+        'statusBreakdown': [],
+        'recentProposals': [],
+        'activeContracts': [],
+        'recentActivity': [],
+        'topFreelancers': [],
+      };
+    }
+  }
+
   static Future<Map<String, dynamic>> getClientDashboardStats() async {
     try {
       final response = await http.get(
@@ -266,7 +266,6 @@ static Future<Map<String, dynamic>> getClientDashboardOverview() async {
     }
   }
 
-  // Proposals
   static Future<List<dynamic>> getProjectProposals(int projectId) async {
     try {
       final response = await http.get(
@@ -300,7 +299,6 @@ static Future<Map<String, dynamic>> getClientDashboardOverview() async {
     }
   }
 
-  // Contracts
   static Future<Map<String, dynamic>> getProjectContract(int projectId) async {
     try {
       final response = await http.get(
@@ -601,14 +599,30 @@ static Future<Map<String, dynamic>> getClientDashboardOverview() async {
 
   static Future<Map<String, dynamic>> getProfile() async {
     try {
+      print(
+        '🔑 Current token: ${token?.substring(0, min(20, token?.length ?? 0))}...',
+      );
+      print('🌐 URL: $BASE_URL/freelancer/profile');
+
       final response = await http.get(
         Uri.parse('$BASE_URL/freelancer/profile'),
         headers: headers,
       );
-      return jsonDecode(response.body);
+
+      print('📡 Status: ${response.statusCode}');
+      print('📄 Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Success: ${data.keys}');
+        return data;
+      } else {
+        print('❌ Failed: ${response.statusCode}');
+        return {};
+      }
     } catch (e) {
-      print('Error getting profile: $e');
-      return {'message': 'Connection error: $e'};
+      print('❌ Exception: $e');
+      return {};
     }
   }
 
@@ -1379,70 +1393,55 @@ static Future<Map<String, dynamic>> getClientDashboardOverview() async {
     return createDirectPaymentIntent(contractId: contractId);
   }
 
-static Future<Map<String, dynamic>> manualConfirmPayment(int contractId) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$BASE_URL/client/contracts/$contractId/manual-confirm'),
-      headers: headers,
-    );
-    print('📡 Manual confirm response: ${response.body}');
-    return jsonDecode(response.body);
-  } catch (e) {
-    print('❌ Error in manualConfirmPayment: $e');
-    return {'success': false, 'message': 'Connection error'};
+  static Future<Map<String, dynamic>> manualConfirmPayment(
+    int contractId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/client/contracts/$contractId/manual-confirm'),
+        headers: headers,
+      );
+      print('📡 Manual confirm response: ${response.body}');
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('❌ Error in manualConfirmPayment: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
   }
-}
 
-// static Future<Map<String, dynamic>> getClientDashboardOverview() async {
-//   try {
-//     final response = await http.get(
-//       Uri.parse('$BASE_URL/client/dashboard/overview'),
-//       headers: headers,
-//     );
-//     if (response.statusCode == 200) {
-//       return jsonDecode(response.body);
-//     }
-//     print('❌ Dashboard overview error: ${response.statusCode} ${response.body}');
-//     return {};
-//   } catch (e) {
-//     print('❌ getClientDashboardOverview: $e');
-//     return {};
-//   }
-// }
- 
-static Future<Map<String, dynamic>> getProjectsSummary({
-  String? status,
-  int limit = 10,
-  int offset = 0,
-}) async {
-  try {
-    final params = <String, String>{
-      'limit': '$limit',
-      'offset': '$offset',
-      if (status != null && status != 'all') 'status': status,
-    };
-    final uri = Uri.parse('$BASE_URL/client/dashboard/projects-summary')
-        .replace(queryParameters: params);
-    final response = await http.get(uri, headers: headers);
-    if (response.statusCode == 200) return jsonDecode(response.body);
-    return {'projects': [], 'total': 0};
-  } catch (e) {
-    print('❌ getProjectsSummary: $e');
-    return {'projects': [], 'total': 0};
+  static Future<Map<String, dynamic>> getProjectsSummary({
+    String? status,
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    try {
+      final params = <String, String>{
+        'limit': '$limit',
+        'offset': '$offset',
+        if (status != null && status != 'all') 'status': status,
+      };
+      final uri = Uri.parse(
+        '$BASE_URL/client/dashboard/projects-summary',
+      ).replace(queryParameters: params);
+      final response = await http.get(uri, headers: headers);
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'projects': [], 'total': 0};
+    } catch (e) {
+      print('❌ getProjectsSummary: $e');
+      return {'projects': [], 'total': 0};
+    }
   }
-}
- 
-static Future<Map<String, dynamic>> getClientProfile() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$BASE_URL/client/profile'),
-      headers: headers,
-    );
-    return jsonDecode(response.body);
-  } catch (e) {
-    print('Error getting client profile: $e');
-    return {'name': 'Client', 'avatar': null};
-  }
-}
 
+  static Future<Map<String, dynamic>> getClientProfile() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/client/profile'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting client profile: $e');
+      return {'name': 'Client', 'avatar': null};
+    }
+  }
 }

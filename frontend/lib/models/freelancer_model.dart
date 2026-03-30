@@ -58,25 +58,67 @@ class FreelancerProfile {
   });
 
   factory FreelancerProfile.fromJson(Map<String, dynamic> json) {
+    print('📥 FreelancerProfile.fromJson: $json');
+
+    double? toDoubleSafe(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) {
+        return double.tryParse(value);
+      }
+      return null;
+    }
+
+    int? toIntSafe(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) {
+        return int.tryParse(value);
+      }
+      return null;
+    }
+
     List<String> parseStringList(dynamic data) {
       if (data == null) return [];
       if (data is List) {
+        if (data.isNotEmpty && data[0] is Map) {
+          return data
+              .map(
+                (e) =>
+                    e['name']?.toString() ??
+                    e['title']?.toString() ??
+                    e.toString(),
+              )
+              .toList();
+        }
         return data.map((e) => e.toString()).toList();
       }
       if (data is String) {
         try {
           final parsed = jsonDecode(data);
           if (parsed is List) {
+            if (parsed.isNotEmpty && parsed[0] is Map) {
+              return parsed
+                  .map(
+                    (e) =>
+                        e['name']?.toString() ??
+                        e['title']?.toString() ??
+                        e.toString(),
+                  )
+                  .toList();
+            }
             return parsed.map((e) => e.toString()).toList();
           }
         } catch (e) {
+          // ignore
         }
         return data.split(',').map((s) => s.trim()).toList();
       }
       return [];
     }
 
-    List<Map<String, dynamic>> parseEducation(dynamic data) {
+    List<Map<String, dynamic>> parseMapList(dynamic data) {
       if (data == null) return [];
       if (data is List) {
         return data.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -92,21 +134,45 @@ class FreelancerProfile {
       return [];
     }
 
-    List<Map<String, dynamic>> parseCertifications(dynamic data) {
+    List<String> parseSkills(dynamic data) {
       if (data == null) return [];
       if (data is List) {
-        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+        if (data.isNotEmpty && data[0] is Map) {
+          return data
+              .map(
+                (e) =>
+                    e['name']?.toString() ??
+                    e['skill']?.toString() ??
+                    e.toString(),
+              )
+              .toList();
+        }
+        return data.map((e) => e.toString()).toList();
       }
       if (data is String) {
         try {
           final parsed = jsonDecode(data);
           if (parsed is List) {
-            return parsed.map((e) => Map<String, dynamic>.from(e)).toList();
+            if (parsed.isNotEmpty && parsed[0] is Map) {
+              return parsed
+                  .map(
+                    (e) =>
+                        e['name']?.toString() ??
+                        e['skill']?.toString() ??
+                        e.toString(),
+                  )
+                  .toList();
+            }
+            return parsed.map((e) => e.toString()).toList();
           }
-        } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
+        return data.split(',').map((s) => s.trim()).toList();
       }
       return [];
     }
+
     return FreelancerProfile(
       id: json['id'],
       name: json['name'],
@@ -114,25 +180,25 @@ class FreelancerProfile {
       bio: json['bio'],
       location: json['location'],
       locationCoordinates: json['location_coordinates'],
-      experienceYears: json['experience_years'],
-      rating: (json['rating'] ?? 0).toDouble(),
+      experienceYears: toIntSafe(json['experience_years']),
+      rating: toDoubleSafe(json['rating']) ?? 0.0,
       avatar: json['avatar'],
       email: json['email'],
-      skills: json['skills'] != null ? List<String>.from(json['skills']) : [],
-      languages: json['languages'] != null ? List<String>.from(json['languages']) : [],
-      education: json['education'] != null ? List<Map<String, dynamic>>.from(json['education']) : [],
-      certifications: json['certifications'] != null ? List<Map<String, dynamic>>.from(json['certifications']) : [],
+      skills: parseSkills(json['skills']),
+      languages: parseStringList(json['languages']),
+      education: parseMapList(json['education']),
+      certifications: parseMapList(json['certifications']),
       cvUrl: json['cv_url'],
       isAvailable: json['is_available'] ?? true,
-      hourlyRate: json['hourly_rate']?.toDouble(),
-      completedProjectsCount: json['completed_projects_count'] ?? 0,
+      hourlyRate: toDoubleSafe(json['hourly_rate']),
+      completedProjectsCount: toIntSafe(json['completed_projects_count']) ?? 0,
       website: json['website'],
       github: json['github'],
       linkedin: json['linkedin'],
       behance: json['behance'],
-      totalEarnings: json['total_earnings']?.toDouble(),
-      jobSuccessScore: json['job_success_score'],
-      responseTime: json['response_time'],
+      totalEarnings: toDoubleSafe(json['total_earnings']),
+      jobSuccessScore: toIntSafe(json['job_success_score']),
+      responseTime: toIntSafe(json['response_time']),
     );
   }
 
@@ -151,9 +217,9 @@ class FreelancerProfile {
     'is_available': isAvailable,
     'hourly_rate': hourlyRate,
     'website': website,
-      'github': github,
-      'linkedin': linkedin,
-      'behance': behance,
+    'github': github,
+    'linkedin': linkedin,
+    'behance': behance,
   };
 
   double get profileCompletion {

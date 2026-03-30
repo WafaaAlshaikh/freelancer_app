@@ -28,25 +28,51 @@ class ChatModel {
   });
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
+    print('📦 ChatModel.fromJson: $json');
+
+    User? otherUser;
+    if (json['otherUser'] != null) {
+      try {
+        otherUser = User.fromJson(json['otherUser']);
+      } catch (e) {
+        print('⚠️ Error parsing otherUser: $e');
+        otherUser = User(
+          id: json['otherUserId'] ?? 0,
+          name: json['otherUserName'] ?? 'User',
+          avatar: json['otherUserAvatar'],
+        );
+      }
+    } else if (json['other_user'] != null) {
+      try {
+        otherUser = User.fromJson(json['other_user']);
+      } catch (e) {
+        print('⚠️ Error parsing other_user: $e');
+      }
+    }
+
     return ChatModel(
-      id: json['id'],
-      uniqueId: json['unique_id'] ?? '',
-      otherUser: json['otherUser'] != null 
-          ? User.fromJson(json['otherUser']) 
-          : null,
-      lastMessage: json['last_message'],
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      uniqueId: json['unique_id']?.toString() ?? '',
+      otherUser: otherUser,
+      lastMessage: json['last_message']?.toString(),
       lastMessageTime: json['last_message_time'] != null
-          ? DateTime.parse(json['last_message_time'])
+          ? DateTime.tryParse(json['last_message_time'].toString())
           : null,
-      lastMessageSenderId: json['last_message_sender_id'],
-      unreadCount: json['unreadCount'] ?? 0,
+      lastMessageSenderId: json['last_message_sender_id'] != null
+          ? int.tryParse(json['last_message_sender_id'].toString())
+          : null,
+      unreadCount: int.tryParse(json['unreadCount']?.toString() ?? '0') ?? 0,
       lastMessages: json['lastMessages'] != null
           ? (json['lastMessages'] as List)
-              .map((m) => Message.fromJson(m))
-              .toList()
+                .map((m) => Message.fromJson(m))
+                .toList()
           : [],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 }
