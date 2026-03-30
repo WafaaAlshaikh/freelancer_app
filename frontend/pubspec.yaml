@@ -60,6 +60,7 @@ dependencies:
   open_file: ^3.5.11
 
   google_fonts: ^6.1.0
+  video_player: ^2.11.1
 
 
 dev_dependencies:

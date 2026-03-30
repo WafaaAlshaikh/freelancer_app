@@ -1444,4 +1444,117 @@ class ApiService {
       return {'name': 'Client', 'avatar': null};
     }
   }
+
+  static Future<Map<String, dynamic>> getAdminUsers({
+    String role = 'all',
+    String status = 'all',
+    String search = '',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/admin/users?role=$role&status=$status&search=$search&page=$page&limit=$limit',
+        ),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'users': [], 'total': 0, 'totalPages': 1};
+    } catch (e) {
+      print('Error getting admin users: $e');
+      return {'users': [], 'total': 0, 'totalPages': 1};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateUserStatus(
+    int userId,
+    String status,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/admin/users/$userId/status'),
+        headers: headers,
+        body: jsonEncode({'status': status}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error updating user status: $e');
+      return {'success': false};
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyUser(
+    int userId,
+    bool verify,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/admin/users/$userId/verify'),
+        headers: headers,
+        body: jsonEncode({'verified': verify}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error verifying user: $e');
+      return {'success': false};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminDashboardStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/admin/dashboard/stats'),
+        headers: headers,
+      );
+
+      print('📊 Admin stats response status: ${response.statusCode}');
+      print('📊 Admin stats response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data;
+      } else {
+        print('❌ Failed to get admin stats: ${response.statusCode}');
+        return {
+          'stats': {
+            'totalUsers': 0,
+            'totalFreelancers': 0,
+            'totalClients': 0,
+            'totalProjects': 0,
+            'totalContracts': 0,
+            'totalEarnings': 0,
+            'pendingProjects': 0,
+            'activeContracts': 0,
+            'completedContracts': 0,
+            'pendingDisputes': 0,
+          },
+          'monthlyStats': [],
+          'recentUsers': [],
+          'recentProjects': [],
+        };
+      }
+    } catch (e) {
+      print('❌ Error getting admin stats: $e');
+      return {
+        'stats': {
+          'totalUsers': 0,
+          'totalFreelancers': 0,
+          'totalClients': 0,
+          'totalProjects': 0,
+          'totalContracts': 0,
+          'totalEarnings': 0,
+          'pendingProjects': 0,
+          'activeContracts': 0,
+          'completedContracts': 0,
+          'pendingDisputes': 0,
+        },
+        'monthlyStats': [],
+        'recentUsers': [],
+        'recentProjects': [],
+      };
+    }
+  }
 }

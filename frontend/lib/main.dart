@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:freelancer_platform/models/project_model.dart';
 import 'package:freelancer_platform/models/proposal_model.dart';
+import 'package:freelancer_platform/screens/admin/admin_dashboard_screen.dart';
+import 'package:freelancer_platform/screens/admin/users_management_screen.dart';
 import 'package:freelancer_platform/screens/chat/chat_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
 import 'package:freelancer_platform/screens/payment/payment_screen.dart';
@@ -125,6 +127,11 @@ class FreelancerApp extends StatelessWidget {
             final projectId = settings.arguments as int;
             return MaterialPageRoute(
               builder: (_) => client.ProjectDetailsScreen(projectId: projectId),
+            );
+
+          case '/admin/dashboard':
+            return MaterialPageRoute(
+              builder: (_) => const AdminDashboardScreen(),
             );
 
           case '/client/project-proposals':

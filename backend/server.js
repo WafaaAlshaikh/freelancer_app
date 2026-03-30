@@ -25,6 +25,8 @@ import stripeWebhookRoutes from "./src/routes/stripeWebhookRoutes.js";
 import { initSocket } from "./src/socket/socketManager.js";
 import dashboardRoutes from "./src/routes/dashboardRoutes.js";
 import profileRoutes from "./src/routes/profileRoutes.js";
+import adminRoutes from "./src/routes/adminRoutes.js";
+
 
 dotenv.config();
 
@@ -134,6 +136,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/client/dashboard", dashboardRoutes);
 app.use("/api/profiles", profileRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/payment-success", (req, res) => {
   const { session_id, contract_id } = req.query;
