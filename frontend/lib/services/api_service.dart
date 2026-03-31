@@ -1557,4 +1557,144 @@ class ApiService {
       };
     }
   }
+
+  static Future<Map<String, dynamic>> analyzeProject({
+    required String title,
+    required String description,
+    String? category,
+    List<String>? skills,
+    double? budget,
+  }) async {
+    try {
+      print('🔍 Analyzing project via API:');
+      print('  URL: $BASE_URL/ai/analyze-project');
+      print('  Title: $title');
+      print(
+        '  Description: ${description.substring(0, description.length > 100 ? 100 : description.length)}',
+      );
+
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ai/analyze-project'),
+        headers: headers,
+        body: jsonEncode({
+          'title': title,
+          'description': description,
+          'category': category,
+          'skills': skills ?? [],
+          'budget': budget,
+        }),
+      );
+
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('📡 Parsed data: $data');
+
+        if (data['success'] == true && data['analysis'] != null) {
+          return data['analysis'];
+        }
+        return {};
+      }
+      return {};
+    } catch (e) {
+      print('❌ Error analyzing project: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSmartPricing(int projectId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ai/smart-pricing/$projectId'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting smart pricing: $e');
+      return {'success': false, 'pricing': null};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getPersonalizedRecommendations({
+    int limit = 10,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ai/personalized-recommendations?limit=$limit'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting recommendations: $e');
+      return {'success': false, 'recommendations': []};
+    }
+  }
+
+  static Future<Map<String, dynamic>> chatWithAI(
+    String message, {
+    int? projectId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ai/chat'),
+        headers: headers,
+        body: jsonEncode({
+          'message': message,
+          'context': {'projectId': projectId},
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error chatting with AI: $e');
+      return {
+        'success': true,
+        'reply': "I'm having trouble connecting. Please try again.",
+        'suggestedActions': [],
+      };
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getChatHistory() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ai/chat/history'),
+        headers: headers,
+      );
+
+      print('📡 Chat history response: ${response.statusCode}');
+      print('📡 Chat history body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final history = data['history'];
+
+        if (history is List) {
+          return history.map((item) {
+            if (item is Map) {
+              return Map<String, dynamic>.from(item);
+            }
+            return <String, dynamic>{};
+          }).toList();
+        }
+        return [];
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error getting chat history: $e');
+      return [];
+    }
+  }
+
+  static Future<void> clearChatHistory() async {
+    try {
+      await http.delete(
+        Uri.parse('$BASE_URL/ai/chat/history'),
+        headers: headers,
+      );
+    } catch (e) {
+      print('❌ Error clearing chat history: $e');
+    }
+  }
 }

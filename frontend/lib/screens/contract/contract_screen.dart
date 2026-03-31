@@ -1,4 +1,5 @@
 // screens/contract/contract_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -54,6 +55,12 @@ class _ContractScreenState extends State<ContractScreen> {
       setState(() => loading = false);
       Fluttertoast.showToast(msg: "Error loading contract");
     }
+  }
+
+  bool get isAIGenerated {
+    return contract?.terms?.contains('AI-generated') == true ||
+        contract?.contractDocument?.contains('AI-generated') == true ||
+        contract?.contractDocument?.contains('🤖') == true;
   }
 
   bool get needsPayment {
@@ -272,7 +279,34 @@ class _ContractScreenState extends State<ContractScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Contract Agreement"),
+        title: Row(
+          children: [
+            const Text("Contract Agreement"),
+            if (isAIGenerated) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.purple, Colors.blue],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, size: 14, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      "AI Generated",
+                      style: TextStyle(fontSize: 10, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -360,7 +394,7 @@ class _ContractScreenState extends State<ContractScreen> {
                           ),
                         ),
                         Text(
-                          "\$${_formatAmountInt(contract!.agreedAmount)}", // ✅ استخدم الدالة الجديدة
+                          "\$${_formatAmountInt(contract!.agreedAmount)}",
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -378,26 +412,54 @@ class _ContractScreenState extends State<ContractScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Payment Milestones",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            const Text(
+                              "Payment Milestones",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (isAIGenerated)
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome,
+                                      size: 10,
+                                      color: Colors.purple.shade700,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      "AI Optimized",
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.purple.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          'Found ${contract!.milestones!.length} milestones',
-                          style: const TextStyle(color: Colors.blue),
-                        ),
-
                         ...contract!.milestones!.map((milestone) {
                           return _buildMilestoneCard(
                             milestone,
                             contract!.milestones!.indexOf(milestone),
                           );
                         }).toList(),
-
                         const SizedBox(height: 16),
                       ],
                     )
@@ -415,6 +477,7 @@ class _ContractScreenState extends State<ContractScreen> {
                         ),
                       ),
                     ),
+
                   const SizedBox(height: 20),
 
                   if (contract!.status == 'active' &&
@@ -690,10 +753,7 @@ class _ContractScreenState extends State<ContractScreen> {
                       ],
                     ),
                   ),
-                  // lib/screens/contract/contract_screen.dart
-                  // القسم الكامل مع التصحيح
 
-                  // ✅ قسم الدفع - للعميل فقط
                   if (widget.userRole == 'client' &&
                       contract?.status == 'active')
                     Padding(
@@ -985,6 +1045,16 @@ class _ContractScreenState extends State<ContractScreen> {
             margin: Margins.only(top: 8, bottom: 8),
           ),
           "strong": Style(fontWeight: FontWeight.bold),
+          ".milestone-card": Style(
+            backgroundColor: Colors.grey.shade100,
+            padding: HtmlPaddings.all(12),
+            margin: Margins.only(bottom: 12),
+          ),
+          ".clause": Style(
+            backgroundColor: Colors.grey.shade50,
+            padding: HtmlPaddings.all(12),
+            margin: Margins.only(bottom: 12),
+          ),
         },
       ),
     );
@@ -1421,7 +1491,6 @@ class _ContractScreenState extends State<ContractScreen> {
     );
 
     if (confirmed == true && controller.text.isNotEmpty) {
-      // TODO: إرسال طلب التعديل
       Fluttertoast.showToast(msg: 'Revision request sent to freelancer');
     }
   }

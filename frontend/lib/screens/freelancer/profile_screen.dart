@@ -424,35 +424,6 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
         loadingPortfolio = false;
       });
     } catch (e) {
-      void navigateToEditProfile() async {
-        if (loadingProfile) {
-          Fluttertoast.showToast(msg: "Loading profile, please wait...");
-          return;
-        }
-
-        if (profile == null) {
-          print('Profile is null, cannot navigate');
-          Fluttertoast.showToast(
-            msg: "Profile not loaded yet. Please refresh.",
-          );
-          return;
-        }
-
-        print('Navigating to EditProfileScreen with profile: ${profile?.name}');
-
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EditProfileScreen(profile: profile!),
-          ),
-        );
-
-        if (result == true) {
-          await fetchProfile();
-          await fetchPortfolio();
-        }
-      }
-
       print('Error fetching portfolio: $e');
       setState(() => loadingPortfolio = false);
     }

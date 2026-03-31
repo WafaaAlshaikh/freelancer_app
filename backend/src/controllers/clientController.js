@@ -1,5 +1,5 @@
 // controllers/clientController.js
-import stripe from '../config/stripe.js';
+import stripe from "../config/stripe.js";
 import { sequelize } from "../config/db.js";
 import { Op, fn, col } from "sequelize";
 import {
@@ -16,7 +16,6 @@ import ContractService from "../services/contractService.js";
 import NotificationService from "../services/notificationService.js";
 import PaymentService from "../services/paymentService.js";
 
-// ========== GET client dashboard stats ==========
 export const getDashboardStats = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -82,7 +81,6 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
-// ========== GET client projects ==========
 export const getMyProjects = async (req, res) => {
   try {
     console.log("📥 Fetching projects for client:", req.user.id);
@@ -121,7 +119,6 @@ export const getMyProjects = async (req, res) => {
   }
 };
 
-// ========== GET single project with details ==========
 export const getProjectById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -173,7 +170,6 @@ export const getProjectById = async (req, res) => {
   }
 };
 
-// ========== CREATE project ==========
 export const createProject = async (req, res) => {
   try {
     const { title, description, budget, duration, category, skills } = req.body;
@@ -206,7 +202,6 @@ export const createProject = async (req, res) => {
   }
 };
 
-// ========== UPDATE project ==========
 export const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -242,7 +237,6 @@ export const updateProject = async (req, res) => {
   }
 };
 
-// ========== DELETE project ==========
 export const deleteProject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -276,7 +270,6 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-// ========== GET project proposals with details ==========
 export const getProjectProposals = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -339,7 +332,6 @@ export const getProjectProposals = async (req, res) => {
     });
   }
 };
-// ========== ACCEPT/REJECT proposal ==========
 export const updateProposalStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -447,7 +439,6 @@ export const updateProposalStatus = async (req, res) => {
   }
 };
 
-// ========== GET contract by project ==========
 export const getProjectContract = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -477,7 +468,6 @@ export const getProjectContract = async (req, res) => {
   }
 };
 
-// ========== GET all contracts for client ==========
 export const getMyContracts = async (req, res) => {
   try {
     const contracts = await Contract.findAll({
@@ -507,7 +497,6 @@ export const getMyContracts = async (req, res) => {
   }
 };
 
-// ========== COMPLETE project ==========
 export const completeProject = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -680,48 +669,45 @@ export const acceptProposalWithNegotiation = async (req, res) => {
     const { proposalId } = req.params;
     const { agreedPrice, agreedMilestones } = req.body;
 
-    console.log("📝 Accepting proposal:", {
-      proposalId,
-      agreedPrice,
-      agreedMilestones,
-    });
-
     const proposal = await Proposal.findByPk(proposalId, {
       include: [
         { model: Project, include: [{ model: User, as: "client" }] },
-        { model: User, as: "freelancer", attributes: ["id", "name"] },
+        { model: User, as: "freelancer", attributes: ["id", "name", "email"] },
       ],
     });
 
-    if (!proposal) {
+    if (!proposal)
       return res.status(404).json({ message: "Proposal not found" });
-    }
-
     if (proposal.Project.UserId !== req.user.id) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    if (proposal.status !== "negotiating" && proposal.status !== "pending") {
-      return res.status(400).json({ message: "Cannot accept this proposal" });
-    }
-
     const finalPrice = agreedPrice || proposal.price;
-    const finalMilestones = agreedMilestones || proposal.milestones;
+    const finalMilestones = agreedMilestones || proposal.milestones || [];
+
+    const aiContract = await ContractService.generateAIContract(
+      proposal.ProjectId,
+      proposal.UserId,
+      req.user.id,
+      finalPrice,
+      finalMilestones,
+    );
 
     await Proposal.update(
       { status: "rejected" },
       { where: { ProjectId: proposal.ProjectId, id: { [Op.ne]: proposalId } } },
     );
-
     await proposal.update({ status: "accepted" });
 
-    const contract = await ContractService.createContractFromNegotiation({
-      proposalId: proposal.id,
-      freelancerId: proposal.UserId,
-      clientId: req.user.id,
-      agreedAmount: finalPrice,
-      milestones: finalMilestones,
-      projectId: proposal.ProjectId,
+    const contract = await Contract.create({
+      ProjectId: proposal.ProjectId,
+      FreelancerId: proposal.UserId,
+      ClientId: req.user.id,
+      agreed_amount: finalPrice,
+      contract_document: aiContract,
+      status: "draft",
+      terms: "AI-generated contract with industry-specific clauses",
+      milestones: JSON.stringify(finalMilestones),
     });
 
     const paymentIntent = await PaymentService.createEscrowPaymentIntent(
@@ -730,7 +716,7 @@ export const acceptProposalWithNegotiation = async (req, res) => {
     );
 
     res.json({
-      message: "✅ Proposal accepted. Please fund the escrow.",
+      message: "✅ Proposal accepted with AI-generated contract",
       contract,
       paymentIntent,
       requiresPayment: true,
@@ -832,13 +818,13 @@ export const createCheckoutSession = async (req, res) => {
     console.log("🔍 Creating checkout session for contract:", contractId);
     console.log("🔍 Payment Intent ID:", paymentIntentId);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5000";
     console.log("🔍 Frontend URL:", frontendUrl);
 
     const result = await PaymentService.createCheckoutSession(
       contractId,
       req.user.id,
-      frontendUrl 
+      frontendUrl,
     );
 
     console.log("✅ Checkout session result:", result);
@@ -868,67 +854,80 @@ export const createCheckoutSession = async (req, res) => {
 export const manualConfirmPayment = async (req, res) => {
   try {
     const { contractId } = req.params;
-    
-    console.log('💰 Manual payment confirmation for contract:', contractId);
-    
+
+    console.log("💰 Manual payment confirmation for contract:", contractId);
+
     const contract = await Contract.findByPk(contractId);
-    
+
     if (!contract) {
       return res.status(404).json({ message: "Contract not found" });
     }
-    
+
     await contract.update({
-      escrow_status: 'funded',
-      payment_status: 'escrow',
+      escrow_status: "funded",
+      payment_status: "escrow",
     });
-    
-    console.log('✅ Contract updated:', contract.id, 'escrow_status:', contract.escrow_status);
-    
-    let clientWallet = await Wallet.findOne({ where: { UserId: contract.ClientId } });
+
+    console.log(
+      "✅ Contract updated:",
+      contract.id,
+      "escrow_status:",
+      contract.escrow_status,
+    );
+
+    let clientWallet = await Wallet.findOne({
+      where: { UserId: contract.ClientId },
+    });
     if (!clientWallet) {
-      clientWallet = await Wallet.create({ UserId: contract.ClientId, balance: 0 });
+      clientWallet = await Wallet.create({
+        UserId: contract.ClientId,
+        balance: 0,
+      });
     }
-    
-    const newPendingBalance = (clientWallet.pending_balance || 0) + contract.agreed_amount;
+
+    const newPendingBalance =
+      (clientWallet.pending_balance || 0) + contract.agreed_amount;
     await clientWallet.update({
       pending_balance: newPendingBalance,
     });
-    console.log('✅ Client wallet updated, pending_balance:', newPendingBalance);
-    
+    console.log(
+      "✅ Client wallet updated, pending_balance:",
+      newPendingBalance,
+    );
+
     const transaction = await Transaction.create({
       wallet_id: clientWallet.id,
       amount: contract.agreed_amount,
-      type: 'deposit',
-      status: 'completed',
+      type: "deposit",
+      status: "completed",
       description: `Escrow deposit for contract #${contract.id}`,
       reference_id: contract.id,
-      reference_type: 'contract',
+      reference_type: "contract",
       completed_at: new Date(),
     });
-    console.log('✅ Transaction created:', transaction.id);
-    
+    console.log("✅ Transaction created:", transaction.id);
+
     await NotificationService.createNotification({
       userId: contract.ClientId,
-      type: 'payment_received',
-      title: 'Payment Confirmed ✅',
+      type: "payment_received",
+      title: "Payment Confirmed ✅",
       body: `$${contract.agreed_amount} has been deposited into escrow.`,
-      data: { contractId: contract.id, screen: 'contract' },
+      data: { contractId: contract.id, screen: "contract" },
     });
-    
+
     await NotificationService.createNotification({
       userId: contract.FreelancerId,
-      type: 'payment_received',
-      title: 'Payment Secured 💰',
+      type: "payment_received",
+      title: "Payment Secured 💰",
       body: `The client has funded $${contract.agreed_amount} into escrow.`,
-      data: { contractId: contract.id, screen: 'contract' },
+      data: { contractId: contract.id, screen: "contract" },
     });
-    
-    res.json({ 
-      success: true, 
-      message: 'Payment confirmed successfully',
-      contract 
+
+    res.json({
+      success: true,
+      message: "Payment confirmed successfully",
+      contract,
     });
-    
   } catch (err) {
     console.error("Error in manualConfirmPayment:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -938,15 +937,19 @@ export const manualConfirmPayment = async (req, res) => {
 export const handlePaymentSuccess = async (req, res) => {
   try {
     const { session_id, contract_id } = req.query;
-    
-    console.log('💰 Payment success callback:', { session_id, contract_id });
-    
+
+    console.log("💰 Payment success callback:", { session_id, contract_id });
+
     const result = await PaymentService.handleCheckoutSuccess(session_id);
-    
+
     if (result.success) {
-      res.redirect(`${process.env.FRONTEND_URL}/contract/${contract_id}?payment=success`);
+      res.redirect(
+        `${process.env.FRONTEND_URL}/contract/${contract_id}?payment=success`,
+      );
     } else {
-      res.redirect(`${process.env.FRONTEND_URL}/contract/${contract_id}?payment=failed`);
+      res.redirect(
+        `${process.env.FRONTEND_URL}/contract/${contract_id}?payment=failed`,
+      );
     }
   } catch (err) {
     console.error("Error handling payment success:", err);
@@ -1018,7 +1021,7 @@ export const createDirectPayment = async (req, res) => {
     const userId = req.user.id;
 
     const contract = await Contract.findByPk(contractId, {
-      include: [{ model: Project }]
+      include: [{ model: Project }],
     });
 
     if (!contract) {
@@ -1029,16 +1032,22 @@ export const createDirectPayment = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    console.log('💰 Creating Payment Intent for amount:', contract.agreed_amount);
-    console.log('🔑 Using Stripe key:', process.env.STRIPE_SECRET_KEY ? 'Present' : 'Missing');
+    console.log(
+      "💰 Creating Payment Intent for amount:",
+      contract.agreed_amount,
+    );
+    console.log(
+      "🔑 Using Stripe key:",
+      process.env.STRIPE_SECRET_KEY ? "Present" : "Missing",
+    );
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(contract.agreed_amount * 100),
-      currency: 'usd',
+      currency: "usd",
       metadata: {
         contractId: contract.id,
-        type: 'escrow',
-        projectTitle: contract.Project?.title || 'Project Payment',
+        type: "escrow",
+        projectTitle: contract.Project?.title || "Project Payment",
       },
       description: `Contract #${contract.id} - ${contract.Project?.title}`,
       automatic_payment_methods: {
@@ -1046,11 +1055,11 @@ export const createDirectPayment = async (req, res) => {
       },
     });
 
-    console.log('✅ Payment Intent created:', paymentIntent.id);
+    console.log("✅ Payment Intent created:", paymentIntent.id);
 
     await contract.update({
       escrow_id: paymentIntent.id,
-      escrow_status: 'pending',
+      escrow_status: "pending",
     });
 
     res.json({
@@ -1059,13 +1068,12 @@ export const createDirectPayment = async (req, res) => {
       paymentIntentId: paymentIntent.id,
       amount: contract.agreed_amount,
     });
-
   } catch (err) {
     console.error("Error creating direct payment:", err);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: err.message,
-      error: err.toString()
+      error: err.toString(),
     });
   }
 };
@@ -1074,89 +1082,109 @@ export const getClientDashboardOverview = async (req, res) => {
   try {
     const userId = req.user.id;
     const now = new Date();
-    
-    // ── 1. Project counts ──────────────────────────────
+
     const projects = await Project.findAll({
       where: { UserId: userId },
-      attributes: ['id', 'title', 'status', 'budget', 'createdAt'],
+      attributes: ["id", "title", "status", "budget", "createdAt"],
     });
-    
+
     const totalProjects = projects.length;
-    const openProjects = projects.filter(p => p.status === 'open').length;
-    const inProgressProjects = projects.filter(p => p.status === 'in_progress').length;
-    const completedProjects = projects.filter(p => p.status === 'completed').length;
-    
-    // ── 2. Proposal stats ──────────────────────────────
-    const projectIds = projects.map(p => p.id);
-    
+    const openProjects = projects.filter((p) => p.status === "open").length;
+    const inProgressProjects = projects.filter(
+      (p) => p.status === "in_progress",
+    ).length;
+    const completedProjects = projects.filter(
+      (p) => p.status === "completed",
+    ).length;
+
+    const projectIds = projects.map((p) => p.id);
+
     const proposals = await Proposal.findAll({
       where: { ProjectId: projectIds },
       include: [
-        { model: User, as: 'freelancer', attributes: ['id', 'name', 'avatar'] },
-        { model: FreelancerProfile, as: 'profile', attributes: ['title', 'rating', 'skills'] },
-        { model: Project, attributes: ['title', 'id'] }
+        { model: User, as: "freelancer", attributes: ["id", "name", "avatar"] },
+        {
+          model: FreelancerProfile,
+          as: "profile",
+          attributes: ["title", "rating", "skills"],
+        },
+        { model: Project, attributes: ["title", "id"] },
       ],
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
       limit: 5,
     });
-    
+
     const totalProposals = proposals.length;
-    const pendingProposals = proposals.filter(p => p.status === 'pending').length;
-    const acceptedProposals = proposals.filter(p => p.status === 'accepted').length;
-    
-    // ── 3. Contract & Financial stats ──────────────────
+    const pendingProposals = proposals.filter(
+      (p) => p.status === "pending",
+    ).length;
+    const acceptedProposals = proposals.filter(
+      (p) => p.status === "accepted",
+    ).length;
+
     const contracts = await Contract.findAll({
       where: { ClientId: userId },
       include: [
-        { model: Project, attributes: ['title', 'category'] },
-        { model: User, as: 'freelancer', attributes: ['id', 'name', 'avatar'] }
+        { model: Project, attributes: ["title", "category"] },
+        { model: User, as: "freelancer", attributes: ["id", "name", "avatar"] },
       ],
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
       limit: 10,
     });
-    
-    const completedContracts = contracts.filter(c => c.status === 'completed');
-    const totalSpent = completedContracts.reduce((sum, c) => sum + (parseFloat(c.agreed_amount) || 0), 0);
+
+    const completedContracts = contracts.filter(
+      (c) => c.status === "completed",
+    );
+    const totalSpent = completedContracts.reduce(
+      (sum, c) => sum + (parseFloat(c.agreed_amount) || 0),
+      0,
+    );
     const escrowHeld = contracts
-      .filter(c => c.escrow_status === 'funded')
+      .filter((c) => c.escrow_status === "funded")
       .reduce((sum, c) => sum + (parseFloat(c.agreed_amount) || 0), 0);
-    
-    // ── 4. Spending chart – last 6 months using Wallet Transactions ──
+
     const sixMonthsAgo = new Date(now);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
-    
+
     const wallet = await Wallet.findOne({ where: { UserId: userId } });
     let monthlySpending = [];
-    
+
     if (wallet) {
       const raw = await Transaction.findAll({
         where: {
           wallet_id: wallet.id,
-          type: 'deposit',
-          status: 'completed',
+          type: "deposit",
+          status: "completed",
           createdAt: { [Op.gte]: sixMonthsAgo },
         },
         attributes: [
-          [sequelize.fn('YEAR', sequelize.col('createdAt')), 'year'],
-          [sequelize.fn('MONTH', sequelize.col('createdAt')), 'month'],
-          [sequelize.fn('SUM', sequelize.col('amount')), 'total'],
+          [sequelize.fn("YEAR", sequelize.col("createdAt")), "year"],
+          [sequelize.fn("MONTH", sequelize.col("createdAt")), "month"],
+          [sequelize.fn("SUM", sequelize.col("amount")), "total"],
         ],
-        group: [sequelize.fn('YEAR', sequelize.col('createdAt')), sequelize.fn('MONTH', sequelize.col('createdAt'))],
-        order: [[sequelize.fn('YEAR', sequelize.col('createdAt')), 'ASC'], [sequelize.fn('MONTH', sequelize.col('createdAt')), 'ASC']],
+        group: [
+          sequelize.fn("YEAR", sequelize.col("createdAt")),
+          sequelize.fn("MONTH", sequelize.col("createdAt")),
+        ],
+        order: [
+          [sequelize.fn("YEAR", sequelize.col("createdAt")), "ASC"],
+          [sequelize.fn("MONTH", sequelize.col("createdAt")), "ASC"],
+        ],
         raw: true,
       });
-      
-      // Fill every month (even $0)
+
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now);
         d.setMonth(d.getMonth() - i);
         const y = d.getFullYear();
         const m = d.getMonth() + 1;
-        const found = raw.find(r => Number(r.year) === y && Number(r.month) === m);
+        const found = raw.find(
+          (r) => Number(r.year) === y && Number(r.month) === m,
+        );
         monthlySpending.push({
-          label: d.toLocaleString('en', { month: 'short' }),
+          label: d.toLocaleString("en", { month: "short" }),
           total: found ? parseFloat(found.total) : 0,
         });
       }
@@ -1164,23 +1192,30 @@ export const getClientDashboardOverview = async (req, res) => {
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now);
         d.setMonth(d.getMonth() - i);
-        monthlySpending.push({ 
-          label: d.toLocaleString('en', { month: 'short' }), 
-          total: 0 
+        monthlySpending.push({
+          label: d.toLocaleString("en", { month: "short" }),
+          total: 0,
         });
       }
     }
-    
-    // ── 5. Active contracts with progress ─────────────
+
     const activeContracts = contracts
-      .filter(c => c.status === 'active')
-      .map(c => {
-        const milestones = c.milestones ? (Array.isArray(c.milestones) ? c.milestones : JSON.parse(c.milestones)) : [];
+      .filter((c) => c.status === "active")
+      .map((c) => {
+        const milestones = c.milestones
+          ? Array.isArray(c.milestones)
+            ? c.milestones
+            : JSON.parse(c.milestones)
+          : [];
         const total = milestones.length;
-        const done = milestones.filter(m => m.status === 'completed' || m.status === 'approved').length;
+        const done = milestones.filter(
+          (m) => m.status === "completed" || m.status === "approved",
+        ).length;
         const progress = total > 0 ? Math.round((done / total) * 100) : 0;
-        const nextMs = milestones.find(m => m.status !== 'completed' && m.status !== 'approved');
-        
+        const nextMs = milestones.find(
+          (m) => m.status !== "completed" && m.status !== "approved",
+        );
+
         return {
           id: c.id,
           status: c.status,
@@ -1198,29 +1233,26 @@ export const getClientDashboardOverview = async (req, res) => {
           nextMilestoneTitle: nextMs?.title || null,
         };
       });
-    
-    // ── 6. Notifications ──────────────────────────────
+
     const notifications = await Notification.findAll({
       where: { userId: userId },
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
       limit: 5,
     });
-    
-    // ── 7. Status breakdown for pie chart ─────────────
+
     const statusBreakdown = [
-      { label: 'Open', value: openProjects, color: '#3B82F6' },
-      { label: 'In Progress', value: inProgressProjects, color: '#F59E0B' },
-      { label: 'Completed', value: completedProjects, color: '#10B981' },
-    ].filter(s => s.value > 0);
-    
-    // ── 8. Top freelancers ────────────────────────────
+      { label: "Open", value: openProjects, color: "#3B82F6" },
+      { label: "In Progress", value: inProgressProjects, color: "#F59E0B" },
+      { label: "Completed", value: completedProjects, color: "#10B981" },
+    ].filter((s) => s.value > 0);
+
     const topFreelancers = await User.findAll({
-      where: { role: 'freelancer' },
-      include: [{ model: FreelancerProfile, attributes: ['rating'] }],
+      where: { role: "freelancer" },
+      include: [{ model: FreelancerProfile, attributes: ["rating"] }],
       limit: 5,
-      attributes: ['id', 'name', 'avatar'],
+      attributes: ["id", "name", "avatar"],
     });
-    
+
     res.json({
       stats: {
         totalProjects,
@@ -1233,13 +1265,14 @@ export const getClientDashboardOverview = async (req, res) => {
         totalSpent,
         escrowHeld,
         totalReleased: 0,
-        proposalAcceptRate: totalProposals > 0 
-          ? Math.round((acceptedProposals / totalProposals) * 100) 
-          : 0,
+        proposalAcceptRate:
+          totalProposals > 0
+            ? Math.round((acceptedProposals / totalProposals) * 100)
+            : 0,
       },
       monthlySpending,
       statusBreakdown,
-      recentProposals: proposals.map(p => ({
+      recentProposals: proposals.map((p) => ({
         id: p.id,
         status: p.status,
         price: parseFloat(p.price) || 0,
@@ -1251,10 +1284,14 @@ export const getClientDashboardOverview = async (req, res) => {
         freelancerAvatar: p.freelancer?.avatar,
         freelancerTitle: p.profile?.title,
         freelancerRating: p.profile?.rating,
-        skills: p.profile?.skills ? (typeof p.profile.skills === 'string' ? JSON.parse(p.profile.skills) : p.profile.skills) : [],
+        skills: p.profile?.skills
+          ? typeof p.profile.skills === "string"
+            ? JSON.parse(p.profile.skills)
+            : p.profile.skills
+          : [],
       })),
       activeContracts,
-      recentActivity: notifications.map(n => ({
+      recentActivity: notifications.map((n) => ({
         id: n.id,
         type: n.type,
         title: n.title,
@@ -1263,19 +1300,18 @@ export const getClientDashboardOverview = async (req, res) => {
         createdAt: n.createdAt,
         data: n.data,
       })),
-      topFreelancers: topFreelancers.map(f => ({
+      topFreelancers: topFreelancers.map((f) => ({
         id: f.id,
         name: f.name,
         avatar: f.avatar,
         rating: f.FreelancerProfile?.rating || 0,
       })),
     });
-    
   } catch (error) {
-    console.error('❌ Error in getClientDashboardOverview:', error);
-    res.status(500).json({ 
-      message: 'Server error', 
-      error: error.message 
+    console.error("❌ Error in getClientDashboardOverview:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -1283,15 +1319,15 @@ export const getClientDashboardOverview = async (req, res) => {
 export const getClientProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     const user = await User.findByPk(userId, {
-      attributes: ['id', 'name', 'avatar', 'email'],
+      attributes: ["id", "name", "avatar", "email"],
     });
-    
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     res.json({
       id: user.id,
       name: user.name,
@@ -1301,9 +1337,7 @@ export const getClientProfile = async (req, res) => {
       phone: user.phone || null,
     });
   } catch (error) {
-    console.error('❌ Error in getClientProfile:', error);
+    console.error("❌ Error in getClientProfile:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-

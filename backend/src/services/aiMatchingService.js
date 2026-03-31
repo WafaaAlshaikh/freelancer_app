@@ -34,94 +34,99 @@ const parseSkills = (skillsField) => {
 };
 
 class AIMatchingService {
+  static async suggestProjectsForFreelancer(freelancerId, limit = 10) {
+    try {
+      console.log("🎯 [AI] Searching projects for freelancer:", freelancerId);
 
+      const freelancer = await FreelancerProfile.findOne({
+        where: { UserId: freelancerId },
+        include: [
+          {
+            model: User,
+            attributes: ["id", "name", "avatar"],
+          },
+        ],
+      });
 
-static async suggestProjectsForFreelancer(freelancerId, limit = 10) {
-  try {
-    console.log('🎯 [AI] Searching projects for freelancer:', freelancerId);
-    
-    const freelancer = await FreelancerProfile.findOne({
-      where: { UserId: freelancerId },
-      include: [{ 
-        model: User, 
-        attributes: ['id', 'name', 'avatar']
-      }]
-    });
-
-    if (!freelancer) {
-      throw new Error('Freelancer profile not found');
-    }
-
-    console.log('👤 Freelancer found:', {
-      name: freelancer.User?.name,
-      skills: freelancer.skills,
-      experience: freelancer.experience_years
-    });
-
-    const projects = await Project.findAll({
-      where: { 
-        status: 'open',
-        UserId: { [Op.ne]: freelancerId }
-      },
-      include: [{ 
-        model: User, 
-        as: 'client',  
-        attributes: ['id', 'name', 'avatar']
-      }],
-      limit: 50
-    });
-
-    console.log(`📊 Found ${projects.length} open projects`);
-
-    const scoredProjects = await Promise.all(
-      projects.map(async (project) => {
-        const existingProposal = await Proposal.findOne({
-          where: { ProjectId: project.id, UserId: freelancerId }
-        });
-
-        const matchScore = await this.calculateProjectMatchScore(
-          project, 
-          freelancer
-        );
-
-        const projectData = project.toJSON();
-        projectData.skills = parseSkills(project.skills);
-
-        return {
-          ...projectData,
-          matchScore: matchScore.total,
-          matchDetails: matchScore,
-          hasApplied: !!existingProposal
-        };
-      })
-    );
-
-    const sortedProjects = scoredProjects
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, limit);
-
-    console.log(`✅ Returning ${sortedProjects.length} suggestions`);
-    if (sortedProjects.length > 0) {
-      console.log('🏆 Top match:', sortedProjects[0].title, 'Score:', sortedProjects[0].matchScore);
-    }
-
-    return {
-      success: true,
-      suggestions: sortedProjects,
-      freelancer: {
-        name: freelancer.User?.name,
-        skills: parseSkills(freelancer.skills),
-        experience: freelancer.experience_years
+      if (!freelancer) {
+        throw new Error("Freelancer profile not found");
       }
-    };
 
-  } catch (error) {
-    console.error('❌ [AI] Error in suggestProjects:', error);
-    return { success: false, error: error.message, suggestions: [] };
+      console.log("👤 Freelancer found:", {
+        name: freelancer.User?.name,
+        skills: freelancer.skills,
+        experience: freelancer.experience_years,
+      });
+
+      const projects = await Project.findAll({
+        where: {
+          status: "open",
+          UserId: { [Op.ne]: freelancerId },
+        },
+        include: [
+          {
+            model: User,
+            as: "client",
+            attributes: ["id", "name", "avatar"],
+          },
+        ],
+        limit: 50,
+      });
+
+      console.log(`📊 Found ${projects.length} open projects`);
+
+      const scoredProjects = await Promise.all(
+        projects.map(async (project) => {
+          const existingProposal = await Proposal.findOne({
+            where: { ProjectId: project.id, UserId: freelancerId },
+          });
+
+          const matchScore = await this.calculateProjectMatchScore(
+            project,
+            freelancer,
+          );
+
+          const projectData = project.toJSON();
+          projectData.skills = parseSkills(project.skills);
+
+          return {
+            ...projectData,
+            matchScore: matchScore.total,
+            matchDetails: matchScore,
+            hasApplied: !!existingProposal,
+          };
+        }),
+      );
+
+      const sortedProjects = scoredProjects
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, limit);
+
+      console.log(`✅ Returning ${sortedProjects.length} suggestions`);
+      if (sortedProjects.length > 0) {
+        console.log(
+          "🏆 Top match:",
+          sortedProjects[0].title,
+          "Score:",
+          sortedProjects[0].matchScore,
+        );
+      }
+
+      return {
+        success: true,
+        suggestions: sortedProjects,
+        freelancer: {
+          name: freelancer.User?.name,
+          skills: parseSkills(freelancer.skills),
+          experience: freelancer.experience_years,
+        },
+      };
+    } catch (error) {
+      console.error("❌ [AI] Error in suggestProjects:", error);
+      return { success: false, error: error.message, suggestions: [] };
+    }
   }
-}
 
- 
   static async calculateProjectMatchScore(project, freelancer) {
     const freelancerSkillsArray = parseSkills(freelancer.skills);
     const projectSkillsArray = parseSkills(project.skills);
@@ -190,103 +195,107 @@ static async suggestProjectsForFreelancer(freelancerId, limit = 10) {
     };
   }
 
+  static async suggestFreelancersForClient(projectId, limit = 10) {
+    try {
+      console.log("🎯 [AI] Finding freelancers for project:", projectId);
 
-static async suggestFreelancersForClient(projectId, limit = 10) {
-  try {
-    console.log('🎯 [AI] Finding freelancers for project:', projectId);
+      const project = await Project.findByPk(projectId, {
+        include: [
+          {
+            model: User,
+            as: "client",
+            attributes: ["id", "name"],
+          },
+        ],
+      });
 
-    const project = await Project.findByPk(projectId, {
-      include: [{
-        model: User,
-        as: 'client', 
-        attributes: ['id', 'name']
-      }]
-    });
-    
-    if (!project) throw new Error('Project not found');
+      if (!project) throw new Error("Project not found");
 
-    const projectSkills = parseSkills(project.skills);
-    console.log('📋 Project:', project.title, 'Skills:', projectSkills);
+      const projectSkills = parseSkills(project.skills);
+      console.log("📋 Project:", project.title, "Skills:", projectSkills);
 
-    const freelancers = await FreelancerProfile.findAll({
-      where: { is_available: true },
-      include: [
-        { 
-          model: User, 
-          attributes: ['id', 'name', 'avatar', 'email'],
-          where: { role: 'freelancer' }
-        }
-      ],
-      limit: 100
-    });
+      const freelancers = await FreelancerProfile.findAll({
+        where: { is_available: true },
+        include: [
+          {
+            model: User,
+            attributes: ["id", "name", "avatar", "email"],
+            where: { role: "freelancer" },
+          },
+        ],
+        limit: 100,
+      });
 
-    console.log(`📊 Found ${freelancers.length} available freelancers`);
+      console.log(`📊 Found ${freelancers.length} available freelancers`);
 
-    const scoredFreelancers = await Promise.all(
-      freelancers.map(async (freelancer) => {
-        const hasProposal = await Proposal.findOne({
-          where: { ProjectId: projectId, UserId: freelancer.UserId }
-        });
+      const scoredFreelancers = await Promise.all(
+        freelancers.map(async (freelancer) => {
+          const hasProposal = await Proposal.findOne({
+            where: { ProjectId: projectId, UserId: freelancer.UserId },
+          });
 
-        const matchScore = await this.calculateFreelancerMatchScore(
-          freelancer,
-          project
+          const matchScore = await this.calculateFreelancerMatchScore(
+            freelancer,
+            project,
+          );
+
+          const completedProjects = await Contract.count({
+            where: {
+              FreelancerId: freelancer.UserId,
+              status: "completed",
+            },
+          });
+
+          return {
+            id: freelancer.UserId,
+            name: freelancer.User?.name,
+            avatar: freelancer.User?.avatar,
+            title: freelancer.title,
+            rating: freelancer.rating,
+            skills: parseSkills(freelancer.skills),
+            experience: freelancer.experience_years,
+            hourlyRate: freelancer.hourly_rate,
+            completedProjects,
+            matchScore: matchScore.total,
+            matchDetails: matchScore,
+            hasProposal: !!hasProposal,
+            profile: freelancer,
+          };
+        }),
+      );
+
+      const sortedFreelancers = scoredFreelancers
+        .sort((a, b) => {
+          if (a.hasProposal && !b.hasProposal) return -1;
+          if (!a.hasProposal && b.hasProposal) return 1;
+          return b.matchScore - a.matchScore;
+        })
+        .slice(0, limit);
+
+      console.log(`✅ Returning ${sortedFreelancers.length} suggestions`);
+      if (sortedFreelancers.length > 0) {
+        console.log(
+          "🏆 Top freelancer:",
+          sortedFreelancers[0].name,
+          "Score:",
+          sortedFreelancers[0].matchScore,
         );
-
-        const completedProjects = await Contract.count({
-          where: { 
-            FreelancerId: freelancer.UserId,
-            status: 'completed' 
-          }
-        });
-
-        return {
-          id: freelancer.UserId,
-          name: freelancer.User?.name,
-          avatar: freelancer.User?.avatar,
-          title: freelancer.title,
-          rating: freelancer.rating,
-          skills: parseSkills(freelancer.skills),
-          experience: freelancer.experience_years,
-          hourlyRate: freelancer.hourly_rate,
-          completedProjects,
-          matchScore: matchScore.total,
-          matchDetails: matchScore,
-          hasProposal: !!hasProposal,
-          profile: freelancer
-        };
-      })
-    );
-
-    const sortedFreelancers = scoredFreelancers
-      .sort((a, b) => {
-        if (a.hasProposal && !b.hasProposal) return -1;
-        if (!a.hasProposal && b.hasProposal) return 1;
-        return b.matchScore - a.matchScore;
-      })
-      .slice(0, limit);
-
-    console.log(`✅ Returning ${sortedFreelancers.length} suggestions`);
-    if (sortedFreelancers.length > 0) {
-      console.log('🏆 Top freelancer:', sortedFreelancers[0].name, 'Score:', sortedFreelancers[0].matchScore);
-    }
-
-    return {
-      success: true,
-      suggestions: sortedFreelancers,
-      project: {
-        title: project.title,
-        skills: projectSkills,
-        budget: project.budget
       }
-    };
 
-  } catch (error) {
-    console.error('❌ [AI] Error in suggestFreelancers:', error);
-    return { success: false, error: error.message, suggestions: [] };
+      return {
+        success: true,
+        suggestions: sortedFreelancers,
+        project: {
+          title: project.title,
+          skills: projectSkills,
+          budget: project.budget,
+        },
+      };
+    } catch (error) {
+      console.error("❌ [AI] Error in suggestFreelancers:", error);
+      return { success: false, error: error.message, suggestions: [] };
+    }
   }
-}
-
 
   static async calculateFreelancerMatchScore(freelancer, project) {
     const freelancerSkillsArray = parseSkills(freelancer.skills);
@@ -380,7 +389,6 @@ static async suggestFreelancersForClient(projectId, limit = 10) {
     };
   }
 
-
   static async enhanceWithAI(project, freelancers) {
     try {
       const projectSkills = parseSkills(project.skills);
@@ -421,6 +429,198 @@ static async suggestFreelancersForClient(projectId, limit = 10) {
       console.error("AI enhancement failed:", error);
       return freelancers;
     }
+  }
+
+  static async getPersonalizedRecommendations(freelancerId, limit = 10) {
+    try {
+      console.log("🎯 [AI] Getting personalized recommendations...");
+
+      const userBehavior = await this.getUserBehavior(freelancerId);
+
+      const similarProjects = await this.getSimilarProjects(userBehavior);
+
+      const collaborativeProjects = await this.getCollaborativeProjects(
+        freelancerId,
+        userBehavior,
+      );
+
+      let recommendations = [...similarProjects, ...collaborativeProjects];
+
+      recommendations = recommendations.filter(
+        (v, i, a) => a.findIndex((t) => t.id === v.id) === i,
+      );
+
+      recommendations = await Promise.all(
+        recommendations.map(async (project) => {
+          const freelancer = await FreelancerProfile.findOne({
+            where: { UserId: freelancerId },
+          });
+          const matchScore = this.calculateMatchScore(
+            project,
+            this.parseSkills(freelancer?.skills),
+            freelancer?.experience_years || 0,
+          );
+          return {
+            ...project,
+            matchScore,
+            reason: this.getRecommendationReason(project, userBehavior),
+          };
+        }),
+      );
+
+      recommendations.sort((a, b) => b.matchScore - a.matchScore);
+
+      return recommendations.slice(0, limit);
+    } catch (error) {
+      console.error("❌ Personalized recommendations error:", error);
+      return [];
+    }
+  }
+
+  static async getUserBehavior(userId) {
+    try {
+      const proposals = await Proposal.findAll({
+        where: { UserId: userId },
+        include: [{ model: Project }],
+        order: [["createdAt", "DESC"]],
+        limit: 20,
+      });
+
+      const skills = new Set();
+      const categories = new Set();
+      let avgPrice = 0;
+      let avgDuration = 0;
+
+      proposals.forEach((p) => {
+        const project = p.Project;
+        if (project) {
+          this.parseSkills(project.skills).forEach((s) => skills.add(s));
+          if (project.category) categories.add(project.category);
+          avgPrice += parseFloat(p.price || 0);
+          avgDuration += project.duration || 0;
+        }
+      });
+
+      return {
+        totalProposals: proposals.length,
+        topSkills: Array.from(skills),
+        preferredCategories: Array.from(categories),
+        avgPrice: proposals.length > 0 ? avgPrice / proposals.length : 0,
+        avgDuration: proposals.length > 0 ? avgDuration / proposals.length : 0,
+        recentProposals: proposals.slice(0, 5).map((p) => ({
+          id: p.Project?.id,
+          title: p.Project?.title,
+          price: p.price,
+        })),
+      };
+    } catch (error) {
+      console.error("Error getting user behavior:", error);
+      return { topSkills: [], preferredCategories: [], totalProposals: 0 };
+    }
+  }
+
+  static async getSimilarProjects(userBehavior) {
+    if (
+      userBehavior.topSkills.length === 0 &&
+      userBehavior.preferredCategories.length === 0
+    ) {
+      return [];
+    }
+
+    const whereClause = {
+      status: "open",
+      [Op.or]: [],
+    };
+
+    if (userBehavior.topSkills.length > 0) {
+      whereClause[Op.or].push({
+        skills: { [Op.like]: `%${userBehavior.topSkills[0]}%` },
+      });
+    }
+
+    if (userBehavior.preferredCategories.length > 0) {
+      whereClause[Op.or].push({
+        category: userBehavior.preferredCategories[0],
+      });
+    }
+
+    const projects = await Project.findAll({
+      where: whereClause,
+      include: [
+        { model: User, as: "client", attributes: ["id", "name", "avatar"] },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit: 20,
+    });
+
+    return projects.map((p) => p.toJSON());
+  }
+
+  static async getCollaborativeProjects(userId, userBehavior) {
+    try {
+      const freelancer = await FreelancerProfile.findOne({
+        where: { UserId: userId },
+      });
+      const freelancerSkills = this.parseSkills(freelancer?.skills);
+
+      const similarFreelancers = await FreelancerProfile.findAll({
+        where: {
+          skills: {
+            [Op.or]: freelancerSkills.map((skill) => ({
+              [Op.like]: `%${skill}%`,
+            })),
+          },
+          UserId: { [Op.ne]: userId },
+        },
+        limit: 10,
+      });
+
+      const similarFreelancerIds = similarFreelancers.map((f) => f.UserId);
+      const proposals = await Proposal.findAll({
+        where: {
+          UserId: { [Op.in]: similarFreelancerIds },
+          status: "accepted",
+        },
+        include: [{ model: Project, where: { status: "open" } }],
+        limit: 30,
+      });
+
+      const projectMap = new Map();
+      proposals.forEach((p) => {
+        if (p.Project && !projectMap.has(p.Project.id)) {
+          projectMap.set(p.Project.id, p.Project.toJSON());
+        }
+      });
+
+      return Array.from(projectMap.values());
+    } catch (error) {
+      console.error("Error in collaborative filtering:", error);
+      return [];
+    }
+  }
+
+  static getRecommendationReason(project, userBehavior) {
+    const reasons = [];
+
+    if (
+      userBehavior.topSkills.some((skill) =>
+        this.parseSkills(project.skills).some((ps) =>
+          ps.toLowerCase().includes(skill.toLowerCase()),
+        ),
+      )
+    ) {
+      reasons.push("Matches your skills");
+    }
+
+    if (userBehavior.preferredCategories.includes(project.category)) {
+      reasons.push("Similar to projects you like");
+    }
+
+    if (project.budget <= userBehavior.avgPrice * 1.2) {
+      reasons.push("Within your typical budget range");
+    }
+
+    return reasons.length > 0 ? reasons[0] : "Recommended for you";
   }
 }
 
