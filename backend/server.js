@@ -26,7 +26,10 @@ import { initSocket } from "./src/socket/socketManager.js";
 import dashboardRoutes from "./src/routes/dashboardRoutes.js";
 import profileRoutes from "./src/routes/profileRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
-
+import landingRoutes from "./src/routes/landingRoutes.js";
+import adminLandingRoutes from "./src/routes/adminLandingRoutes.js";
+import { seedLandingData } from "./src/seed/landingData.js";
+import { protect, authorizeRoles } from "./src/middleware/authMiddleware.js";
 
 dotenv.config();
 
@@ -122,6 +125,7 @@ app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => res.send("API is running..."));
 
+// ==================== Routes ====================
 app.use("/api/auth", authRoutes);
 app.use("/api/freelancer", freelancerRoutes);
 app.use("/api/projects", projectRoutes);
@@ -137,6 +141,13 @@ app.use("/api/chats", chatRoutes);
 app.use("/api/client/dashboard", dashboardRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/landing", landingRoutes);
+app.use(
+  "/api/admin/landing",
+  protect,
+  authorizeRoles("admin"),
+  adminLandingRoutes,
+);
 
 app.get("/payment-success", (req, res) => {
   const { session_id, contract_id } = req.query;
@@ -167,6 +178,9 @@ async function startServer() {
   try {
     await sequelize.sync({ alter: true });
     console.log("✅ Tables synced with database");
+
+    await seedLandingData();
+    console.log("✅ Landing page data seeded");
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

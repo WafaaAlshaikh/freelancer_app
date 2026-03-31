@@ -33,15 +33,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       loading = true;
       errorMessage = null;
     });
-    
+
     try {
       final response = await ApiService.getAdminDashboardStats();
       print('📊 Dashboard response: $response');
-      
+
       if (response != null && response.isNotEmpty) {
         final statsData = response['stats'] ?? {};
         final monthlyStatsData = response['monthlyStats'] ?? [];
-        
+
         setState(() {
           stats = AdminStats.fromJson(statsData);
           monthlyStats = List<Map<String, dynamic>>.from(monthlyStatsData);
@@ -108,49 +108,47 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null && stats?.totalUsers == 0
-              ? _buildErrorWidget()
-              : Row(
-                  children: [
-                    NavigationRail(
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: (index) {
-                        setState(() => _selectedIndex = index);
-                      },
-                      labelType: NavigationRailLabelType.selected,
-                      destinations: const [
-                        NavigationRailDestination(
-                          icon: Icon(Icons.dashboard),
-                          selectedIcon: Icon(Icons.dashboard),
-                          label: Text('Dashboard'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.people),
-                          selectedIcon: Icon(Icons.people),
-                          label: Text('Users'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.work),
-                          selectedIcon: Icon(Icons.work),
-                          label: Text('Projects'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.description),
-                          selectedIcon: Icon(Icons.description),
-                          label: Text('Contracts'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.settings),
-                          selectedIcon: Icon(Icons.settings),
-                          label: Text('Settings'),
-                        ),
-                      ],
+          ? _buildErrorWidget()
+          : Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (index) {
+                    setState(() => _selectedIndex = index);
+                  },
+                  labelType: NavigationRailLabelType.selected,
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.dashboard),
+                      selectedIcon: Icon(Icons.dashboard),
+                      label: Text('Dashboard'),
                     ),
-                    const VerticalDivider(thickness: 1, width: 1),
-                    Expanded(
-                      child: _buildContent(),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.people),
+                      selectedIcon: Icon(Icons.people),
+                      label: Text('Users'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.work),
+                      selectedIcon: Icon(Icons.work),
+                      label: Text('Projects'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.description),
+                      selectedIcon: Icon(Icons.description),
+                      label: Text('Contracts'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.settings),
+                      selectedIcon: Icon(Icons.settings),
+                      label: Text('Settings'),
                     ),
                   ],
                 ),
+                const VerticalDivider(thickness: 1, width: 1),
+                Expanded(child: _buildContent()),
+              ],
+            ),
     );
   }
 
@@ -159,11 +157,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red.shade300,
-          ),
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(
             errorMessage ?? 'Failed to load dashboard data',
@@ -192,7 +186,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (stats == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     switch (_selectedIndex) {
       case 0:
         return _buildDashboardContent();
@@ -230,7 +224,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 const CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.admin_panel_settings, size: 30, color: Color(0xff14A800)),
+                  child: Icon(
+                    Icons.admin_panel_settings,
+                    size: 30,
+                    color: Color(0xff14A800),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -254,7 +252,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white24,
                     borderRadius: BorderRadius.circular(20),
@@ -277,16 +278,66 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             children: [
-              _buildStatCard('Total Users', stats!.totalUsers.toString(), Icons.people, Colors.blue),
-              _buildStatCard('Freelancers', stats!.totalFreelancers.toString(), Icons.work, Colors.green),
-              _buildStatCard('Clients', stats!.totalClients.toString(), Icons.business, Colors.orange),
-              _buildStatCard('Projects', stats!.totalProjects.toString(), Icons.folder, Colors.purple),
-              _buildStatCard('Contracts', stats!.totalContracts.toString(), Icons.description, Colors.teal),
-              _buildStatCard('Earnings', '\$${stats!.totalEarnings.toStringAsFixed(0)}', Icons.attach_money, Colors.green),
-              _buildStatCard('Pending Projects', stats!.pendingProjects.toString(), Icons.pending, Colors.orange),
-              _buildStatCard('Active Contracts', stats!.activeContracts.toString(), Icons.play_circle, Colors.blue),
-              _buildStatCard('Completed', stats!.completedContracts.toString(), Icons.check_circle, Colors.green),
-              _buildStatCard('Disputes', stats!.pendingDisputes.toString(), Icons.warning, Colors.red),
+              _buildStatCard(
+                'Total Users',
+                stats!.totalUsers.toString(),
+                Icons.people,
+                Colors.blue,
+              ),
+              _buildStatCard(
+                'Freelancers',
+                stats!.totalFreelancers.toString(),
+                Icons.work,
+                Colors.green,
+              ),
+              _buildStatCard(
+                'Clients',
+                stats!.totalClients.toString(),
+                Icons.business,
+                Colors.orange,
+              ),
+              _buildStatCard(
+                'Projects',
+                stats!.totalProjects.toString(),
+                Icons.folder,
+                Colors.purple,
+              ),
+              _buildStatCard(
+                'Contracts',
+                stats!.totalContracts.toString(),
+                Icons.description,
+                Colors.teal,
+              ),
+              _buildStatCard(
+                'Earnings',
+                '\$${stats!.totalEarnings.toStringAsFixed(0)}',
+                Icons.attach_money,
+                Colors.green,
+              ),
+              _buildStatCard(
+                'Pending Projects',
+                stats!.pendingProjects.toString(),
+                Icons.pending,
+                Colors.orange,
+              ),
+              _buildStatCard(
+                'Active Contracts',
+                stats!.activeContracts.toString(),
+                Icons.play_circle,
+                Colors.blue,
+              ),
+              _buildStatCard(
+                'Completed',
+                stats!.completedContracts.toString(),
+                Icons.check_circle,
+                Colors.green,
+              ),
+              _buildStatCard(
+                'Disputes',
+                stats!.pendingDisputes.toString(),
+                Icons.warning,
+                Colors.red,
+              ),
             ],
           ),
 
@@ -317,8 +368,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         lineBarsData: [
                           LineChartBarData(
                             spots: monthlyStats.asMap().entries.map((entry) {
-                              final users = entry.value['users'] ?? entry.value['freelancers'] ?? 0;
-                              return FlSpot(entry.key.toDouble(), users.toDouble());
+                              final users =
+                                  entry.value['users'] ??
+                                  entry.value['freelancers'] ??
+                                  0;
+                              return FlSpot(
+                                entry.key.toDouble(),
+                                users.toDouble(),
+                              );
                             }).toList(),
                             isCurved: true,
                             color: Colors.blue,
@@ -354,7 +411,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

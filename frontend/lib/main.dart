@@ -8,6 +8,7 @@ import 'package:freelancer_platform/screens/admin/admin_dashboard_screen.dart';
 import 'package:freelancer_platform/screens/admin/users_management_screen.dart';
 import 'package:freelancer_platform/screens/chat/chat_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
+import 'package:freelancer_platform/screens/landing/landing_screen.dart';
 import 'package:freelancer_platform/screens/payment/payment_screen.dart';
 import 'package:freelancer_platform/screens/wallet/wallet_screen.dart';
 import 'package:freelancer_platform/screens/workspace/add_reminder_screen.dart';
@@ -86,6 +87,7 @@ class FreelancerApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       initialRoute: _getInitialRoute(),
       routes: {
+        '/': (_) => const LandingScreen(),
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignupScreen(),
         '/verify': (_) => const VerifyScreen(),
@@ -237,7 +239,7 @@ class FreelancerApp extends StatelessWidget {
         return '/client/dashboard';
       }
     }
-    return '/login';
+    return '/';
   }
 }
 
