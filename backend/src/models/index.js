@@ -14,6 +14,19 @@ import Notification from "./Notification.js";
 import Transaction from "./Transaction.js";
 import Chat from "./Chat.js";
 import ClientProfile from "./ClientProfile.js";
+import SkillTest from "./SkillTest.js";
+import UserSkillTest from "./UserSkillTest.js";
+import Badge from "./Badge.js"; 
+import UserBadge from "./UserBadge.js";
+
+SkillTest.belongsTo(Badge, { foreignKey: 'badge_id' });
+Badge.hasMany(SkillTest, { foreignKey: 'badge_id' });
+
+UserSkillTest.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(UserSkillTest, { foreignKey: 'user_id' });
+
+UserSkillTest.belongsTo(SkillTest, { foreignKey: 'test_id' });
+SkillTest.hasMany(UserSkillTest, { foreignKey: 'test_id' });
 
 User.hasOne(ClientProfile, { foreignKey: "UserId" });
 ClientProfile.belongsTo(User, { foreignKey: "UserId" });
@@ -95,4 +108,8 @@ export {
   Transaction,
   Chat,
   ClientProfile,
+  SkillTest,
+  UserSkillTest,
+  Badge,
+  UserBadge,
 };

@@ -5,6 +5,7 @@ import 'package:freelancer_platform/screens/chat/chats_list_screen.dart';
 import 'package:freelancer_platform/screens/contract/my_contracts_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/edit_profile_screen.dart';
 import 'package:freelancer_platform/screens/notifications/notifications_screen.dart';
+import 'package:freelancer_platform/screens/skill_tests/skill_tests_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/freelancer_model.dart';
 import '../../models/project_model.dart';
@@ -302,7 +303,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 6, vsync: this);
+    tabController = TabController(length: 7, vsync: this);
 
     _loadAllData();
     _loadUnreadNotificationsCount();
@@ -636,6 +637,222 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
       ],
     );
   }
+
+  Widget _buildSkillTestsSection() {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.purple.shade400, Colors.blue.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.quiz,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Skill Tests',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Test your skills & earn badges',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'NEW',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _buildTestItem(
+                icon: Icons.code,
+                title: 'Programming Skills',
+                description: 'Test your coding abilities',
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SkillTestsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 24),
+              _buildTestItem(
+                icon: Icons.design_services,
+                title: 'Design Skills',
+                description: 'Showcase your creativity',
+                color: Colors.purple,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SkillTestsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 24),
+              _buildTestItem(
+                icon: Icons.trending_up,
+                title: 'Marketing Skills',
+                description: 'Digital marketing expertise',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SkillTestsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SkillTestsScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward, size: 18),
+                  label: const Text('View All Tests'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xff14A800),
+                    side: const BorderSide(color: Color(0xff14A800)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// دالة مساعدة لبناء عنصر الاختبار
+Widget _buildTestItem({
+  required IconData icon,
+  required String title,
+  required String description,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Icon(
+          Icons.chevron_right,
+          color: Colors.grey.shade400,
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildQuickStats() {
     final totalProposals = stats?['totalProposals'] ?? 0;
@@ -1611,6 +1828,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
             const SizedBox(height: 16),
 
             _buildProfileCompletionCard(),
+            _buildSkillTestsSection(),
             _buildQuickStats(),
 
             const SizedBox(height: 20),
@@ -1991,6 +2209,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
             Tab(text: "My Projects"),
             Tab(text: "Contracts"),
             Tab(text: "Messages"),
+            Tab(text: "Skill Tests"),
           ],
         ),
         actions: [
@@ -2112,6 +2331,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen>
               style: TextStyle(fontSize: 16),
             ),
           ),
+          const SkillTestsScreen(),
         ],
       ),
     );

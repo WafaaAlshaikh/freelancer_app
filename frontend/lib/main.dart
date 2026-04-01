@@ -11,6 +11,7 @@ import 'package:freelancer_platform/screens/chat/chat_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
 import 'package:freelancer_platform/screens/landing/landing_screen.dart';
 import 'package:freelancer_platform/screens/payment/payment_screen.dart';
+import 'package:freelancer_platform/screens/skill_tests/test_results_screen.dart';
 import 'package:freelancer_platform/screens/wallet/wallet_screen.dart';
 import 'package:freelancer_platform/screens/workspace/add_reminder_screen.dart';
 import 'package:freelancer_platform/screens/workspace/connect_github_screen.dart';
@@ -220,6 +221,16 @@ class FreelancerApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>?;
             return MaterialPageRoute(
               builder: (_) => AIChatScreen(projectId: args?['projectId']),
+            );
+
+          case '/test-results':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => TestResultsScreen(
+                userTestId: args['userTestId'],
+                test: args['test'],
+                result: args['result'],
+              ),
             );
 
           default:

@@ -28,8 +28,9 @@ import profileRoutes from "./src/routes/profileRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
 import landingRoutes from "./src/routes/landingRoutes.js";
 import adminLandingRoutes from "./src/routes/adminLandingRoutes.js";
-import { seedLandingData } from "./src/seed/landingData.js";
+import seedSkillTests from "./src/seed/seedSkillTests.js";
 import { protect, authorizeRoles } from "./src/middleware/authMiddleware.js";
+import skillTestRoutes from "./src/routes/skillTestRoutes.js";
 
 dotenv.config();
 
@@ -142,6 +143,7 @@ app.use("/api/client/dashboard", dashboardRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/landing", landingRoutes);
+app.use("/api/skill-tests", skillTestRoutes);
 app.use(
   "/api/admin/landing",
   protect,
@@ -179,8 +181,8 @@ async function startServer() {
     await sequelize.sync({ alter: true });
     console.log("✅ Tables synced with database");
 
-    await seedLandingData();
-    console.log("✅ Landing page data seeded");
+    // await seedSkillTests();
+    // console.log("✅ Skill test data seeded");
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
