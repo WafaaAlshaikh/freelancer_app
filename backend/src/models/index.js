@@ -16,17 +16,28 @@ import Chat from "./Chat.js";
 import ClientProfile from "./ClientProfile.js";
 import SkillTest from "./SkillTest.js";
 import UserSkillTest from "./UserSkillTest.js";
-import Badge from "./Badge.js"; 
+import Badge from "./Badge.js";
 import UserBadge from "./UserBadge.js";
+import SubscriptionPlan from "./SubscriptionPlan.js";
+import UserSubscription from "./UserSubscription.js";
+import Coupon from "./Coupon.js";
+import Invoice from "./Invoice.js";
+import SubscriptionLog from "./SubscriptionLog.js";
 
-SkillTest.belongsTo(Badge, { foreignKey: 'badge_id' });
-Badge.hasMany(SkillTest, { foreignKey: 'badge_id' });
+User.hasOne(UserSubscription, { foreignKey: "user_id" });
+UserSubscription.belongsTo(User, { foreignKey: "user_id" });
 
-UserSkillTest.belongsTo(User, { foreignKey: 'user_id' });
-User.hasMany(UserSkillTest, { foreignKey: 'user_id' });
+SubscriptionPlan.hasMany(UserSubscription, { foreignKey: "plan_id" });
+UserSubscription.belongsTo(SubscriptionPlan, { foreignKey: "plan_id" });
 
-UserSkillTest.belongsTo(SkillTest, { foreignKey: 'test_id' });
-SkillTest.hasMany(UserSkillTest, { foreignKey: 'test_id' });
+SkillTest.belongsTo(Badge, { foreignKey: "badge_id" });
+Badge.hasMany(SkillTest, { foreignKey: "badge_id" });
+
+UserSkillTest.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(UserSkillTest, { foreignKey: "user_id" });
+
+UserSkillTest.belongsTo(SkillTest, { foreignKey: "test_id" });
+SkillTest.hasMany(UserSkillTest, { foreignKey: "test_id" });
 
 User.hasOne(ClientProfile, { foreignKey: "UserId" });
 ClientProfile.belongsTo(User, { foreignKey: "UserId" });
@@ -112,4 +123,9 @@ export {
   UserSkillTest,
   Badge,
   UserBadge,
+  SubscriptionPlan,
+  UserSubscription,
+  Coupon,
+  Invoice,
+  SubscriptionLog,
 };

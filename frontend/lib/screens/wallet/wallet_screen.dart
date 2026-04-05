@@ -1,4 +1,5 @@
 // lib/screens/wallet/wallet_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../services/api_service.dart';
@@ -6,7 +7,7 @@ import '../../models/wallet_model.dart';
 import '../../models/transaction_model.dart';
 
 class WalletScreen extends StatefulWidget {
-  final String userRole; 
+  final String userRole;
   const WalletScreen({super.key, required this.userRole});
 
   @override
@@ -130,7 +131,6 @@ class _WalletScreenState extends State<WalletScreen> {
         Fluttertoast.showToast(msg: '✅ Withdrawal request submitted');
         _loadWallet();
       } else if (response['requiresOnboarding'] == true) {
-        // TODO: Open Stripe Connect onboarding
         Fluttertoast.showToast(msg: 'Please complete Stripe account setup');
       } else {
         Fluttertoast.showToast(msg: response['message'] ?? 'Error');
@@ -138,62 +138,69 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Wallet'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadWallet,
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionCard(
+            icon: Icons.arrow_downward,
+            label: 'Withdraw',
+            color: Colors.orange,
+            onTap: _requestWithdrawal,
           ),
-        ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildActionCard(
+            icon: Icons.shopping_bag,
+            label: 'Boost',
+            color: Colors.purple,
+            onTap: () {
+              Navigator.pushNamed(context, '/features/shop');
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildActionCard(
+            icon: Icons.history,
+            label: 'History',
+            color: Colors.blue,
+            onTap: () {
+              // TODO: Show transaction history
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : wallet == null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.account_balance_wallet,
-                        size: 64,
-                        color: Colors.grey.shade300,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No wallet found',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadWallet,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildBalanceCard(),
-                        const SizedBox(height: 24),
-
-                        _buildActionButtons(),
-                        const SizedBox(height: 24),
-
-                        _buildTransactionsSection(),
-                      ],
-                    ),
-                  ),
-                ),
     );
   }
 
@@ -219,10 +226,7 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           const Text(
             'Total Balance',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 8),
           Text(
@@ -262,10 +266,7 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget _buildBalanceStat(String label, String value, Color color) {
     return Column(
       children: [
-        Text(
-          label,
-          style: TextStyle(color: color, fontSize: 12),
-        ),
+        Text(label, style: TextStyle(color: color, fontSize: 12)),
         const SizedBox(height: 4),
         Text(
           value,
@@ -276,60 +277,6 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionCard(
-            icon: Icons.arrow_downward,
-            label: 'Withdraw',
-            color: Colors.orange,
-            onTap: _requestWithdrawal,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionCard(
-            icon: Icons.history,
-            label: 'History',
-            color: Colors.blue,
-            onTap: () {
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(color: color, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -376,10 +323,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   color: tx.typeColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Text(
-                  tx.typeIcon,
-                  style: const TextStyle(fontSize: 20),
-                ),
+                child: Text(tx.typeIcon, style: const TextStyle(fontSize: 20)),
               ),
               title: Text(
                 tx.typeText,
@@ -433,5 +377,56 @@ class _WalletScreenState extends State<WalletScreen> {
     } else {
       return 'Just now';
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Wallet'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadWallet),
+        ],
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : wallet == null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet,
+                    size: 64,
+                    color: Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No wallet found',
+                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadWallet,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildBalanceCard(),
+                    const SizedBox(height: 24),
+                    _buildActionButtons(),
+                    const SizedBox(height: 24),
+                    _buildTransactionsSection(),
+                  ],
+                ),
+              ),
+            ),
+    );
   }
 }

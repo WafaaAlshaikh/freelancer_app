@@ -1,6 +1,8 @@
-// screens/freelancer/my_proposals_screen.dart
+// lib/screens/freelancer/my_proposals_screen.dart
+
 import 'package:flutter/material.dart';
 import '../../models/proposal_model.dart';
+import '../../models/usage_limits_model.dart';
 import '../../services/api_service.dart';
 import 'project_details_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -21,12 +23,39 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
   List<Proposal> rejectedProposals = [];
 
   bool loading = true;
+  bool _loadingUsage = true;
+  UsageLimits? _usage;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     fetchProposals();
+    _loadUsage();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadUsage() async {
+    setState(() => _loadingUsage = true);
+    try {
+      final response = await ApiService.getUserUsage();
+      if (response['usage'] != null) {
+        setState(() {
+          _usage = UsageLimits.fromJson(response['usage']);
+          _loadingUsage = false;
+        });
+      } else {
+        setState(() => _loadingUsage = false);
+      }
+    } catch (e) {
+      print('Error loading usage: $e');
+      setState(() => _loadingUsage = false);
+    }
   }
 
   Future<void> fetchProposals() async {
@@ -54,6 +83,108 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
       setState(() => loading = false);
       Fluttertoast.showToast(msg: "Error loading proposals");
     }
+  }
+
+  Widget _buildProposalsLimitIndicator() {
+    if (_loadingUsage || _usage == null) return const SizedBox.shrink();
+    if (_usage!.proposalsLimit == null) return const SizedBox.shrink();
+
+    final percentage = _usage!.proposalsProgress;
+    final remaining = _usage!.remainingProposals;
+    final isLimitReached = remaining <= 0;
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isLimitReached ? Colors.red.shade50 : Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isLimitReached ? Colors.red.shade200 : Colors.blue.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Proposals This Month',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isLimitReached ? Colors.red : Colors.blue.shade700,
+                ),
+              ),
+              Text(
+                '${_usage!.proposalsUsed} / ${_usage!.proposalsLimit}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isLimitReached ? Colors.red : Colors.blue.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: percentage.clamp(0.0, 1.0),
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation(
+                isLimitReached ? Colors.red : Colors.blue,
+              ),
+              minHeight: 6,
+            ),
+          ),
+          if (isLimitReached)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning, size: 14, color: Colors.red),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'You have reached your proposal limit for this month. '
+                      'Upgrade your plan to submit more proposals.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/subscription/plans');
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Upgrade',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (remaining <= 2)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'You have $remaining proposal${remaining > 1 ? 's' : ''} remaining this month.',
+                style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -116,13 +247,20 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                 ],
               ),
             )
-          : TabBarView(
-              controller: _tabController,
+          : Column(
               children: [
-                _buildProposalsList(proposals),
-                _buildProposalsList(pendingProposals),
-                _buildProposalsList(acceptedProposals),
-                _buildProposalsList(rejectedProposals),
+                _buildProposalsLimitIndicator(),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildProposalsList(proposals),
+                      _buildProposalsList(pendingProposals),
+                      _buildProposalsList(acceptedProposals),
+                      _buildProposalsList(rejectedProposals),
+                    ],
+                  ),
+                ),
               ],
             ),
     );
@@ -131,9 +269,16 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
   Widget _buildProposalsList(List<Proposal> proposalsList) {
     if (proposalsList.isEmpty) {
       return Center(
-        child: Text(
-          "No proposals in this category",
-          style: TextStyle(color: Colors.grey.shade600),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              "No proposals in this category",
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            ),
+          ],
         ),
       );
     }
@@ -387,11 +532,5 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
     } else {
       return 'Just now';
     }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 }

@@ -1,6 +1,7 @@
 // screens/freelancer/project_details_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:freelancer_platform/models/usage_limits_model.dart';
 import '../../models/project_model.dart';
 import '../../services/api_service.dart';
 import 'submit_proposal_screen.dart';
@@ -22,6 +23,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   bool loadingPricing = false;
   Map<String, dynamic>? smartPricing;
   bool showSmartPricing = false;
+  UsageLimits? _usage;
+
+  Future<void> _loadUsage() async {
+    final response = await ApiService.getUserUsage();
+    if (response['success'] && response['usage'] != null) {
+      setState(() {
+        _usage = UsageLimits.fromJson(response['usage']);
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -29,6 +40,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     fetchProjectDetails();
     checkExistingProposal();
     _loadSmartPricing();
+    _loadUsage();
   }
 
   Future<void> _loadSmartPricing() async {
@@ -582,6 +594,24 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
 
                   const SizedBox(height: 24),
+                  if (_usage != null && _usage!.proposalsLimit != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Proposals remaining this month: ${_usage!.remainingProposals}',
+                      style: TextStyle(
+                        color: _usage!.remainingProposals <= 0
+                            ? Colors.red
+                            : Colors.green,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (_usage!.remainingProposals <= 0)
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/subscription/plans'),
+                        child: const Text('Upgrade to send more proposals'),
+                      ),
+                  ],
 
                   if (!hasSubmitted && project!.status == 'open')
                     SizedBox(

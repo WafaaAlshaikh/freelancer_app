@@ -7,6 +7,7 @@ import {
   Wallet,
   Message,
   User,
+  Transaction,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import multer from "multer";

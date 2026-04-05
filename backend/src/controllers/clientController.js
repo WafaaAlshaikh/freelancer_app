@@ -15,6 +15,7 @@ import {
 import ContractService from "../services/contractService.js";
 import NotificationService from "../services/notificationService.js";
 import PaymentService from "../services/paymentService.js";
+import SubscriptionService from "../services/subscriptionService.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
@@ -516,6 +517,7 @@ export const completeProject = async (req, res) => {
     }
 
     await project.update({ status: "completed" });
+    await SubscriptionService.decrementActiveProjectsCount(req.user.id);
 
     const contract = await Contract.findOne({
       where: { ProjectId: projectId },
@@ -527,6 +529,7 @@ export const completeProject = async (req, res) => {
         end_date: new Date(),
       });
     }
+    await SubscriptionService.decrementActiveProjectsCount(req.user.id);
 
     res.json({
       message: "✅ Project completed successfully",
@@ -709,6 +712,8 @@ export const acceptProposalWithNegotiation = async (req, res) => {
       terms: "AI-generated contract with industry-specific clauses",
       milestones: JSON.stringify(finalMilestones),
     });
+
+    await SubscriptionService.incrementActiveProjectsCount(req.user.id);
 
     const paymentIntent = await PaymentService.createEscrowPaymentIntent(
       contract.id,

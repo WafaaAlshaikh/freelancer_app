@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:freelancer_platform/models/usage_limits_model.dart';
 import 'enhanced_client_profile_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -156,6 +157,7 @@ class _ProposalItem {
   final String? freelancerTitle;
   final double? freelancerRating;
   final List<String> skills;
+  UsageLimits? _usage;
 
   _ProposalItem({
     required this.id,
@@ -429,6 +431,8 @@ class _ClientDashboardState extends State<ClientDashboard>
   bool _loadingSuggestions = true;
   int _touchedIndex = -1;
   Timer? _refreshTimer;
+  UsageLimits? _usage;
+  bool _loadingUsage = true;
 
   static const Color _primary = Color(0xFF6366F1);
   static const Color _primaryDark = Color(0xFF4F46E5);
@@ -441,6 +445,24 @@ class _ClientDashboardState extends State<ClientDashboard>
   static const Color _gray = Color(0xFF6B7280);
   static const Color _lightGray = Color(0xFFF9FAFB);
 
+  Future<void> _loadUsage() async {
+    setState(() => _loadingUsage = true);
+    try {
+      final response = await ApiService.getUserUsage();
+      if (response['usage'] != null && mounted) {
+        setState(() {
+          _usage = UsageLimits.fromJson(response['usage']);
+          _loadingUsage = false;
+        });
+      } else {
+        setState(() => _loadingUsage = false);
+      }
+    } catch (e) {
+      print('Error loading usage: $e');
+      if (mounted) setState(() => _loadingUsage = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -448,6 +470,7 @@ class _ClientDashboardState extends State<ClientDashboard>
     _loadDashboard();
     _loadMyProjects();
     _loadUnread();
+    _loadUsage();
     _refreshTimer = Timer.periodic(
       const Duration(seconds: 60),
       (_) => _loadDashboard(silent: true),
@@ -458,6 +481,120 @@ class _ClientDashboardState extends State<ClientDashboard>
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();
+  }
+
+  Widget _buildActiveProjectsLimitIndicator() {
+    if (_usage == null) return const SizedBox.shrink();
+    if (_usage!.activeProjectsLimit == null) return const SizedBox.shrink();
+
+    final remaining = _usage!.remainingActiveProjects;
+    final used = _usage!.activeProjectsUsed;
+    final limit = _usage!.activeProjectsLimit!;
+    final isLimitReached = remaining <= 0;
+    final isNearLimit = remaining <= 2 && remaining > 0;
+
+    if (!isLimitReached && !isNearLimit) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isLimitReached ? Colors.red.shade50 : Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isLimitReached ? Colors.red.shade200 : Colors.orange.shade200,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isLimitReached
+                  ? Colors.red.shade100
+                  : Colors.orange.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              isLimitReached ? Icons.block : Icons.warning,
+              size: 20,
+              color: isLimitReached ? Colors.red : Colors.orange,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isLimitReached
+                      ? 'Active Projects Limit Reached'
+                      : 'Approaching Active Projects Limit',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: isLimitReached ? Colors.red : Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isLimitReached
+                      ? 'You have reached the maximum of $limit active projects on your current plan.'
+                      : 'You have $remaining project${remaining > 1 ? 's' : ''} remaining out of $limit.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isLimitReached
+                        ? Colors.red.shade700
+                        : Colors.orange.shade700,
+                  ),
+                ),
+                if (isLimitReached) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: used / limit,
+                          backgroundColor: Colors.red.shade100,
+                          valueColor: const AlwaysStoppedAnimation(Colors.red),
+                          minHeight: 6,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/subscription/plans');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isLimitReached
+                            ? Colors.red
+                            : Colors.orange,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Upgrade Plan',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadClientProfile() async {
@@ -799,7 +936,6 @@ class _ClientDashboardState extends State<ClientDashboard>
     );
   }
 
-  // ========== UI Components ==========
   Widget _buildHeader() {
     final greeting = _getGreeting();
     final firstName = _clientProfile?.name?.split(' ').first ?? 'User';
@@ -906,6 +1042,10 @@ class _ClientDashboardState extends State<ClientDashboard>
               ),
               _buildIconButton(Icons.search, _showSearchDialog),
               const SizedBox(width: 8),
+              _buildIconButton(Icons.subscriptions, () {
+                Navigator.pushNamed(context, '/subscription/plans');
+              }, iconColor: const Color(0xff14A800)),
+              const SizedBox(width: 8),
               _buildIconButtonWithBadge(Icons.notifications_none, () async {
                 await Navigator.push(
                   context,
@@ -916,6 +1056,13 @@ class _ClientDashboardState extends State<ClientDashboard>
               }, badgeCount: _unread),
               const SizedBox(width: 8),
               _buildIconButton(Icons.more_vert, _showMenuDialog),
+              IconButton(
+                icon: const Icon(Icons.account_balance_wallet),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/wallet', arguments: 'client');
+                },
+                tooltip: 'Wallet',
+              ),
             ],
           ),
         ),
@@ -1408,6 +1555,13 @@ class _ClientDashboardState extends State<ClientDashboard>
     }
   }
 
+  Widget _buildOverview() {
+    final d = _data;
+    if (d == null) return const SizedBox();
+
+    return _buildRefreshableBody();
+  }
+
   Widget _buildRefreshableBody() {
     return RefreshIndicator(
       color: _primary,
@@ -1417,6 +1571,7 @@ class _ClientDashboardState extends State<ClientDashboard>
           _loadMyProjects(),
           _loadClientProfile(),
           _loadUnread(),
+          _loadUsage(),
         ]);
       },
       child: CustomScrollView(
@@ -1424,6 +1579,7 @@ class _ClientDashboardState extends State<ClientDashboard>
           SliverToBoxAdapter(
             child: Column(
               children: [
+                _buildActiveProjectsLimitIndicator(),
                 _buildHeader(),
                 _buildQuickActions(),
                 if (_calculateProfileCompletion() < 100)
@@ -1446,12 +1602,6 @@ class _ClientDashboardState extends State<ClientDashboard>
         ],
       ),
     );
-  }
-
-  Widget _buildOverview() {
-    final d = _data;
-    if (d == null) return const SizedBox();
-    return _buildRefreshableBody();
   }
 
   Widget _buildAISection() {

@@ -64,7 +64,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== Header ====================
   Widget _buildHeader(bool isMobile) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -128,8 +127,6 @@ class _LandingScreenState extends State<LandingScreen> {
       ),
     );
   }
-
-  // ==================== Hero Section ====================
 
   Widget _buildHeroSection(bool isMobile) {
     final hero = landingData?.hero;
@@ -348,7 +345,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== Features Section ====================
   Widget _buildFeaturesSection(bool isMobile) {
     final features = landingData?.features;
     final featuresList = features?.content != null
@@ -464,7 +460,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== How It Works ====================
   Widget _buildHowItWorksSection(bool isMobile) {
     final howItWorks = landingData?.howItWorks;
     final steps = howItWorks?.content != null
@@ -582,7 +577,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== Stats Section ====================
   Widget _buildStatsSection() {
     final stats = landingData?.stats;
     return Container(
@@ -632,7 +626,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== Testimonials ====================
   Widget _buildTestimonialsSection() {
     final testimonials = landingData?.testimonials;
     if (testimonials == null || testimonials.isEmpty) {
@@ -741,7 +734,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== CTA Section ====================
   Widget _buildCTASection() {
     final cta = landingData?.cta;
     return Container(
@@ -795,7 +787,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== Footer ====================
   Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 48),
@@ -907,7 +898,6 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  // ==================== Default Data ====================
   List<Map<String, dynamic>> _defaultFeatures() {
     return [
       {

@@ -21,7 +21,7 @@ const User = sequelize.define("User", {
   role: {
     type: DataTypes.ENUM("admin", "client", "freelancer"),
   },
-  
+
   avatar: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -30,7 +30,19 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  
+  proposal_count_this_month: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  proposal_reset_date: {
+    type: DataTypes.DATE,
+    defaultValue: () => new Date(new Date().setDate(1)),
+  },
+  active_projects_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+
   tagline: {
     type: DataTypes.STRING(160),
     allowNull: true,
@@ -39,7 +51,7 @@ const User = sequelize.define("User", {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  
+
   location: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -56,7 +68,7 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  
+
   website: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -73,7 +85,7 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  
+
   is_verified: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
@@ -86,7 +98,7 @@ const User = sequelize.define("User", {
     type: DataTypes.ENUM("basic", "verified", "trusted", "premium"),
     defaultValue: "basic",
   },
-  
+
   verification_code: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -103,7 +115,7 @@ const User = sequelize.define("User", {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  
+
   last_seen: {
     type: DataTypes.DATE,
     allowNull: true,
@@ -120,7 +132,7 @@ const User = sequelize.define("User", {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
-  
+
   email_notifications: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
@@ -133,7 +145,7 @@ const User = sequelize.define("User", {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  
+
   preferred_language: {
     type: DataTypes.STRING,
     defaultValue: "en",
@@ -142,7 +154,7 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     defaultValue: "USD",
   },
-  
+
   account_status: {
     type: DataTypes.ENUM("active", "inactive", "suspended", "deleted"),
     defaultValue: "active",
@@ -151,7 +163,7 @@ const User = sequelize.define("User", {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
-  
+
   member_since: {
     type: DataTypes.DATE,
     allowNull: true,
@@ -160,7 +172,7 @@ const User = sequelize.define("User", {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
-  
+
   google_id: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -173,7 +185,7 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  
+
   referral_code: {
     type: DataTypes.STRING,
     allowNull: true,

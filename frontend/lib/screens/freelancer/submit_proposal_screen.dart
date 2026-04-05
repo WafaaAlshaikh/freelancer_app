@@ -1,5 +1,6 @@
 // screens/freelancer/submit_proposal_screen.dart
 import 'package:flutter/material.dart';
+import 'package:freelancer_platform/models/usage_limits_model.dart';
 import '../../models/project_model.dart';
 import '../../services/api_service.dart';
 import '../../widgets/milestone_editor.dart';
@@ -35,6 +36,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
   bool loadingMilestones = false;
   Map<String, dynamic>? projectAnalysis;
   bool showAIMilestones = false;
+  bool _checkingLimits = false;
 
   @override
   void initState() {
@@ -428,6 +430,22 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
     }
 
     setState(() => loading = true);
+    setState(() => _checkingLimits = true);
+    final usageResponse = await ApiService.getUserUsage();
+    setState(() => _checkingLimits = false);
+
+    if (usageResponse['usage'] != null) {
+      final usage = UsageLimits.fromJson(usageResponse['usage']);
+      if (!usage.canSubmitProposal) {
+        Fluttertoast.showToast(
+          msg:
+              'You have reached your proposal limit. Please upgrade to submit more proposals.',
+          timeInSecForIosWeb: 3,
+          backgroundColor: Colors.red,
+        );
+        return;
+      }
+    }
 
     try {
       final result = await ApiService.submitProposal(

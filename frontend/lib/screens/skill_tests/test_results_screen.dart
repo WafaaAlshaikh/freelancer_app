@@ -32,7 +32,6 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
 
   Future<void> _loadDetailedResults() async {
     setState(() => _loading = true);
-    // يمكن إضافة API لجلب التفاصيل الكاملة للنتائج
     setState(() => _loading = false);
   }
 
@@ -50,10 +49,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: _shareResults,
-          ),
+          IconButton(icon: const Icon(Icons.share), onPressed: _shareResults),
         ],
       ),
       body: _loading
@@ -173,7 +169,9 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
             value: percentage / 100,
             backgroundColor: Colors.grey.shade200,
             valueColor: AlwaysStoppedAnimation(
-              percentage >= widget.test.passingScore ? Colors.green : Colors.red,
+              percentage >= widget.test.passingScore
+                  ? Colors.green
+                  : Colors.red,
             ),
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
@@ -200,10 +198,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         Text(
           label,
@@ -219,15 +214,21 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Color(int.parse(badge.color.replaceFirst('#', '0xff'))).withOpacity(0.1),
-            Color(int.parse(badge.color.replaceFirst('#', '0xff'))).withOpacity(0.05),
+            Color(
+              int.parse(badge.color.replaceFirst('#', '0xff')),
+            ).withOpacity(0.1),
+            Color(
+              int.parse(badge.color.replaceFirst('#', '0xff')),
+            ).withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Color(int.parse(badge.color.replaceFirst('#', '0xff'))).withOpacity(0.3),
+          color: Color(
+            int.parse(badge.color.replaceFirst('#', '0xff')),
+          ).withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -235,7 +236,9 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Color(int.parse(badge.color.replaceFirst('#', '0xff'))).withOpacity(0.2),
+              color: Color(
+                int.parse(badge.color.replaceFirst('#', '0xff')),
+              ).withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -253,7 +256,9 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
                   'New Badge Earned!',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(int.parse(badge.color.replaceFirst('#', '0xff'))),
+                    color: Color(
+                      int.parse(badge.color.replaceFirst('#', '0xff')),
+                    ),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -268,10 +273,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
                 if (badge.description != null)
                   Text(
                     badge.description!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
               ],
             ),
@@ -442,7 +444,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
             child: ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.pop(context); // العودة إلى شاشة الاختبارات
+                Navigator.pop(context);
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Try Again'),

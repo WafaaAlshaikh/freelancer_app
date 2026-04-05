@@ -7,17 +7,25 @@ import 'package:http/http.dart';
 import '../utils/constants.dart';
 import '../utils/token_storage.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:flutter/foundation.dart';
+import '../models/subscription_plan_model.dart';
+import '../models/coupon_model.dart';
+import '../models/subscription_stats_model.dart';
 
 class ApiService {
   static String? token;
-  static String get baseUrl => BASE_URL;
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:5001/api';
+    }
+    return BASE_URL;
+  }
 
   static Map<String, String> get headers => {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer $token',
   };
 
-  // ===== Auth APIs =====
   static Future<Map<String, dynamic>> signup(
     String name,
     String email,
@@ -114,8 +122,6 @@ class ApiService {
       return {'message': 'Connection error: $e'};
     }
   }
-
-  // ===== Client APIs =====
 
   static Future<Map<String, dynamic>> getClientDashboardOverview() async {
     try {
@@ -345,7 +351,6 @@ class ApiService {
     }
   }
 
-  // ===== Portfolio APIs =====
   static Future<List<dynamic>> getPortfolio(int? userId) async {
     if (userId == null) return [];
 
@@ -767,7 +772,6 @@ class ApiService {
     }
   }
 
-  // ===== Contract APIs =====
   static Future<Map<String, dynamic>> getContract(int contractId) async {
     try {
       final response = await http.get(
@@ -890,7 +894,6 @@ class ApiService {
     }
   }
 
-  // ===== Rating APIs =====
   static Future<Map<String, dynamic>> addRating({
     required int contractId,
     required int rating,
@@ -996,7 +999,6 @@ class ApiService {
     }
   }
 
-  // ===== GitHub APIs =====
   static Future<Map<String, dynamic>> connectGithubRepo({
     required int contractId,
     required String repoUrl,
@@ -1070,7 +1072,6 @@ class ApiService {
     }
   }
 
-  // ===== Notification APIs =====
   static Future<Map<String, dynamic>> getNotifications({
     int limit = 50,
     int offset = 0,
@@ -1132,8 +1133,6 @@ class ApiService {
       print('Error deleting notification: $e');
     }
   }
-
-  // ===== Payment & Wallet APIs =====
 
   static Future<Map<String, dynamic>> startNegotiation(int proposalId) async {
     try {
@@ -1695,6 +1694,507 @@ class ApiService {
       );
     } catch (e) {
       print('❌ Error clearing chat history: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSubscriptionPlans() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/subscription/plans'),
+        headers: headers,
+      );
+
+      print('📡 Subscription plans response status: ${response.statusCode}');
+      print('📡 Subscription plans response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('📡 Parsed data: $data');
+        return data;
+      } else {
+        print('❌ Error response: ${response.body}');
+        return {'success': false, 'plans': []};
+      }
+    } catch (e) {
+      print('❌ Error getting subscription plans: $e');
+      return {'success': false, 'plans': []};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserSubscription() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/subscription/me'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting user subscription: $e');
+      return {'success': false, 'subscription': null};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createSubscriptionCheckout(
+    String planSlug,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/checkout'),
+        headers: headers,
+        body: jsonEncode({'planSlug': planSlug}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating checkout session: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createSubscriptionPaymentIntent(
+    String planSlug,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/payment-intent'),
+        headers: headers,
+        body: jsonEncode({'planSlug': planSlug}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating subscription payment intent: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> confirmSubscriptionPayment({
+    required String planSlug,
+    required String paymentIntentId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/confirm-payment'),
+        headers: headers,
+        body: jsonEncode({
+          'planSlug': planSlug,
+          'paymentIntentId': paymentIntentId,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error confirming subscription payment: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<String?> createSubscriptionCheckoutSession({
+    required String planSlug,
+    required String paymentIntentId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/checkout-session'),
+        headers: headers,
+        body: jsonEncode({'planSlug': 'business'}),
+      );
+
+      final data = jsonDecode(response.body);
+      return data['checkoutUrl'];
+    } catch (e) {
+      print('Error creating subscription checkout session: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> manualConfirmSubscriptionPayment(
+    String planSlug,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/manual-confirm'),
+        headers: headers,
+        body: jsonEncode({'planSlug': planSlug}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error in manualConfirmSubscriptionPayment: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<String?> createSubscriptionCheckoutSessionDirect(
+    String planSlug, {
+    String? couponCode,
+  }) async {
+    final body = {'planSlug': planSlug};
+    if (couponCode != null) body['couponCode'] = couponCode;
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/checkout-session'),
+        headers: headers,
+        body: jsonEncode({'planSlug': planSlug}),
+      );
+
+      final data = jsonDecode(response.body);
+      print('🔍 Checkout session response: $data');
+      return data['checkoutUrl'];
+    } catch (e) {
+      print('Error creating subscription checkout session: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> confirmCheckoutSession(
+    String sessionId,
+  ) async {
+    try {
+      print('🔐 confirmCheckoutSession called with sessionId: $sessionId');
+
+      final token = await TokenStorage.getToken();
+      print('🔐 Token exists: ${token != null}');
+
+      if (token == null) {
+        print('❌ No token found, user might not be logged in');
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final url = '$BASE_URL/subscription/confirm-checkout';
+      print('🔐 Request URL: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'session_id': sessionId}),
+      );
+
+      print('🔐 Response status: ${response.statusCode}');
+      print('🔐 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('❌ Error confirming checkout: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> refreshUserSubscription() async {
+    try {
+      final token = await TokenStorage.getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/subscription/my'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('🔄 Refresh subscription response: ${response.body}');
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error refreshing subscription: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> cancelSubscription() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/cancel'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error canceling subscription: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getFeaturePrices() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/features/prices'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting feature prices: $e');
+      return {'success': false, 'prices': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserUsage() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/user/usage'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting user usage: $e');
+      return {'success': false, 'usage': null};
+    }
+  }
+
+  static Future<Map<String, dynamic>> manualActivateSubscription(
+    String planSlug,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription-dev/manual-activate'),
+        headers: headers,
+        body: jsonEncode({'planSlug': planSlug}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error in manual activation: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> refreshSubscription() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/subscription/me'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error refreshing subscription: $e');
+      return {'success': false, 'subscription': null};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminSubscriptionStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/admin/subscription/stats'),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false, 'stats': {}};
+    } catch (e) {
+      print('Error getting subscription stats: $e');
+      return {'success': false, 'stats': {}};
+    }
+  }
+
+  static Future<List<SubscriptionPlan>> getAdminPlans() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/admin/subscription/plans'),
+        headers: headers,
+      );
+      print('📡 getAdminPlans status: ${response.statusCode}');
+      print('📡 getAdminPlans body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> plansJson = data['plans'];
+        return plansJson.map((json) {
+          try {
+            return SubscriptionPlan.fromJson(json);
+          } catch (e) {
+            print('❌ Error parsing plan: $e, JSON: $json');
+            rethrow;
+          }
+        }).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error getting admin plans: $e');
+      return [];
+    }
+  }
+
+  static Future<SubscriptionPlan?> createPlan(SubscriptionPlan plan) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/subscription/plans'),
+        headers: headers,
+        body: jsonEncode(plan.toJson()),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return SubscriptionPlan.fromJson(data['plan']);
+      }
+      return null;
+    } catch (e) {
+      print('Error creating plan: $e');
+      return null;
+    }
+  }
+
+  static Future<SubscriptionPlan?> updatePlan(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/admin/subscription/plans/$id'),
+        headers: headers,
+        body: jsonEncode(data),
+      );
+      if (response.statusCode == 200) {
+        final dataJson = jsonDecode(response.body);
+        return SubscriptionPlan.fromJson(dataJson['plan']);
+      }
+      return null;
+    } catch (e) {
+      print('Error updating plan: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> deletePlan(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$BASE_URL/admin/subscription/plans/$id'),
+        headers: headers,
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error deleting plan: $e');
+      return false;
+    }
+  }
+
+  static Future<List<Coupon>> getAdminCoupons({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/admin/subscription/coupons?page=$page&limit=$limit',
+        ),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> couponsJson = data['coupons'];
+        return couponsJson.map((json) => Coupon.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error getting coupons: $e');
+      return [];
+    }
+  }
+
+  static Future<Coupon?> createCoupon(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/subscription/coupons'),
+        headers: headers,
+        body: jsonEncode(data),
+      );
+      if (response.statusCode == 200) {
+        final dataJson = jsonDecode(response.body);
+        return Coupon.fromJson(dataJson['coupon']);
+      }
+      return null;
+    } catch (e) {
+      print('Error creating coupon: $e');
+      return null;
+    }
+  }
+
+  static Future<Coupon?> updateCoupon(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/admin/subscription/coupons/$id'),
+        headers: headers,
+        body: jsonEncode(data),
+      );
+      if (response.statusCode == 200) {
+        final dataJson = jsonDecode(response.body);
+        return Coupon.fromJson(dataJson['coupon']);
+      }
+      return null;
+    } catch (e) {
+      print('Error updating coupon: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> deleteCoupon(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$BASE_URL/admin/subscription/coupons/$id'),
+        headers: headers,
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error deleting coupon: $e');
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> purchaseFeature(
+    String feature, {
+    int? entityId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$BASE_URL/features/purchase'),
+      headers: headers,
+      body: jsonEncode({'feature': feature, 'entityId': entityId}),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getAffiliateInfo() async {
+    final response = await http.get(
+      Uri.parse('$BASE_URL/affiliate/info'),
+      headers: headers,
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> validateCoupon(
+    String code,
+    String planSlug,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/subscription/validate-coupon'),
+        headers: headers,
+        body: jsonEncode({'code': code, 'planSlug': planSlug}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error validating coupon: $e');
+      return {'valid': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getInvoices({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/invoices?page=$page&limit=$limit'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false, 'invoices': []};
+    } catch (e) {
+      print('Error getting invoices: $e');
+      return {'success': false, 'invoices': []};
     }
   }
 }

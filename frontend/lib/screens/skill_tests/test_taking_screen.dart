@@ -22,7 +22,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
   bool _submitting = false;
   int _timeRemaining = 0;
   Timer? _timer;
-  bool _isTestStarted = false; // إضافة متغير لتتبع حالة بدء الاختبار
+  bool _isTestStarted = false;
 
   @override
   void initState() {
@@ -31,50 +31,47 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
     _startTest();
   }
 
-  // lib/screens/skill_tests/test_taking_screen.dart
-Future<void> _startTest() async {
-  if (!mounted) return;
-  
-  setState(() => _loading = true);
-  
-  try {
-    final result = await SkillTestService.startTest(widget.test.id);
-    
-    print('Start test result: $result'); // للتتبع
-    
-    if (result['success'] == true && result['userTestId'] != null) {
-      if (mounted) {
-        setState(() {
-          _userTestId = result['userTestId'];
-          _isTestStarted = true;
-          _loading = false;
-        });
-        _startTimer();
+  Future<void> _startTest() async {
+    if (!mounted) return;
+
+    setState(() => _loading = true);
+
+    try {
+      final result = await SkillTestService.startTest(widget.test.id);
+
+      print('Start test result: $result');
+
+      if (result['success'] == true && result['userTestId'] != null) {
+        if (mounted) {
+          setState(() {
+            _userTestId = result['userTestId'];
+            _isTestStarted = true;
+            _loading = false;
+          });
+          _startTimer();
+        }
+      } else {
+        if (mounted) {
+          setState(() => _loading = false);
+          final errorMsg = result['message'] ?? 'Failed to start test';
+          Fluttertoast.showToast(msg: errorMsg);
+
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          });
+        }
       }
-    } else {
-      // فشل بدء الاختبار
+    } catch (e) {
+      print('Error in _startTest: $e');
       if (mounted) {
         setState(() => _loading = false);
-        final errorMsg = result['message'] ?? 'Failed to start test';
-        Fluttertoast.showToast(msg: errorMsg);
-        
-        // العودة للشاشة السابقة بعد تأخير قصير
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            Navigator.pop(context);
-          }
-        });
+        Fluttertoast.showToast(msg: 'Error starting test: $e');
+        Navigator.pop(context);
       }
     }
-  } catch (e) {
-    print('Error in _startTest: $e');
-    if (mounted) {
-      setState(() => _loading = false);
-      Fluttertoast.showToast(msg: 'Error starting test: $e');
-      Navigator.pop(context);
-    }
   }
-}
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -102,7 +99,7 @@ Future<void> _startTest() async {
         'answer': answer,
       });
     });
-    
+
     if (_currentQuestionIndex < widget.test.questions.length - 1) {
       setState(() => _currentQuestionIndex++);
     } else {
@@ -111,7 +108,6 @@ Future<void> _startTest() async {
   }
 
   Future<void> _submitTest() async {
-    // التحقق من وجود userTestId
     if (_userTestId == null) {
       if (mounted) {
         Fluttertoast.showToast(msg: 'Test not properly initialized');
@@ -130,13 +126,13 @@ Future<void> _startTest() async {
 
       if (mounted) {
         setState(() => _submitting = false);
-        
+
         if (result['success'] == true) {
-          // إزالة Navigator.pop(context, true) هنا لأن _showResultDialog ستقوم بالتنقل
           _showResultDialog(result);
         } else {
-          Fluttertoast.showToast(msg: result['message'] ?? 'Error submitting test');
-          // إذا فشل الإرسال، نعود للشاشة السابقة
+          Fluttertoast.showToast(
+            msg: result['message'] ?? 'Error submitting test',
+          );
           Navigator.pop(context);
         }
       }
@@ -159,8 +155,10 @@ Future<void> _startTest() async {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(passed ? Icons.celebration : Icons.sentiment_dissatisfied,
-                color: passed ? Colors.green : Colors.red),
+            Icon(
+              passed ? Icons.celebration : Icons.sentiment_dissatisfied,
+              color: passed ? Colors.green : Colors.red,
+            ),
             const SizedBox(width: 8),
             Text(passed ? 'Test Passed!' : 'Test Completed'),
           ],
@@ -173,7 +171,9 @@ Future<void> _startTest() async {
             LinearProgressIndicator(
               value: percentage / 100,
               backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation(passed ? Colors.green : Colors.red),
+              valueColor: AlwaysStoppedAnimation(
+                passed ? Colors.green : Colors.red,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -188,18 +188,36 @@ Future<void> _startTest() async {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Color(int.parse(widget.test.badge!.color.replaceFirst('#', '0xff'))).withOpacity(0.1),
+                    color: Color(
+                      int.parse(
+                        widget.test.badge!.color.replaceFirst('#', '0xff'),
+                      ),
+                    ).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.emoji_events, color: Color(int.parse(widget.test.badge!.color.replaceFirst('#', '0xff')))),
+                      Icon(
+                        Icons.emoji_events,
+                        color: Color(
+                          int.parse(
+                            widget.test.badge!.color.replaceFirst('#', '0xff'),
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Badge: ${widget.test.badge!.name}',
                         style: TextStyle(
-                          color: Color(int.parse(widget.test.badge!.color.replaceFirst('#', '0xff'))),
+                          color: Color(
+                            int.parse(
+                              widget.test.badge!.color.replaceFirst(
+                                '#',
+                                '0xff',
+                              ),
+                            ),
+                          ),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -212,8 +230,8 @@ Future<void> _startTest() async {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // إغلاق الـ Dialog
-              Navigator.pop(context, true); // العودة للشاشة السابقة مع تحديث
+              Navigator.pop(context);
+              Navigator.pop(context, true);
             },
             child: const Text('Close'),
           ),
@@ -230,15 +248,10 @@ Future<void> _startTest() async {
 
   @override
   Widget build(BuildContext context) {
-    // التأكد من وجود الأسئلة
     if (widget.test.questions.isEmpty) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.test.name),
-        ),
-        body: const Center(
-          child: Text('No questions available for this test'),
-        ),
+        appBar: AppBar(title: Text(widget.test.name)),
+        body: const Center(child: Text('No questions available for this test')),
       );
     }
 
@@ -255,18 +268,26 @@ Future<void> _startTest() async {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _timeRemaining < 60 ? Colors.red.shade100 : Colors.grey.shade100,
+              color: _timeRemaining < 60
+                  ? Colors.red.shade100
+                  : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [
-                Icon(Icons.timer, size: 16, color: _timeRemaining < 60 ? Colors.red : Colors.grey),
+                Icon(
+                  Icons.timer,
+                  size: 16,
+                  color: _timeRemaining < 60 ? Colors.red : Colors.grey,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _formatTime(_timeRemaining),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: _timeRemaining < 60 ? Colors.red : Colors.grey.shade700,
+                    color: _timeRemaining < 60
+                        ? Colors.red
+                        : Colors.grey.shade700,
                   ),
                 ),
               ],
@@ -281,7 +302,9 @@ Future<void> _startTest() async {
               child: Column(
                 children: [
                   LinearProgressIndicator(
-                    value: (_currentQuestionIndex + 1) / widget.test.questions.length,
+                    value:
+                        (_currentQuestionIndex + 1) /
+                        widget.test.questions.length,
                     backgroundColor: Colors.grey.shade200,
                     valueColor: const AlwaysStoppedAnimation(Color(0xff14A800)),
                   ),
@@ -293,7 +316,10 @@ Future<void> _startTest() async {
                   const SizedBox(height: 32),
                   Text(
                     question.text,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   ..._buildQuestionOptions(question),
@@ -318,10 +344,7 @@ Future<void> _startTest() async {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                option,
-                style: const TextStyle(fontSize: 16),
-              ),
+              child: Text(option, style: const TextStyle(fontSize: 16)),
             ),
           ),
         );
@@ -340,10 +363,7 @@ Future<void> _startTest() async {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                option,
-                style: const TextStyle(fontSize: 16),
-              ),
+              child: Text(option, style: const TextStyle(fontSize: 16)),
             ),
           ),
         );

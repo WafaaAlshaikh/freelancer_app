@@ -9,9 +9,15 @@ import 'package:freelancer_platform/screens/admin/users_management_screen.dart';
 import 'package:freelancer_platform/screens/ai/ai_chat_screen.dart';
 import 'package:freelancer_platform/screens/chat/chat_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
+import 'package:freelancer_platform/screens/features/features_shop_screen.dart';
 import 'package:freelancer_platform/screens/landing/landing_screen.dart';
 import 'package:freelancer_platform/screens/payment/payment_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/test_results_screen.dart';
+import 'package:freelancer_platform/screens/subscription/my_subscription_screen.dart';
+import 'package:freelancer_platform/screens/subscription/subscription_comparison_screen.dart';
+import 'package:freelancer_platform/screens/subscription/subscription_invoices_screen.dart';
+import 'package:freelancer_platform/screens/subscription/subscription_plans_screen.dart';
+import 'package:freelancer_platform/screens/subscription/subscription_usage_screen.dart';
 import 'package:freelancer_platform/screens/wallet/wallet_screen.dart';
 import 'package:freelancer_platform/screens/workspace/add_reminder_screen.dart';
 import 'package:freelancer_platform/screens/workspace/connect_github_screen.dart';
@@ -41,6 +47,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/chat/chats_list_screen.dart';
 import 'services/socket_service.dart';
+import 'package:freelancer_platform/screens/subscription/subscription_success_screen.dart';
+import 'package:freelancer_platform/screens/subscription/subscription_cancel_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,7 +112,14 @@ class FreelancerApp extends StatelessWidget {
 
         '/client/dashboard': (_) => const ClientDashboard(),
         '/client/create-project': (_) => const CreateProjectScreen(),
-
+        '/subscription/plans': (_) => const SubscriptionPlansScreen(),
+        '/subscription/my': (_) => const MySubscriptionScreen(),
+        '/features/shop': (_) => const FeaturesShopScreen(),
+        '/subscription_success': (_) => const SubscriptionSuccessScreen(),
+        '/subscription_cancel': (_) => const SubscriptionCancelScreen(),
+        '/subscription/invoices': (_) => const SubscriptionInvoicesScreen(),
+        '/subscription/comparison': (_) => const SubscriptionComparisonScreen(),
+        '/subscription/usage': (_) => const SubscriptionUsageScreen(),
         '/chats': (_) => ChatsListScreen(),
 
         '/my-contracts': (context) {
@@ -126,13 +141,44 @@ class FreelancerApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => SubmitProposalScreen(project: project),
             );
+          case '/subscription_success':
+            return MaterialPageRoute(
+              builder: (_) => const SubscriptionSuccessScreen(),
+            );
+          case '/subscription_cancel':
+            return MaterialPageRoute(
+              builder: (_) => const SubscriptionCancelScreen(),
+            );
+          case '/subscription/plans':
+            return MaterialPageRoute(
+              builder: (_) => const SubscriptionPlansScreen(),
+            );
 
+          case '/subscription/comparison':
+            return MaterialPageRoute(
+              builder: (_) => const SubscriptionComparisonScreen(),
+            );
+          case '/subscription/my':
+            return MaterialPageRoute(
+              builder: (_) => const MySubscriptionScreen(),
+            );
           case '/client/project-details':
             final projectId = settings.arguments as int;
             return MaterialPageRoute(
               builder: (_) => client.ProjectDetailsScreen(projectId: projectId),
             );
-
+          case '/subscription/plans':
+            return MaterialPageRoute(
+              builder: (_) => const SubscriptionPlansScreen(),
+            );
+          case '/subscription/my':
+            return MaterialPageRoute(
+              builder: (_) => const MySubscriptionScreen(),
+            );
+          case '/features/shop':
+            return MaterialPageRoute(
+              builder: (_) => const FeaturesShopScreen(),
+            );
           case '/admin/dashboard':
             return MaterialPageRoute(
               builder: (_) => const AdminDashboardScreen(),

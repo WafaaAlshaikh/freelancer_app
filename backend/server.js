@@ -31,7 +31,14 @@ import adminLandingRoutes from "./src/routes/adminLandingRoutes.js";
 import seedSkillTests from "./src/seed/seedSkillTests.js";
 import { protect, authorizeRoles } from "./src/middleware/authMiddleware.js";
 import skillTestRoutes from "./src/routes/skillTestRoutes.js";
-
+import subscriptionRoutes from "./src/routes/subscriptionRoutes.js";
+import featureRoutes from "./src/routes/featureRoutes.js";
+import { User } from "./src/models/index.js"; 
+import SubscriptionService from "./src/services/subscriptionService.js";
+import subscriptionDevRoutes from "./src/routes/subscriptionDevRoutes.js";
+import invoiceRoutes from "./src/routes/invoiceRoutes.js";
+import adminSubscriptionRoutes from "./src/routes/adminSubscriptionRoutes.js";
+import CronService from "./src/services/CronService.js";
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -42,91 +49,45 @@ console.log(
 
 const app = express();
 
-app.post(
-  "/api/stripe/webhook",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-    const sig = req.headers["stripe-signature"];
-    let event;
 
-    console.log("🔔 Webhook received");
-    console.log("🔔 Signature:", sig);
-    console.log("🔔 Body length:", req.body.length);
+app.use("/api/stripe", stripeWebhookRoutes);
 
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET,
-      );
-      console.log("✅ Webhook verified, event type:", event.type);
-    } catch (err) {
-      console.log(`⚠️ Webhook signature verification failed.`, err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
-    try {
-      switch (event.type) {
-        case "checkout.session.completed":
-          const session = event.data.object;
-          console.log("💰 Checkout session completed:", session.id);
-          console.log("💰 Session metadata:", session.metadata);
-
-          const result = await PaymentService.handleCheckoutSuccess(session.id);
-          console.log("✅ Payment processed result:", result);
-          break;
-
-        case "payment_intent.succeeded":
-          const paymentIntent = event.data.object;
-          console.log("💰 PaymentIntent succeeded:", paymentIntent.id);
-          console.log("💰 PaymentIntent metadata:", paymentIntent.metadata);
-
-          const paymentResult = await PaymentService.handlePaymentSuccess(
-            paymentIntent.id,
-          );
-          console.log("✅ Payment processed result:", paymentResult);
-          break;
-
-        default:
-          console.log(`Unhandled event type ${event.type}`);
-      }
-    } catch (err) {
-      console.error("❌ Error processing webhook:", err);
-    }
-
-    res.json({ received: true });
-  },
-);
+app.use((req, res, next) => {
+  console.log(`📡 ${req.method} ${req.url}`);
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const server = http.createServer(app);
-
 const io = initSocket(server);
 
-const uploadDirs = ["uploads/cvs", "uploads/avatars", "uploads/portfolio"];
+const uploadDirs = ["uploads/cvs", "uploads/avatars", "uploads/portfolio", "uploads/chats", "uploads/covers", "uploads/logos"];
 uploadDirs.forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
-
-app.use("/api/stripe", stripeWebhookRoutes);
-
 app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => res.send("API is running..."));
 
-// ==================== Routes ====================
+// ==================== API ROUTES ====================
+
 app.use("/api/auth", authRoutes);
 app.use("/api/freelancer", freelancerRoutes);
 app.use("/api/projects", projectRoutes);
@@ -144,12 +105,37 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/landing", landingRoutes);
 app.use("/api/skill-tests", skillTestRoutes);
+app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/features", featureRoutes);
+app.use("/api/subscription-dev", subscriptionDevRoutes);
+app.use("/api/admin/subscription", adminSubscriptionRoutes);  
+app.use("/api/invoices", invoiceRoutes);
 app.use(
   "/api/admin/landing",
   protect,
   authorizeRoles("admin"),
   adminLandingRoutes,
 );
+
+app.get("/api/user/usage", protect, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    const subscription = await SubscriptionService.getUserSubscription(req.user.id);
+    
+    res.json({
+      success: true,
+      usage: {
+        proposals_used: user.proposal_count_this_month || 0,
+        proposals_limit: subscription.plan.proposal_limit,
+        active_projects_used: user.active_projects_count || 0,
+        active_projects_limit: subscription.plan.active_project_limit,
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user usage:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 
 app.get("/payment-success", (req, res) => {
   const { session_id, contract_id } = req.query;
@@ -165,7 +151,50 @@ app.get("/payment-cancel", (req, res) => {
   );
 });
 
+// ==================== FLUTTER WEB ROUTING SUPPORT ====================
+
+app.get('/api/subscription/success', (req, res) => {
+  const sessionId = req.query.session_id;
+  const queryString = new URLSearchParams(req.query).toString();
+  const redirectUrl = `${process.env.FRONTEND_URL}/subscription_success${queryString ? '?' + queryString : ''}`;
+  console.log('🔄 Stripe success -> Flutter:', redirectUrl);
+  res.redirect(redirectUrl);
+});
+
+app.get('/api/subscription/cancel', (req, res) => {
+  const redirectUrl = `${process.env.FRONTEND_URL}/subscription_cancel`;
+  console.log('🔄 Stripe cancel -> Flutter:', redirectUrl);
+  res.redirect(redirectUrl);
+});
+
+app.get('/api/subscription/my', (req, res) => {
+  const queryString = new URLSearchParams(req.query).toString();
+  const redirectUrl = `${process.env.FRONTEND_URL}/#/subscription/my${queryString ? '?' + queryString : ''}`;
+  console.log('🔄 Redirecting to Flutter:', redirectUrl);
+  res.redirect(redirectUrl);
+});
+
+app.get('/api/subscription/success-old', (req, res) => {
+  const queryString = new URLSearchParams(req.query).toString();
+  const redirectUrl = `${process.env.FRONTEND_URL}/#/subscription/success${queryString ? '?' + queryString : ''}`;
+  console.log('🔄 Stripe success (old) -> Flutter:', redirectUrl);
+  res.redirect(redirectUrl);
+});
+
+app.use('/api/subscription', (req, res, next) => {
+  if (req.method === 'GET' && !req.path.includes('checkout') && !req.path.includes('confirm')) {
+    const redirectUrl = `${process.env.FRONTEND_URL}/#${req.originalUrl}`;
+    console.log('🔄 Any subscription route -> Flutter:', redirectUrl);
+    res.redirect(redirectUrl);
+  } else {
+    next();
+  }
+});
+
+// ==================== ERROR HANDLERS ====================
+
 app.use((req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.url}`);
   res.status(404).json({ message: `Cannot ${req.method} ${req.path}` });
 });
 
@@ -174,26 +203,29 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: err.message || "Internal server error" });
 });
 
-const PORT = process.env.PORT || 5000;
+// ==================== START SERVER ====================
+
+const PORT = process.env.PORT || 5001;
 
 async function startServer() {
   try {
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: false });
     console.log("✅ Tables synced with database");
 
-    // await seedSkillTests();
-    // console.log("✅ Skill test data seeded");
+    CronService.initialize();
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🔌 Socket.io ready for real-time events`);
+      console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL}`);
+      console.log(`💳 Stripe webhook secret: ${process.env.STRIPE_WEBHOOK_SECRET ? "Present" : "Missing"}`);
     });
   } catch (err) {
     console.error("❌ DB connection error:", err);
+    process.exit(1);
   }
 }
 
-// ✅ Clean old notifications daily
 setInterval(
   async () => {
     try {

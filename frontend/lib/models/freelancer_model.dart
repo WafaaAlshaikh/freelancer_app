@@ -20,6 +20,8 @@ class FreelancerProfile {
   bool? isAvailable;
   double? hourlyRate;
   int? completedProjectsCount;
+  final bool? isFeatured;
+  final DateTime? featuredUntil;
 
   final String? website;
   final String? github;
@@ -55,6 +57,8 @@ class FreelancerProfile {
     this.totalEarnings,
     this.jobSuccessScore,
     this.responseTime,
+    this.isFeatured = false,
+    this.featuredUntil,
   });
 
   factory FreelancerProfile.fromJson(Map<String, dynamic> json) {
@@ -77,6 +81,14 @@ class FreelancerProfile {
         return int.tryParse(value);
       }
       return null;
+    }
+
+    bool parseBool(dynamic value) {
+      if (value == null) return false;
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      if (value is String) return value.toLowerCase() == 'true' || value == '1';
+      return false;
     }
 
     List<String> parseStringList(dynamic data) {
@@ -199,6 +211,10 @@ class FreelancerProfile {
       totalEarnings: toDoubleSafe(json['total_earnings']),
       jobSuccessScore: toIntSafe(json['job_success_score']),
       responseTime: toIntSafe(json['response_time']),
+      isFeatured: json['is_featured'] as bool? ?? false,
+      featuredUntil: json['featured_until'] != null
+          ? DateTime.tryParse(json['featured_until'])
+          : null,
     );
   }
 

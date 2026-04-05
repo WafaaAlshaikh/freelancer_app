@@ -1,6 +1,7 @@
 // lib/screens/admin/admin_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:freelancer_platform/screens/admin/subscription_management_screen.dart';
 import '../../models/admin_stats.dart';
 import '../../services/api_service.dart';
 import 'users_management_screen.dart';
@@ -138,6 +139,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       selectedIcon: Icon(Icons.description),
                       label: Text('Contracts'),
                     ),
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.subscriptions),
+                      selectedIcon: Icon(Icons.subscriptions),
+                      label: Text('Subscriptions'),
+                    ),
                     NavigationRailDestination(
                       icon: Icon(Icons.settings),
                       selectedIcon: Icon(Icons.settings),
@@ -192,11 +198,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return _buildDashboardContent();
       case 1:
         return const UsersManagementScreen();
-      // case 2:
-      //   return const ProjectsManagementScreen();
-      // case 3:
-      //   return const ContractsManagementScreen();
       case 2:
+        return const Center(child: Text('Projects Management - Coming Soon'));
+      case 3:
+        return const Center(child: Text('Contracts Management - Coming Soon'));
+      case 4:
+        return const SubscriptionManagementScreen();
+      case 5:
         return const AdminSettingsScreen();
       default:
         return _buildDashboardContent();
