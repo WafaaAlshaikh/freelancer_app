@@ -20,6 +20,7 @@ import '../notifications/notifications_screen.dart';
 import 'create_project_screen.dart';
 import 'project_proposals_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'freelancer_profile_preview_screen.dart';
 
 class DashboardOverview {
   final _Stats stats;
@@ -1689,13 +1690,15 @@ class _ClientDashboardState extends State<ClientDashboard>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getMatchColor(freelancer.matchScore).withOpacity(0.1),
+                  color: _getMatchColor(
+                    freelancer.matchScore ?? 0,
+                  ).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${freelancer.matchScore}%',
+                  '${freelancer.matchScore ?? 0}%',
                   style: TextStyle(
-                    color: _getMatchColor(freelancer.matchScore),
+                    color: _getMatchColor(freelancer.matchScore ?? 0),
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1707,7 +1710,7 @@ class _ClientDashboardState extends State<ClientDashboard>
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: freelancer.skills.take(3).map((skill) {
+            children: (freelancer.skills ?? []).take(3).map((skill) {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -1728,7 +1731,7 @@ class _ClientDashboardState extends State<ClientDashboard>
               Icon(Icons.star, size: 12, color: _warning),
               const SizedBox(width: 4),
               Text(
-                freelancer.rating.toStringAsFixed(1),
+                (freelancer.rating ?? 0).toStringAsFixed(1),
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -1738,25 +1741,38 @@ class _ClientDashboardState extends State<ClientDashboard>
               Icon(Icons.work, size: 12, color: _gray),
               const SizedBox(width: 4),
               Text(
-                '${freelancer.experience}y',
+                '${freelancer.experience ?? 0}y',
                 style: TextStyle(fontSize: 11, color: _gray),
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'View',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+              GestureDetector(
+                onTap: () {
+                  final openProject = _myProjects.firstWhere(
+                    (p) => p.status == 'open',
+                    orElse: () => Project(),
+                  );
+
+                  _navigateToFreelancerProfile(
+                    freelancer.id,
+                    projectId: openProject.id?.toString(),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'View Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -1975,101 +1991,104 @@ class _ClientDashboardState extends State<ClientDashboard>
   }
 
   Widget _buildCompactContractCard(_ContractItem c) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: _modernCard(),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _buildAvatar(
-                c.freelancerName ?? 'F',
-                c.freelancerAvatar,
-                44,
-                _primary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      c.projectTitle ?? 'Project',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+    return GestureDetector(
+      onTap: () => _navigateToFreelancerProfile(c.id),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: _modernCard(),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                _buildAvatar(
+                  c.freelancerName ?? 'F',
+                  c.freelancerAvatar,
+                  44,
+                  _primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        c.projectTitle ?? 'Project',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      Text(
+                        c.freelancerName ?? 'Freelancer',
+                        style: TextStyle(fontSize: 11, color: _gray),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _statusColor(c.status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _statusLabel(c.status),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _statusColor(c.status),
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      c.freelancerName ?? 'Freelancer',
-                      style: TextStyle(fontSize: 11, color: _gray),
+                      '\$${c.agreedAmount.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: _primary,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: c.progress / 100,
+                      minHeight: 4,
+                      backgroundColor: Colors.grey.shade100,
+                      valueColor: AlwaysStoppedAnimation(_primary),
                     ),
-                    decoration: BoxDecoration(
-                      color: _statusColor(c.status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      _statusLabel(c.status),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: _statusColor(c.status),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '\$${c.agreedAmount.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: _primary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: c.progress / 100,
-                    minHeight: 4,
-                    backgroundColor: Colors.grey.shade100,
-                    valueColor: AlwaysStoppedAnimation(_primary),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${c.progress}%',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: _primary,
+                const SizedBox(width: 8),
+                Text(
+                  '${c.progress}%',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _primary,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2104,50 +2123,58 @@ class _ClientDashboardState extends State<ClientDashboard>
   }
 
   Widget _buildCompactProposalCard(_ProposalItem p) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: _modernCard(),
-      child: Row(
-        children: [
-          _buildAvatar(p.freelancerName ?? 'F', p.freelancerAvatar, 44, _info),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  p.freelancerName ?? 'Freelancer',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+    return GestureDetector(
+      onTap: () => _navigateToFreelancerProfile(p.id),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: _modernCard(),
+        child: Row(
+          children: [
+            _buildAvatar(
+              p.freelancerName ?? 'F',
+              p.freelancerAvatar,
+              44,
+              _info,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p.freelancerName ?? 'Freelancer',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-                Text(
-                  '\$${p.price} • ${p.deliveryTime} days',
-                  style: TextStyle(fontSize: 11, color: _gray),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: p.status == 'accepted'
-                  ? _success.withOpacity(0.1)
-                  : _warning.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              p.status == 'accepted' ? 'Accepted' : 'Pending',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: p.status == 'accepted' ? _success : _warning,
+                  Text(
+                    '\$${p.price} • ${p.deliveryTime} days',
+                    style: TextStyle(fontSize: 11, color: _gray),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: p.status == 'accepted'
+                    ? _success.withOpacity(0.1)
+                    : _warning.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                p.status == 'accepted' ? 'Accepted' : 'Pending',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: p.status == 'accepted' ? _success : _warning,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2575,6 +2602,18 @@ class _ClientDashboardState extends State<ClientDashboard>
                 ),
               ),
             ),
+    );
+  }
+
+  void _navigateToFreelancerProfile(int freelancerId, {String? projectId}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FreelancerProfilePreviewScreen(
+          freelancerId: freelancerId,
+          projectId: projectId,
+        ),
+      ),
     );
   }
 

@@ -2197,4 +2197,44 @@ class ApiService {
       return {'success': false, 'invoices': []};
     }
   }
+
+  static Future<Map<String, dynamic>> getFreelancerPublicProfile(
+    int freelancerId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/profiles/freelancer/$freelancerId'),
+        headers: headers,
+      );
+
+      print('📡 Freelancer profile response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('❌ Error getting freelancer profile: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getFreelancerPublicProfileV2(
+    int freelancerId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/freelancer/profile/public/$freelancerId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('Error: $e');
+      return {};
+    }
+  }
 }

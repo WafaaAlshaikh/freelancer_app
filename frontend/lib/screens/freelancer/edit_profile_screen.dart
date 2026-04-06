@@ -1,3 +1,5 @@
+// screens/freelancer/edit_profile_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -8,6 +10,17 @@ import '../../widgets/skill_chip.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+
+class AppColors {
+  static const sidebarBg = Color(0xFF2D2B55);
+  static const sidebarText = Color(0xFFC8C6E8);
+  static const sidebarActive = Color(0xFF5B58E2);
+  static const accent = Color(0xFF6C63FF);
+  static const accentLight = Color(0xFFA78BFA);
+  static const green = Color(0xFF14A800);
+  static const pageBg = Color(0xFFF5F6F8);
+  static const cardBg = Colors.white;
+}
 
 class EditProfileScreen extends StatefulWidget {
   final FreelancerProfile profile;
@@ -458,8 +471,83 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       decoration: InputDecoration(
         labelText: label,
         hintText: placeholder,
-        border: const OutlineInputBorder(),
-        prefixIcon: Icon(icon, color: Colors.grey.shade600),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.accent, width: 2),
+        ),
+        prefixIcon: Icon(icon, color: AppColors.accent),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, {IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, color: AppColors.accent, size: 20),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D2B55),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(Widget child) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(padding: const EdgeInsets.all(20), child: child),
+    );
+  }
+
+  Widget _buildAITag(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.green.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppColors.green),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          ),
+        ],
       ),
     );
   }
@@ -467,152 +555,173 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.pageBg,
       appBar: AppBar(
-        title: const Text("Edit Profile"),
-        backgroundColor: Colors.white,
+        title: const Text(
+          "Edit Profile",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2D2B55),
+          ),
+        ),
+        backgroundColor: AppColors.cardBg,
         elevation: 0,
         foregroundColor: Colors.black,
-        actions: [
-          TextButton(
-            onPressed: saveProfile,
-            child: loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text("Save"),
-          ),
-        ],
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: avatarUrl != null
-                      ? NetworkImage(
-                          avatarUrl!.startsWith('http')
-                              ? avatarUrl!
-                              : 'http://localhost:5000$avatarUrl',
-                        )
-                      : null,
-                  child: avatarUrl == null
-                      ? Text(
-                          nameController.text.isNotEmpty
-                              ? nameController.text[0].toUpperCase()
-                              : "?",
-                          style: const TextStyle(
-                            fontSize: 40,
-                            color: Colors.white,
-                          ),
-                        )
-                      : null,
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: pickImage,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xff14A800),
-                        shape: BoxShape.circle,
+            _buildInfoCard(
+              Column(
+                children: [
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundColor: AppColors.accentLight.withOpacity(0.3),
+                        backgroundImage: avatarUrl != null
+                            ? NetworkImage(
+                                avatarUrl!.startsWith('http')
+                                    ? avatarUrl!
+                                    : 'http://localhost:5000$avatarUrl',
+                              )
+                            : null,
+                        child: avatarUrl == null
+                            ? Text(
+                                nameController.text.isNotEmpty
+                                    ? nameController.text[0].toUpperCase()
+                                    : "?",
+                                style: const TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.accent,
+                                ),
+                              )
+                            : null,
                       ),
-                      child: isUploadingAvatar
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 20,
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
                             ),
+                            child: isUploadingAvatar
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: pickCV,
+                      icon: isUploadingCV
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.upload_file, size: 18),
+                      label: Text(cvUrl != null ? "Update CV" : "Upload CV"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accent,
+                        side: BorderSide(color: AppColors.accent),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: ElevatedButton.icon(
-                onPressed: pickCV,
-                icon: isUploadingCV
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Icon(Icons.upload_file),
-                label: Text(cvUrl != null ? "Update CV" : "Upload CV"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+                ],
               ),
             ),
 
             if (showAIAnalysis && aiAnalysis != null)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.green.shade50, Colors.blue.shade50],
+                    colors: [
+                      AppColors.green.withOpacity(0.1),
+                      AppColors.accent.withOpacity(0.05),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade200),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.green.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.auto_awesome,
-                          color: Colors.green.shade700,
-                          size: 20,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.green.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome,
+                            color: AppColors.green,
+                            size: 20,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "AI Analysis Complete!",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "AI Analysis Complete!",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: AppColors.green,
+                                ),
+                              ),
+                              Text(
+                                "Extracted from your CV",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Extracted from your CV:",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
-                      runSpacing: 4,
+                      runSpacing: 8,
                       children: [
                         if (aiAnalysis!['title'] != null)
                           _buildAITag(Icons.work, aiAnalysis!['title']),
@@ -639,681 +748,802 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
 
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(
+                    "Basic Information",
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: "Full Name",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accent,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.person,
+                        color: AppColors.accent,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: titleController,
+                    decoration: InputDecoration(
+                      labelText: "Professional Title",
+                      hintText: "e.g., Senior Flutter Developer",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accent,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.work,
+                        color: AppColors.accent,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: bioController,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: "Bio",
+                      hintText: "Tell us about yourself...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accent,
+                          width: 2,
+                        ),
+                      ),
+                      alignLabelWithHint: true,
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Basic Information",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+            ),
 
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: "Full Name",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(
+                    "Location",
+                    icon: Icons.location_on_outlined,
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: locationController,
+                    decoration: InputDecoration(
+                      labelText: "Address",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accent,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.location_on,
+                        color: AppColors.accent,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(
+                          Icons.my_location,
+                          color: AppColors.accent,
+                        ),
+                        onPressed: getCurrentLocation,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
+                  ),
+                  if (selectedLocation != null) ...[
                     const SizedBox(height: 12),
-
-                    TextField(
-                      controller: titleController,
-                      decoration: const InputDecoration(
-                        labelText: "Professional Title",
-                        hintText: "e.g., Senior Flutter Developer",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.work),
+                    Container(
+                      height: 160,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: bioController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: "Bio",
-                        hintText: "Tell us about yourself...",
-                        border: OutlineInputBorder(),
-                        alignLabelWithHint: true,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          'https://maps.googleapis.com/maps/api/staticmap?center=${selectedLocation!.latitude},${selectedLocation!.longitude}&zoom=15&size=600x160&maptype=roadmap&markers=color:red%7C${selectedLocation!.latitude},${selectedLocation!.longitude}&key=$_googleMapsApiKey',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade100,
+                              child: const Center(
+                                child: Text("Map preview unavailable"),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
 
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Location",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: locationController,
-                      decoration: InputDecoration(
-                        labelText: "Address",
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.location_on),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.my_location),
-                          onPressed: getCurrentLocation,
-                        ),
-                      ),
-                    ),
-
-                    if (selectedLocation != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 150,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            'https://maps.googleapis.com/maps/api/staticmap?center=${selectedLocation!.latitude},${selectedLocation!.longitude}&zoom=15&size=600x150&maptype=roadmap&markers=color:red%7C${selectedLocation!.latitude},${selectedLocation!.longitude}&key=$_googleMapsApiKey',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                                child: const Center(
-                                  child: Text("Map preview unavailable"),
-                                ),
-                              );
-                            },
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader("Skills", icon: Icons.code_outlined),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: skillController,
+                          decoration: InputDecoration(
+                            hintText: "Add a skill",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.accent,
+                                width: 2,
+                              ),
+                            ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
                           ),
+                          onSubmitted: (_) => addSkill(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          onPressed: addSkill,
                         ),
                       ),
                     ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Skills",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: skillController,
-                            decoration: const InputDecoration(
-                              hintText: "Add a skill",
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                            onSubmitted: (_) => addSkill(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.add_circle,
-                            color: Color(0xff14A800),
-                          ),
-                          onPressed: addSkill,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: skills.asMap().entries.map((entry) {
-                        return SkillChip(
-                          label: entry.value,
-                          onDeleted: () => removeSkill(entry.key),
-                        );
-                      }).toList(),
-                    ),
-
-                    if (skills.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: skills.asMap().entries.map((entry) {
+                      return SkillChip(
+                        label: entry.value,
+                        onDeleted: () => removeSkill(entry.key),
+                      );
+                    }).toList(),
+                  ),
+                  if (skills.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Center(
                         child: Text(
                           "No skills added yet",
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: Colors.grey.shade500),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Languages",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                ],
+              ),
+            ),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: languageController,
-                            decoration: const InputDecoration(
-                              hintText: "Add a language",
-                              border: OutlineInputBorder(),
-                              isDense: true,
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(
+                    "Languages",
+                    icon: Icons.language_outlined,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: languageController,
+                          decoration: InputDecoration(
+                            hintText: "Add a language",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
-                            onSubmitted: (_) => addLanguage(),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.accent,
+                                width: 2,
+                              ),
+                            ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
                           ),
+                          onSubmitted: (_) => addLanguage(),
                         ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.add_circle,
-                            color: Color(0xff14A800),
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white),
                           onPressed: addLanguage,
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: languages.asMap().entries.map((entry) {
-                        return Chip(
-                          label: Text(entry.value),
-                          onDeleted: () => removeLanguage(entry.key),
-                          deleteIconColor: Colors.red,
-                        );
-                      }).toList(),
-                    ),
-
-                    if (languages.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: languages.asMap().entries.map((entry) {
+                      return Chip(
+                        label: Text(entry.value),
+                        onDeleted: () => removeLanguage(entry.key),
+                        deleteIconColor: Colors.red,
+                        backgroundColor: Colors.grey.shade100,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  if (languages.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Center(
                         child: Text(
                           "No languages added yet",
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: Colors.grey.shade500),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Education",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                ],
+              ),
+            ),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: degreeController,
-                            decoration: const InputDecoration(
-                              hintText: "Degree",
-                              border: OutlineInputBorder(),
-                              isDense: true,
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader("Education", icon: Icons.school_outlined),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: degreeController,
+                          decoration: InputDecoration(
+                            hintText: "Degree",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: institutionController,
-                            decoration: const InputDecoration(
-                              hintText: "Institution",
-                              border: OutlineInputBorder(),
-                              isDense: true,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: institutionController,
+                          decoration: InputDecoration(
+                            hintText: "Institution",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 80,
-                          child: TextField(
-                            controller: yearController,
-                            decoration: const InputDecoration(
-                              hintText: "Year",
-                              border: OutlineInputBorder(),
-                              isDense: true,
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 80,
+                        child: TextField(
+                          controller: yearController,
+                          decoration: InputDecoration(
+                            hintText: "Year",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
                           ),
                         ),
-                        IconButton(
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
                           icon: const Icon(
-                            Icons.add_circle,
-                            color: Color(0xff14A800),
+                            Icons.add,
+                            color: Colors.white,
+                            size: 20,
                           ),
                           onPressed: addEducation,
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    ...education.asMap().entries.map((entry) {
-                      final edu = entry.value;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ...education.asMap().entries.map((entry) {
+                    final edu = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.school,
+                              size: 16,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  edu['degree'] ?? '',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                Text(
+                                  edu['institution'] ?? '',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                if (edu['year'] != null &&
+                                    edu['year'].isNotEmpty)
                                   Text(
-                                    edu['degree'] ?? '',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                    edu['year'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500,
                                     ),
                                   ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.red,
+                            ),
+                            onPressed: () => removeEducation(entry.key),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  if (education.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Center(
+                        child: Text(
+                          "No education added yet",
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(
+                    "Certifications",
+                    icon: Icons.verified_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: certNameController,
+                          decoration: InputDecoration(
+                            hintText: "Certification name",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: certIssuerController,
+                          decoration: InputDecoration(
+                            hintText: "Issuer",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 80,
+                        child: TextField(
+                          controller: certYearController,
+                          decoration: InputDecoration(
+                            hintText: "Year",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          onPressed: addCertification,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ...certifications.asMap().entries.map((entry) {
+                    final cert = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.verified,
+                              size: 16,
+                              color: AppColors.green,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  cert['name'] ?? '',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                if (cert['issuer'] != null &&
+                                    cert['issuer'].isNotEmpty)
                                   Text(
-                                    edu['institution'] ?? '',
+                                    cert['issuer'],
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey.shade600,
                                     ),
                                   ),
-                                  if (edu['year'] != null &&
-                                      edu['year'].isNotEmpty)
-                                    Text(
-                                      edu['year'],
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                size: 18,
-                                color: Colors.red,
-                              ),
-                              onPressed: () => removeEducation(entry.key),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-
-                    if (education.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text(
-                          "No education added yet",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Certifications",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: certNameController,
-                            decoration: const InputDecoration(
-                              hintText: "Certification name",
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: certIssuerController,
-                            decoration: const InputDecoration(
-                              hintText: "Issuer",
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 80,
-                          child: TextField(
-                            controller: certYearController,
-                            decoration: const InputDecoration(
-                              hintText: "Year",
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.add_circle,
-                            color: Color(0xff14A800),
-                          ),
-                          onPressed: addCertification,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    ...certifications.asMap().entries.map((entry) {
-                      final cert = entry.value;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.verified,
-                              size: 16,
-                              color: Colors.green.shade600,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                                if (cert['year'] != null &&
+                                    cert['year'].isNotEmpty)
                                   Text(
-                                    cert['name'] ?? '',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                                    cert['year'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500,
                                     ),
                                   ),
-                                  if (cert['issuer'] != null &&
-                                      cert['issuer'].isNotEmpty)
-                                    Text(
-                                      cert['issuer'],
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  if (cert['year'] != null &&
-                                      cert['year'].isNotEmpty)
-                                    Text(
-                                      cert['year'],
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                ],
-                              ),
+                              ],
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                size: 18,
-                                color: Colors.red,
-                              ),
-                              onPressed: () => removeCertification(entry.key),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.red,
                             ),
-                          ],
-                        ),
-                      );
-                    }),
-
-                    if (certifications.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
+                            onPressed: () => removeCertification(entry.key),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  if (certifications.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Center(
                         child: Text(
                           "No certifications added yet",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Social & Professional Links",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    _buildSocialField(
-                      icon: Icons.link,
-                      label: "Portfolio Website",
-                      placeholder: "https://yourportfolio.com",
-                      controller: websiteController,
-                    ),
-                    const SizedBox(height: 12),
-
-                    _buildSocialField(
-                      icon: Icons.code,
-                      label: "GitHub",
-                      placeholder: "https://github.com/username",
-                      controller: githubController,
-                    ),
-                    const SizedBox(height: 12),
-
-                    _buildSocialField(
-                      icon: Icons.work,
-                      label: "LinkedIn",
-                      placeholder: "https://linkedin.com/in/username",
-                      controller: linkedinController,
-                    ),
-                    const SizedBox(height: 12),
-
-                    _buildSocialField(
-                      icon: Icons.brush,
-                      label: "Behance / Dribbble",
-                      placeholder: "https://behance.net/username",
-                      controller: behanceController,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: experienceController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Years of Experience",
-                          border: OutlineInputBorder(),
-                          suffixText: "years",
+                          style: TextStyle(color: Colors.grey.shade500),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: hourlyRateController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Hourly Rate",
-                          border: OutlineInputBorder(),
-                          prefixText: "\$ ",
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(
+                    "Social & Professional Links",
+                    icon: Icons.link_outlined,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSocialField(
+                    icon: Icons.link,
+                    label: "Portfolio Website",
+                    placeholder: "https://yourportfolio.com",
+                    controller: websiteController,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildSocialField(
+                    icon: Icons.code,
+                    label: "GitHub",
+                    placeholder: "https://github.com/username",
+                    controller: githubController,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildSocialField(
+                    icon: Icons.work,
+                    label: "LinkedIn",
+                    placeholder: "https://linkedin.com/in/username",
+                    controller: linkedinController,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildSocialField(
+                    icon: Icons.brush,
+                    label: "Behance / Dribbble",
+                    placeholder: "https://behance.net/username",
+                    controller: behanceController,
+                  ),
+                ],
+              ),
+            ),
+
+            _buildInfoCard(
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: experienceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Years of Experience",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: AppColors.accent,
+                            width: 2,
+                          ),
+                        ),
+                        suffixText: "years",
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: hourlyRateController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Hourly Rate",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: AppColors.accent,
+                            width: 2,
+                          ),
+                        ),
+                        prefixText: "\$ ",
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 80),
 
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 52,
               child: ElevatedButton(
                 onPressed: loading ? null : saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff14A800),
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  elevation: 0,
                 ),
                 child: loading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Text(
                         "Save Changes",
                         style: TextStyle(
-                          fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAITag(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade200),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: Colors.green.shade700),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
-          ),
-        ],
       ),
     );
   }

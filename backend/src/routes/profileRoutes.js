@@ -28,5 +28,5 @@ router.put("/me/freelancer", protect, authorizeRoles("freelancer"), uploadProfil
 router.get("/me/client", protect, authorizeRoles("client"), getMyClientProfile);
 router.put("/me/client", protect, authorizeRoles("client"), uploadProfileImages, updateClientProfile);
 router.post("/me/client/logo", protect, authorizeRoles("client"), uploadCompanyLogo, handleCompanyLogoUpload);
-
+router.get('/freelancer/:userId', getFreelancerPublicProfile);
 export default router;
