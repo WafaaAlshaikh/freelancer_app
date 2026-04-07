@@ -4,6 +4,7 @@ import '../../models/project_model.dart';
 import '../../services/api_service.dart';
 import 'project_details_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../widgets/favorite_button.dart';
 
 class ProjectsTab extends StatefulWidget {
   const ProjectsTab({super.key});
@@ -30,7 +31,6 @@ class _ProjectsTabState extends State<ProjectsTab> {
     'Web',
   ];
 
-
   @override
   void initState() {
     super.initState();
@@ -38,9 +38,8 @@ class _ProjectsTabState extends State<ProjectsTab> {
     fetchProjects();
   }
 
-
   Future<void> fetchProjects() async {
-    if (!mounted) return; 
+    if (!mounted) return;
 
     setState(() => loading = true);
 
@@ -231,55 +230,63 @@ class _ProjectsTabState extends State<ProjectsTab> {
   }
 
   void _showSortOptions() {
-  showModalBottomSheet(
-    context: context,
-    builder: (context) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(Icons.access_time),
-          title: const Text('Newest First'),
-          onTap: () {
-            setState(() {
-              filteredProjects.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
-            });
-            Navigator.pop(context);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.attach_money),
-          title: const Text('Budget: Low to High'),
-          onTap: () {
-            setState(() {
-              filteredProjects.sort((a, b) => (a.budget ?? 0).compareTo(b.budget ?? 0));
-            });
-            Navigator.pop(context);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.attach_money),
-          title: const Text('Budget: High to Low'),
-          onTap: () {
-            setState(() {
-              filteredProjects.sort((a, b) => (b.budget ?? 0).compareTo(a.budget ?? 0));
-            });
-            Navigator.pop(context);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.timer),
-          title: const Text('Duration: Shortest First'),
-          onTap: () {
-            setState(() {
-              filteredProjects.sort((a, b) => (a.duration ?? 0).compareTo(b.duration ?? 0));
-            });
-            Navigator.pop(context);
-          },
-        ),
-      ],
-    ),
-  );
-}
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.access_time),
+            title: const Text('Newest First'),
+            onTap: () {
+              setState(() {
+                filteredProjects.sort(
+                  (a, b) => b.createdAt!.compareTo(a.createdAt!),
+                );
+              });
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.attach_money),
+            title: const Text('Budget: Low to High'),
+            onTap: () {
+              setState(() {
+                filteredProjects.sort(
+                  (a, b) => (a.budget ?? 0).compareTo(b.budget ?? 0),
+                );
+              });
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.attach_money),
+            title: const Text('Budget: High to Low'),
+            onTap: () {
+              setState(() {
+                filteredProjects.sort(
+                  (a, b) => (b.budget ?? 0).compareTo(a.budget ?? 0),
+                );
+              });
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.timer),
+            title: const Text('Duration: Shortest First'),
+            onTap: () {
+              setState(() {
+                filteredProjects.sort(
+                  (a, b) => (a.duration ?? 0).compareTo(b.duration ?? 0),
+                );
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildProjectCard(Project project) {
     return Card(
@@ -330,6 +337,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
                       ),
                     ),
                   ),
+                  FavoriteButton(projectId: project.id!),
                 ],
               ),
 

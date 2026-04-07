@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../../services/api_service.dart';
 import '../../models/wallet_model.dart';
 import '../../models/transaction_model.dart';
+import '../freelancer/financial_dashboard_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   final String userRole;
@@ -389,6 +390,17 @@ class _WalletScreenState extends State<WalletScreen> {
         elevation: 0,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadWallet),
+          IconButton(
+            icon: const Icon(Icons.analytics),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FinancialDashboardScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: loading

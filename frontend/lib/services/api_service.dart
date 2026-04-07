@@ -2,6 +2,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:freelancer_platform/models/favorite_model.dart';
+import 'package:freelancer_platform/models/financial_model.dart';
+import 'package:freelancer_platform/models/project_model.dart';
+import 'package:freelancer_platform/models/search_response.dart';
+import 'package:freelancer_platform/models/work_submission_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import '../utils/constants.dart';
@@ -2236,5 +2241,480 @@ class ApiService {
       print('Error: $e');
       return {};
     }
+  }
+
+  static Future<bool> addToFavorites(int projectId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/favorites/$projectId'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      return data['success'] == true;
+    } catch (e) {
+      print('Error adding to favorites: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> removeFromFavorites(int projectId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$BASE_URL/favorites/$projectId'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      return data['success'] == true;
+    } catch (e) {
+      print('Error removing from favorites: $e');
+      return false;
+    }
+  }
+
+  static Future<FavoriteResponse> getUserFavorites({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/favorites?page=$page&limit=$limit'),
+        headers: headers,
+      );
+      return FavoriteResponse.fromJson(jsonDecode(response.body));
+    } catch (e) {
+      print('Error getting favorites: $e');
+      return FavoriteResponse(
+        success: false,
+        favorites: [],
+        total: 0,
+        page: 1,
+        totalPages: 1,
+      );
+    }
+  }
+
+  static Future<bool> checkFavorite(int projectId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/favorites/check/$projectId'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      return data['isFavorite'] == true;
+    } catch (e) {
+      print('Error checking favorite: $e');
+      return false;
+    }
+  }
+
+  static Future<List<Project>> getRecentProjects({int limit = 10}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/favorites/recent/projects?limit=$limit'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      final List<dynamic> projectsJson = data['projects'];
+      return projectsJson.map((json) => Project.fromJson(json)).toList();
+    } catch (e) {
+      print('Error getting recent projects: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> submitWork({
+    required int contractId,
+    int? milestoneIndex,
+    required String title,
+    String? description,
+    List<String> files = const [],
+    List<String> links = const [],
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/work-submissions'),
+        headers: headers,
+        body: jsonEncode({
+          'contractId': contractId,
+          'milestoneIndex': milestoneIndex,
+          'title': title,
+          'description': description,
+          'files': files,
+          'links': links,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error submitting work: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> approveWork(int submissionId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/work-submissions/$submissionId/approve'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error approving work: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> requestRevision({
+    required int submissionId,
+    required String revisionMessage,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/work-submissions/$submissionId/revision'),
+        headers: headers,
+        body: jsonEncode({'revisionMessage': revisionMessage}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error requesting revision: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<List<WorkSubmission>> getContractSubmissions(
+    int contractId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/work-submissions/contract/$contractId'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      final List<dynamic> submissionsJson = data['submissions'];
+      return submissionsJson
+          .map((json) => WorkSubmission.fromJson(json))
+          .toList();
+    } catch (e) {
+      print('Error getting submissions: $e');
+      return [];
+    }
+  }
+
+  static Future<String?> uploadWorkFile(
+    Uint8List bytes,
+    String fileName,
+  ) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$BASE_URL/chats/upload'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: fileName,
+          contentType: MediaType('application', 'octet-stream'),
+        ),
+      );
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+      if (response.statusCode == 200) {
+        final data = jsonDecode(responseData);
+        return data['url'];
+      }
+      return null;
+    } catch (e) {
+      print('Error uploading work file: $e');
+      return null;
+    }
+  }
+
+  static Future<FinancialStatsResponse> getFinancialStats({
+    String period = 'monthly',
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      String url = '$BASE_URL/financial/stats?period=$period';
+      if (startDate != null && endDate != null) {
+        url +=
+            '&startDate=${startDate.toIso8601String()}&endDate=${endDate.toIso8601String()}';
+      }
+      final response = await http.get(Uri.parse(url), headers: headers);
+      final data = jsonDecode(response.body);
+      return FinancialStatsResponse.fromJson(data);
+    } catch (e) {
+      print('Error getting financial stats: $e');
+      return FinancialStatsResponse(
+        stats: FinancialStats(
+          totalEarnings: 0,
+          totalFees: 0,
+          totalWithdrawals: 0,
+          netEarnings: 0,
+        ),
+        periodStats: [],
+        recentTransactions: [],
+      );
+    }
+  }
+
+  static Future<String?> generateFinancialReport({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/financial/report?startDate=${startDate.toIso8601String()}&endDate=${endDate.toIso8601String()}',
+        ),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      return data['downloadUrl'];
+    } catch (e) {
+      print('Error generating report: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> requestWithdrawalV2({
+    required double amount,
+    required String method,
+    Map<String, dynamic>? accountDetails,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/financial/withdraw'),
+        headers: headers,
+        body: jsonEncode({
+          'amount': amount,
+          'method': method,
+          'accountDetails': accountDetails,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error requesting withdrawal: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdvancedFinancialAnalytics() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/financial/analytics'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting analytics: $e');
+      return {'success': false};
+    }
+  }
+
+  static Future<SearchResponse> advancedProjectSearch({
+    String? query,
+    String? category,
+    double? minBudget,
+    double? maxBudget,
+    int? minDuration,
+    int? maxDuration,
+    String? skills,
+    String? sortBy = 'newest',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final params = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+        'sortBy': ?sortBy,
+      };
+      if (query != null && query.isNotEmpty) params['query'] = query;
+      if (category != null && category != 'all') params['category'] = category;
+      if (minBudget != null) params['minBudget'] = minBudget.toString();
+      if (maxBudget != null) params['maxBudget'] = maxBudget.toString();
+      if (minDuration != null) params['minDuration'] = minDuration.toString();
+      if (maxDuration != null) params['maxDuration'] = maxDuration.toString();
+      if (skills != null && skills.isNotEmpty) params['skills'] = skills;
+
+      final uri = Uri.parse(
+        '$BASE_URL/search/projects',
+      ).replace(queryParameters: params);
+      final response = await http.get(uri, headers: headers);
+      return SearchResponse.fromJson(jsonDecode(response.body));
+    } catch (e) {
+      print('Error in advanced search: $e');
+      return SearchResponse(
+        success: false,
+        projects: [],
+        total: 0,
+        page: 1,
+        totalPages: 1,
+      );
+    }
+  }
+
+  static Future<SavedFilter> saveSearchFilter({
+    required String name,
+    required Map<String, dynamic> filterData,
+    bool isDefault = false,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/search/filters'),
+        headers: headers,
+        body: jsonEncode({
+          'name': name,
+          'filterData': filterData,
+          'isDefault': isDefault,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      return SavedFilter.fromJson(data['filter']);
+    } catch (e) {
+      print('Error saving filter: $e');
+      rethrow;
+    }
+  }
+
+  static Future<List<SavedFilter>> getSavedFilters() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/search/filters'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      final List<dynamic> filtersJson = data['filters'];
+      return filtersJson.map((json) => SavedFilter.fromJson(json)).toList();
+    } catch (e) {
+      print('Error getting saved filters: $e');
+      return [];
+    }
+  }
+
+  static Future<void> deleteSavedFilter(int filterId) async {
+    try {
+      await http.delete(
+        Uri.parse('$BASE_URL/search/filters/$filterId'),
+        headers: headers,
+      );
+    } catch (e) {
+      print('Error deleting filter: $e');
+      rethrow;
+    }
+  }
+
+  static Future<ProjectAlert> createProjectAlert({
+    required String name,
+    List<String> keywords = const [],
+    List<String> skills = const [],
+    double? minBudget,
+    double? maxBudget,
+    List<String> categories = const [],
+    List<String> notificationMethods = const ['email', 'push'],
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/search/alerts'),
+        headers: headers,
+        body: jsonEncode({
+          'name': name,
+          'keywords': keywords,
+          'skills': skills,
+          'minBudget': minBudget,
+          'maxBudget': maxBudget,
+          'categories': categories,
+          'notificationMethods': notificationMethods,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      return ProjectAlert.fromJson(data['alert']);
+    } catch (e) {
+      print('Error creating alert: $e');
+      rethrow;
+    }
+  }
+
+  static Future<List<ProjectAlert>> getUserAlerts() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/search/alerts'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      final List<dynamic> alertsJson = data['alerts'];
+      return alertsJson.map((json) => ProjectAlert.fromJson(json)).toList();
+    } catch (e) {
+      print('Error getting alerts: $e');
+      return [];
+    }
+  }
+
+  static Future<void> deleteAlert(int alertId) async {
+    try {
+      await http.delete(
+        Uri.parse('$BASE_URL/search/alerts/$alertId'),
+        headers: headers,
+      );
+    } catch (e) {
+      print('Error deleting alert: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> toggleAlert(int alertId) async {
+    try {
+      await http.patch(
+        Uri.parse('$BASE_URL/search/alerts/$alertId/toggle'),
+        headers: headers,
+      );
+    } catch (e) {
+      print('Error toggling alert: $e');
+      rethrow;
+    }
+  }
+
+  static Future<bool> isProjectFavorite(int projectId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/favorites/check/$projectId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['isFavorite'] ?? false;
+      }
+      return false;
+    } catch (e) {
+      print('Error checking favorite: $e');
+      return false;
+    }
+  }
+}
+
+class FinancialStatsResponse {
+  final FinancialStats stats;
+  final List<Map<String, dynamic>> periodStats;
+  final List<FinancialTransaction> recentTransactions;
+
+  FinancialStatsResponse({
+    required this.stats,
+    required this.periodStats,
+    required this.recentTransactions,
+  });
+
+  factory FinancialStatsResponse.fromJson(Map<String, dynamic> json) {
+    return FinancialStatsResponse(
+      stats: FinancialStats.fromJson(json['stats'] ?? {}),
+      periodStats: List<Map<String, dynamic>>.from(json['periodStats'] ?? []),
+      recentTransactions:
+          (json['recentTransactions'] as List?)
+              ?.map((tx) => FinancialTransaction.fromJson(tx))
+              .toList() ??
+          [],
+    );
   }
 }

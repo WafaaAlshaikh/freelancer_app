@@ -33,12 +33,17 @@ import { protect, authorizeRoles } from "./src/middleware/authMiddleware.js";
 import skillTestRoutes from "./src/routes/skillTestRoutes.js";
 import subscriptionRoutes from "./src/routes/subscriptionRoutes.js";
 import featureRoutes from "./src/routes/featureRoutes.js";
-import { User } from "./src/models/index.js"; 
+import { User } from "./src/models/index.js";
 import SubscriptionService from "./src/services/subscriptionService.js";
 import subscriptionDevRoutes from "./src/routes/subscriptionDevRoutes.js";
 import invoiceRoutes from "./src/routes/invoiceRoutes.js";
 import adminSubscriptionRoutes from "./src/routes/adminSubscriptionRoutes.js";
 import CronService from "./src/services/CronService.js";
+import favoriteRoutes from "./src/routes/favoriteRoutes.js";
+import workSubmissionRoutes from "./src/routes/workSubmissionRoutes.js";
+import financialRoutes from "./src/routes/financialRoutes.js";
+import advancedSearchRoutes from "./src/routes/advancedSearchRoutes.js";
+
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -49,16 +54,21 @@ console.log(
 
 const app = express();
 
-
 app.use("/api/stripe", stripeWebhookRoutes);
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With, Accept",
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
   next();
@@ -75,7 +85,14 @@ app.use(express.urlencoded({ extended: true }));
 const server = http.createServer(app);
 const io = initSocket(server);
 
-const uploadDirs = ["uploads/cvs", "uploads/avatars", "uploads/portfolio", "uploads/chats", "uploads/covers", "uploads/logos"];
+const uploadDirs = [
+  "uploads/cvs",
+  "uploads/avatars",
+  "uploads/portfolio",
+  "uploads/chats",
+  "uploads/covers",
+  "uploads/logos",
+];
 uploadDirs.forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -108,8 +125,12 @@ app.use("/api/skill-tests", skillTestRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/features", featureRoutes);
 app.use("/api/subscription-dev", subscriptionDevRoutes);
-app.use("/api/admin/subscription", adminSubscriptionRoutes);  
+app.use("/api/admin/subscription", adminSubscriptionRoutes);
 app.use("/api/invoices", invoiceRoutes);
+app.use("/api/favorites", favoriteRoutes);
+app.use("/api/work-submissions", workSubmissionRoutes);
+app.use("/api/financial", financialRoutes);
+app.use("/api/search", advancedSearchRoutes);
 app.use(
   "/api/admin/landing",
   protect,
@@ -120,8 +141,10 @@ app.use(
 app.get("/api/user/usage", protect, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id);
-    const subscription = await SubscriptionService.getUserSubscription(req.user.id);
-    
+    const subscription = await SubscriptionService.getUserSubscription(
+      req.user.id,
+    );
+
     res.json({
       success: true,
       usage: {
@@ -129,11 +152,11 @@ app.get("/api/user/usage", protect, async (req, res) => {
         proposals_limit: subscription.plan.proposal_limit,
         active_projects_used: user.active_projects_count || 0,
         active_projects_limit: subscription.plan.active_project_limit,
-      }
+      },
     });
   } catch (error) {
-    console.error('Error getting user usage:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Error getting user usage:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
@@ -153,38 +176,42 @@ app.get("/payment-cancel", (req, res) => {
 
 // ==================== FLUTTER WEB ROUTING SUPPORT ====================
 
-app.get('/api/subscription/success', (req, res) => {
+app.get("/api/subscription/success", (req, res) => {
   const sessionId = req.query.session_id;
   const queryString = new URLSearchParams(req.query).toString();
-  const redirectUrl = `${process.env.FRONTEND_URL}/subscription_success${queryString ? '?' + queryString : ''}`;
-  console.log('🔄 Stripe success -> Flutter:', redirectUrl);
+  const redirectUrl = `${process.env.FRONTEND_URL}/subscription_success${queryString ? "?" + queryString : ""}`;
+  console.log("🔄 Stripe success -> Flutter:", redirectUrl);
   res.redirect(redirectUrl);
 });
 
-app.get('/api/subscription/cancel', (req, res) => {
+app.get("/api/subscription/cancel", (req, res) => {
   const redirectUrl = `${process.env.FRONTEND_URL}/subscription_cancel`;
-  console.log('🔄 Stripe cancel -> Flutter:', redirectUrl);
+  console.log("🔄 Stripe cancel -> Flutter:", redirectUrl);
   res.redirect(redirectUrl);
 });
 
-app.get('/api/subscription/my', (req, res) => {
+app.get("/api/subscription/my", (req, res) => {
   const queryString = new URLSearchParams(req.query).toString();
-  const redirectUrl = `${process.env.FRONTEND_URL}/#/subscription/my${queryString ? '?' + queryString : ''}`;
-  console.log('🔄 Redirecting to Flutter:', redirectUrl);
+  const redirectUrl = `${process.env.FRONTEND_URL}/#/subscription/my${queryString ? "?" + queryString : ""}`;
+  console.log("🔄 Redirecting to Flutter:", redirectUrl);
   res.redirect(redirectUrl);
 });
 
-app.get('/api/subscription/success-old', (req, res) => {
+app.get("/api/subscription/success-old", (req, res) => {
   const queryString = new URLSearchParams(req.query).toString();
-  const redirectUrl = `${process.env.FRONTEND_URL}/#/subscription/success${queryString ? '?' + queryString : ''}`;
-  console.log('🔄 Stripe success (old) -> Flutter:', redirectUrl);
+  const redirectUrl = `${process.env.FRONTEND_URL}/#/subscription/success${queryString ? "?" + queryString : ""}`;
+  console.log("🔄 Stripe success (old) -> Flutter:", redirectUrl);
   res.redirect(redirectUrl);
 });
 
-app.use('/api/subscription', (req, res, next) => {
-  if (req.method === 'GET' && !req.path.includes('checkout') && !req.path.includes('confirm')) {
+app.use("/api/subscription", (req, res, next) => {
+  if (
+    req.method === "GET" &&
+    !req.path.includes("checkout") &&
+    !req.path.includes("confirm")
+  ) {
     const redirectUrl = `${process.env.FRONTEND_URL}/#${req.originalUrl}`;
-    console.log('🔄 Any subscription route -> Flutter:', redirectUrl);
+    console.log("🔄 Any subscription route -> Flutter:", redirectUrl);
     res.redirect(redirectUrl);
   } else {
     next();
@@ -218,7 +245,9 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🔌 Socket.io ready for real-time events`);
       console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL}`);
-      console.log(`💳 Stripe webhook secret: ${process.env.STRIPE_WEBHOOK_SECRET ? "Present" : "Missing"}`);
+      console.log(
+        `💳 Stripe webhook secret: ${process.env.STRIPE_WEBHOOK_SECRET ? "Present" : "Missing"}`,
+      );
     });
   } catch (err) {
     console.error("❌ DB connection error:", err);

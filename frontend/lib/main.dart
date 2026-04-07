@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:freelancer_platform/models/contract_model.dart';
 import 'package:freelancer_platform/models/project_model.dart';
 import 'package:freelancer_platform/models/proposal_model.dart';
 import 'package:freelancer_platform/screens/admin/admin_dashboard_screen.dart';
@@ -10,6 +11,10 @@ import 'package:freelancer_platform/screens/ai/ai_chat_screen.dart';
 import 'package:freelancer_platform/screens/chat/chat_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
 import 'package:freelancer_platform/screens/features/features_shop_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/financial_dashboard_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/work_submission_screen.dart';
 import 'package:freelancer_platform/screens/landing/landing_screen.dart';
 import 'package:freelancer_platform/screens/payment/payment_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/test_results_screen.dart';
@@ -122,6 +127,10 @@ class FreelancerApp extends StatelessWidget {
         '/subscription/usage': (_) => const SubscriptionUsageScreen(),
         '/chats': (_) => ChatsListScreen(),
 
+        '/favorites': (_) => const FavoritesScreen(),
+        '/financial-dashboard': (_) => const FinancialDashboardScreen(),
+        '/advanced-search': (_) => const AdvancedSearchScreen(),
+
         '/my-contracts': (context) {
           final userRole =
               ModalRoute.of(context)!.settings.arguments as String? ?? 'client';
@@ -141,14 +150,27 @@ class FreelancerApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => SubmitProposalScreen(project: project),
             );
+
+          case '/work-submission':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => WorkSubmissionScreen(
+                contract: args['contract'],
+                milestoneIndex: args['milestoneIndex'],
+                milestone: args['milestone'],
+              ),
+            );
+
           case '/subscription_success':
             return MaterialPageRoute(
               builder: (_) => const SubscriptionSuccessScreen(),
             );
+
           case '/subscription_cancel':
             return MaterialPageRoute(
               builder: (_) => const SubscriptionCancelScreen(),
             );
+
           case '/subscription/plans':
             return MaterialPageRoute(
               builder: (_) => const SubscriptionPlansScreen(),
@@ -158,27 +180,23 @@ class FreelancerApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => const SubscriptionComparisonScreen(),
             );
+
           case '/subscription/my':
             return MaterialPageRoute(
               builder: (_) => const MySubscriptionScreen(),
             );
+
           case '/client/project-details':
             final projectId = settings.arguments as int;
             return MaterialPageRoute(
               builder: (_) => client.ProjectDetailsScreen(projectId: projectId),
             );
-          case '/subscription/plans':
-            return MaterialPageRoute(
-              builder: (_) => const SubscriptionPlansScreen(),
-            );
-          case '/subscription/my':
-            return MaterialPageRoute(
-              builder: (_) => const MySubscriptionScreen(),
-            );
+
           case '/features/shop':
             return MaterialPageRoute(
               builder: (_) => const FeaturesShopScreen(),
             );
+
           case '/admin/dashboard':
             return MaterialPageRoute(
               builder: (_) => const AdminDashboardScreen(),
@@ -211,7 +229,6 @@ class FreelancerApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             final contractId = args['contractId'] as int;
             final userRole = args['userRole'] as String;
-
             return MaterialPageRoute(
               builder: (_) =>
                   ContractScreen(contractId: contractId, userRole: userRole),
@@ -257,6 +274,7 @@ class FreelancerApp extends StatelessWidget {
                 paymentIntent: args['paymentIntent'],
               ),
             );
+
           case '/connect-github':
             final contractId = settings.arguments as int;
             return MaterialPageRoute(

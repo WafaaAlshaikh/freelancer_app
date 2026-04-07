@@ -194,6 +194,17 @@ const User = sequelize.define("User", {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  saved_filters: {
+  type: DataTypes.TEXT,
+  defaultValue: "[]",
+  get() {
+    const raw = this.getDataValue('saved_filters');
+    return raw ? JSON.parse(raw) : [];
+  },
+  set(val) {
+    this.setDataValue('saved_filters', JSON.stringify(val));
+  },
+},
 });
 
 export default User;

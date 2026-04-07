@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:freelancer_platform/models/usage_limits_model.dart';
+import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
 import 'enhanced_client_profile_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -1042,6 +1043,13 @@ class _ClientDashboardState extends State<ClientDashboard>
                 ),
               ),
               _buildIconButton(Icons.search, _showSearchDialog),
+              const SizedBox(width: 8),
+              _buildIconButton(Icons.favorite_border, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                );
+              }, iconColor: Colors.red),
               const SizedBox(width: 8),
               _buildIconButton(Icons.subscriptions, () {
                 Navigator.pushNamed(context, '/subscription/plans');

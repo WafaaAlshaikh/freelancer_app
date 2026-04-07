@@ -5,6 +5,7 @@ import {
   FreelancerProfile,
   User,
   Contract,
+  UserSkillTest,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import Groq from "groq-sdk";
@@ -185,7 +186,12 @@ class AIMatchingService {
       100,
       Math.round(skillsScore + experienceScore + budgetScore + categoryScore),
     );
-    const testMatch = await this.calculateTestBasedMatchScore(freelancerId, projectSkills);
+    const freelancerId =
+      freelancer.UserId || freelancer.user_id || freelancer.id;
+    const testMatch = await this.calculateTestBasedMatchScore(
+      freelancerId,
+      projectSkills,
+    );
 
     return {
       total,
@@ -625,52 +631,44 @@ class AIMatchingService {
     return reasons.length > 0 ? reasons[0] : "Recommended for you";
   }
 
-  // أضف داخل class AIMatchingService
+  static async calculateTestBasedMatchScore(freelancerId, projectSkills) {
+    try {
+      const testResults = await UserSkillTest.findAll({
+        where: { user_id: freelancerId, passed: true },
+        include: [{ model: SkillTest }],
+      });
 
-// حساب نقاط المطابقة بناءً على نتائج الاختبارات
-static async calculateTestBasedMatchScore(freelancerId, projectSkills) {
-  try {
-    const testResults = await UserSkillTest.findAll({
-      where: { user_id: freelancerId, passed: true },
-      include: [{ model: SkillTest }],
-    });
+      if (testResults.length === 0) return 0;
 
-    if (testResults.length === 0) return 0;
+      let matchScore = 0;
+      const matchedSkills = [];
 
-    let matchScore = 0;
-    const matchedSkills = [];
+      for (const testResult of testResults) {
+        const test = testResult.SkillTest;
+        if (!test) continue;
 
-    for (const testResult of testResults) {
-      const test = testResult.SkillTest;
-      if (!test) continue;
+        const isSkillMatch = projectSkills.some(
+          (skill) =>
+            skill.toLowerCase().includes(test.skill_category.toLowerCase()) ||
+            test.skill_category.toLowerCase().includes(skill.toLowerCase()),
+        );
 
-      // التحقق من تطابق المهارة
-      const isSkillMatch = projectSkills.some(skill => 
-        skill.toLowerCase().includes(test.skill_category.toLowerCase()) ||
-        test.skill_category.toLowerCase().includes(skill.toLowerCase())
-      );
-
-      if (isSkillMatch) {
-        matchScore += testResult.percentage * 0.5; // الوزن 0.5
-        matchedSkills.push(test.skill_category);
+        if (isSkillMatch) {
+          matchScore += testResult.percentage * 0.5;
+          matchedSkills.push(test.skill_category);
+        }
       }
+
+      return {
+        score: Math.min(matchScore, 30),
+        matchedSkills,
+        testsCount: matchedSkills.length,
+      };
+    } catch (error) {
+      console.error("Error calculating test match score:", error);
+      return { score: 0, matchedSkills: [], testsCount: 0 };
     }
-
-    return {
-      score: Math.min(matchScore, 30), // الحد الأقصى 30 نقطة من الاختبارات
-      matchedSkills,
-      testsCount: matchedSkills.length,
-    };
-  } catch (error) {
-    console.error('Error calculating test match score:', error);
-    return { score: 0, matchedSkills: [], testsCount: 0 };
   }
-}
-
-// تعديل دالة calculateProjectMatchScore لتشمل نقاط الاختبارات
-// أضف هذا السطر في نهاية الدالة قبل return
-// const testMatch = await this.calculateTestBasedMatchScore(freelancerId, projectSkills);
-// ثم أضف testMatch.score إلى total
 }
 
 export default AIMatchingService;

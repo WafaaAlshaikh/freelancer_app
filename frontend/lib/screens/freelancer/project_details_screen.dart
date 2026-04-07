@@ -24,6 +24,32 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   Map<String, dynamic>? smartPricing;
   bool showSmartPricing = false;
   UsageLimits? _usage;
+  bool _isFavorite = false;
+
+  Future<void> _toggleFavorite() async {
+    try {
+      if (_isFavorite) {
+        await ApiService.removeFromFavorites(widget.projectId);
+        setState(() => _isFavorite = false);
+        Fluttertoast.showToast(msg: 'Removed from favorites');
+      } else {
+        await ApiService.addToFavorites(widget.projectId);
+        setState(() => _isFavorite = true);
+        Fluttertoast.showToast(msg: 'Added to favorites');
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Error: $e');
+    }
+  }
+
+  Future<void> _checkIfFavorite() async {
+    try {
+      final isFav = await ApiService.isProjectFavorite(widget.projectId);
+      setState(() => _isFavorite = isFav);
+    } catch (e) {
+      print('Error checking favorite: $e');
+    }
+  }
 
   Future<void> _loadUsage() async {
     final response = await ApiService.getUserUsage();
@@ -41,6 +67,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     checkExistingProposal();
     _loadSmartPricing();
     _loadUsage();
+    _checkIfFavorite();
   }
 
   Future<void> _loadSmartPricing() async {
@@ -135,6 +162,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorite ? Colors.red : null,
+            ),
+            onPressed: () => _toggleFavorite(),
+          ),
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),

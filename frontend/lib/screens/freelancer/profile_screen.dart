@@ -6,7 +6,10 @@ import 'package:freelancer_platform/screens/affiliate/affiliate_screen.dart';
 import 'package:freelancer_platform/screens/chat/chats_list_screen.dart';
 import 'package:freelancer_platform/screens/contract/my_contracts_screen.dart';
 import 'package:freelancer_platform/screens/features/features_shop_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/edit_profile_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/financial_dashboard_screen.dart';
 import 'package:freelancer_platform/screens/notifications/notifications_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/skill_tests_screen.dart';
 import 'package:share_plus/share_plus.dart';
@@ -33,6 +36,8 @@ class AppColors {
   static const pageBg = Color(0xFFF5F6F8);
   static const cardBg = Colors.white;
 }
+
+enum ProjectFilter { bestMatches, mostRecent, saved }
 
 class RatingStars extends StatelessWidget {
   final double rating;
@@ -243,6 +248,9 @@ class _Sidebar extends StatelessWidget {
       badge: 2,
       badgeGreen: true,
     ),
+    _SidebarItem(icon: Icons.favorite_border, label: 'Favorites'),
+    _SidebarItem(icon: Icons.attach_money, label: 'Financial'),
+    _SidebarItem(icon: Icons.filter_alt, label: 'Advanced Search'),
     _SidebarItem(icon: Icons.chat_bubble_outline, label: 'Messages', badge: 1),
     _SidebarItem(icon: Icons.quiz_outlined, label: 'Skill Tests'),
   ];
@@ -693,6 +701,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   bool loadingPortfolio = true;
 
   final int _unreadMessages = 3;
+  ProjectFilter _projectFilter = ProjectFilter.bestMatches;
+  List<Project> _savedProjects = [];
+  bool _loadingSaved = false;
 
   @override
   void initState() {
@@ -721,6 +732,193 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       fetchActiveContracts(),
       fetchPortfolio(),
     ]);
+  }
+
+  Future<void> _loadSavedProjects() async {
+    setState(() => _loadingSaved = true);
+    try {
+      final response = await ApiService.getUserFavorites();
+      if (response.success) {
+        setState(() {
+          _savedProjects = response.favorites.map((f) => f.project).toList();
+          _loadingSaved = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _loadingSaved = false);
+    }
+  }
+
+  List<Project> get _filteredProjects {
+    switch (_projectFilter) {
+      case ProjectFilter.bestMatches:
+        return aiSuggestedProjects;
+      case ProjectFilter.mostRecent:
+        return [...recommendedProjects]
+          ..sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+      case ProjectFilter.saved:
+        return _savedProjects;
+    }
+  }
+
+  String get _filterTitle {
+    switch (_projectFilter) {
+      case ProjectFilter.bestMatches:
+        return "Best Matches";
+      case ProjectFilter.mostRecent:
+        return "Most Recent";
+      case ProjectFilter.saved:
+        return "Saved Jobs";
+    }
+  }
+
+  Widget _buildProjectFilterTabs() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          _buildFilterTab(ProjectFilter.bestMatches, "Best Matches"),
+          const SizedBox(width: 16),
+          _buildFilterTab(ProjectFilter.mostRecent, "Most Recent"),
+          const SizedBox(width: 16),
+          _buildFilterTab(ProjectFilter.saved, "Saved Jobs"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterTab(ProjectFilter filter, String label) {
+    final isSelected = _projectFilter == filter;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _projectFilter = filter);
+        if (filter == ProjectFilter.saved && _savedProjects.isEmpty) {
+          _loadSavedProjects();
+        }
+      },
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected
+                  ? const Color(0xff14A800)
+                  : Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            height: 2,
+            width: 40,
+            color: isSelected ? const Color(0xff14A800) : Colors.transparent,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectsSection() {
+    final projects = _filteredProjects;
+
+    if (_projectFilter == ProjectFilter.saved &&
+        _savedProjects.isEmpty &&
+        !_loadingSaved) {
+      _loadSavedProjects();
+    }
+
+    final isLoading = _projectFilter == ProjectFilter.bestMatches
+        ? loadingSuggestions
+        : _projectFilter == ProjectFilter.saved
+        ? _loadingSaved
+        : false;
+
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (projects.isEmpty) {
+      if (_projectFilter == ProjectFilter.saved) {
+        return Container(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              Icon(
+                Icons.favorite_border,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No saved jobs yet',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () =>
+                    setState(() => _projectFilter = ProjectFilter.bestMatches),
+                child: const Text('Browse projects'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (_projectFilter == ProjectFilter.bestMatches &&
+          loadingSuggestions == false) {
+        return Container(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              Icon(Icons.auto_awesome, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              Text(
+                'No AI suggestions yet',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: fetchAISuggestions,
+                child: const Text('Refresh suggestions'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _filterTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (projects.length > 3)
+                TextButton(
+                  onPressed: () => setState(() => _selectedNavIndex = 1),
+                  child: const Text('View All'),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...projects.take(3).map((project) => _buildProjectCard(project)),
+      ],
+    );
   }
 
   Future<void> fetchProfile() async {
@@ -759,9 +957,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       final response = await ApiService.getAISuggestedProjects();
       if (response['success'] == true && response['suggestions'] != null) {
         setState(() {
-          aiSuggestedProjects = (response['suggestions'] as List)
-              .map((j) => Project.fromJson(j))
-              .toList();
+          aiSuggestedProjects = (response['suggestions'] as List).map((j) {
+            final project = Project.fromJson(j);
+            if (j['matchScore'] != null) {
+              project.matchScore = j['matchScore'];
+            }
+            return project;
+          }).toList();
           loadingSuggestions = false;
         });
       } else {
@@ -1645,6 +1847,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             const SizedBox(height: 16),
             _buildTrendingSkills(),
             const SizedBox(height: 16),
+
+            _buildProjectFilterTabs(),
+            const SizedBox(height: 12),
+            _buildProjectsSection(),
+
+            const SizedBox(height: 20),
+
             if (portfolioItems.isNotEmpty) ...[
               const Text(
                 'My Portfolio 🎨',
@@ -1656,42 +1865,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                   .map((item) => PortfolioCard(item: item, onTap: () {})),
               const SizedBox(height: 4),
             ],
-            if (aiSuggestedProjects.isNotEmpty) ...[
-              Row(
-                children: [
-                  Icon(
-                    Icons.auto_awesome,
-                    color: Colors.amber.shade600,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'AI Recommended 🤖',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ...aiSuggestedProjects.take(3).map(_buildProjectCard),
-              const SizedBox(height: 16),
-            ],
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recommended for You 🎯',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                TextButton(
-                  onPressed: () => setState(() => _selectedNavIndex = 1),
-                  child: const Text(
-                    'View All',
-                    style: TextStyle(color: AppColors.accent, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-            ...recommendedProjects.map(_buildProjectCard),
+
             const SizedBox(height: 20),
           ],
         ),
@@ -1920,8 +2094,14 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       case 4:
         return const MyContractsScreen(userRole: 'freelancer');
       case 5:
-        return ChatsListScreen();
+        return const FavoritesScreen();
       case 6:
+        return const FinancialDashboardScreen();
+      case 7:
+        return AdvancedSearchScreen();
+      case 8:
+        return const ChatsListScreen();
+      case 9:
         return const SkillTestsScreen();
       default:
         return _buildHomeTabWithRightPanel();

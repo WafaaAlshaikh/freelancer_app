@@ -23,6 +23,11 @@ import UserSubscription from "./UserSubscription.js";
 import Coupon from "./Coupon.js";
 import Invoice from "./Invoice.js";
 import SubscriptionLog from "./SubscriptionLog.js";
+import ProjectAlert from "./ProjectAlert.js";
+import SavedFilter from "./SavedFilter.js";
+import WorkSubmission from "./WorkSubmission.js";
+import UserFavorite from "./UserFavorite.js";
+import FinancialTransaction from "./FinancialTransaction.js";
 
 User.hasOne(UserSubscription, { foreignKey: "user_id" });
 UserSubscription.belongsTo(User, { foreignKey: "user_id" });
@@ -104,6 +109,12 @@ Portfolio.belongsTo(User, { foreignKey: "UserId" });
 Chat.hasMany(Message, { foreignKey: "chat_id" });
 Message.belongsTo(Chat, { foreignKey: "chat_id" });
 
+UserFavorite.belongsTo(Project, { foreignKey: "project_id" });
+Project.hasMany(UserFavorite, { foreignKey: "project_id" });
+
+UserFavorite.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(UserFavorite, { foreignKey: "user_id" });
+
 export {
   sequelize,
   User,
@@ -128,4 +139,9 @@ export {
   Coupon,
   Invoice,
   SubscriptionLog,
+  ProjectAlert,
+  SavedFilter,
+  WorkSubmission,
+  UserFavorite,
+  FinancialTransaction,
 };
