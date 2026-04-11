@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/proposal_model.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../interview/interviews_screen.dart';
 
 class ProjectProposalsScreen extends StatefulWidget {
   final int projectId;
@@ -17,6 +18,8 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
   List<Map<String, dynamic>> suggestedFreelancers = [];
   bool loading = true;
   bool loadingSuggestions = true;
+  bool _isSendingInterview = false;
+  bool _loadingSuggestions = false;
 
   @override
   void initState() {
@@ -479,6 +482,304 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
     );
   }
 
+  String _formatDateTime(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _sendSmartInterviewInvitation(Proposal proposal) async {
+    setState(() => _isSendingInterview = true);
+
+    final result = await ApiService.createSmartInterviewInvitation(
+      proposalId: proposal.id!,
+      message:
+          'AI has analyzed availability and suggested optimal times. Please select the time that works best for you.',
+      durationMinutes: 30,
+    );
+
+    setState(() => _isSendingInterview = false);
+
+    if (result['success'] == true) {
+      Fluttertoast.showToast(
+        msg:
+            '✅ Smart interview invitation sent to freelancer! They will select a time.',
+        backgroundColor: Colors.purple,
+        textColor: Colors.white,
+        timeInSecForIosWeb: 4,
+      );
+
+      final suggestedTimes = result['suggestedTimes'] as List?;
+      if (suggestedTimes != null && suggestedTimes.isNotEmpty) {
+        _showSuggestedTimesDialog(suggestedTimes);
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const InterviewsScreen()),
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: result['message'] ?? 'Error sending smart invitation',
+        backgroundColor: Colors.red,
+      );
+    }
+  }
+
+  void _showSuggestedTimesDialog(List<dynamic> times) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.purple),
+            SizedBox(width: 8),
+            Text('AI Suggested Times Sent'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'The following AI-optimized times have been sent to the freelancer.\nThey will select one that works for them.',
+              style: TextStyle(fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ...times.map((time) {
+              final dateTime = DateTime.parse(time.toString());
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time, size: 16, color: Colors.purple),
+                    const SizedBox(width: 8),
+                    Text(
+                      _formatDateTime(dateTime),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendGroupInterviewInvitation(Proposal proposal) async {
+    final List<int> selectedFreelancers = [];
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Select Freelancers for Group Interview'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: ListView.builder(
+                itemCount: suggestedFreelancers.length,
+                itemBuilder: (context, index) {
+                  final f = suggestedFreelancers[index];
+                  return CheckboxListTile(
+                    value: selectedFreelancers.contains(f['id']),
+                    onChanged: (checked) {
+                      setState(() {
+                        if (checked == true) {
+                          selectedFreelancers.add(f['id']);
+                        } else {
+                          selectedFreelancers.remove(f['id']);
+                        }
+                      });
+                    },
+                    title: Text(f['name']),
+                    subtitle: Text('${f['matchScore']}% match'),
+                    secondary: CircleAvatar(
+                      backgroundImage: f['avatar'] != null
+                          ? NetworkImage(f['avatar'])
+                          : null,
+                      child: f['avatar'] == null ? Text(f['name'][0]) : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _createGroupInterview(proposal, selectedFreelancers);
+                },
+                child: Text(
+                  'Send to ${selectedFreelancers.length} freelancers',
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<List<DateTime>> _selectMultipleTimes() async {
+    final List<DateTime> selectedTimes = [];
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Select Interview Times'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Select 1-3 preferred times for the interview',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+
+                  ...selectedTimes.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final time = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.purple,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _formatDateTime(time),
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            onPressed: () {
+                              setState(() {
+                                selectedTimes.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  if (selectedTimes.length < 3)
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().add(
+                            const Duration(days: 2),
+                          ),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 30),
+                          ),
+                        );
+                        if (date != null) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: const TimeOfDay(hour: 10, minute: 0),
+                          );
+                          if (time != null) {
+                            final fullDateTime = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                            setState(() {
+                              selectedTimes.add(fullDateTime);
+                            });
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Time'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple.shade100,
+                        foregroundColor: Colors.purple,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: selectedTimes.isEmpty
+                    ? null
+                    : () => Navigator.pop(context, selectedTimes),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+                child: const Text('Send Invitations'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return selectedTimes;
+  }
+
+  Future<void> _createGroupInterview(
+    Proposal proposal,
+    List<int> freelancerIds,
+  ) async {
+    final times = await _selectMultipleTimes();
+    if (times.isEmpty) return;
+
+    final result = await ApiService.createGroupInterviewInvitation(
+      proposalId: proposal.id!,
+      freelancerIds: freelancerIds,
+      suggestedTimes: times,
+      message: 'Group interview for project "${proposal.project?.title}"',
+      durationMinutes: 45,
+    );
+
+    if (result['success'] == true) {
+      Fluttertoast.showToast(
+        msg: 'Group invitations sent to ${freelancerIds.length} freelancers',
+        backgroundColor: Colors.purple,
+      );
+    }
+  }
+
   Widget _buildStatChip({
     required IconData icon,
     required String value,
@@ -508,10 +809,274 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
     );
   }
 
+  void _showInterviewTimePicker(Proposal proposal) async {
+    final List<DateTime> selectedTimes = [];
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.calendar_month, color: Colors.purple),
+                SizedBox(width: 8),
+                Text('Schedule Interview'),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Select 1-3 preferred times for the interview',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+
+                  ...selectedTimes.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final time = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.purple,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _formatDateTime(time),
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            onPressed: () {
+                              setState(() {
+                                selectedTimes.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  if (selectedTimes.length < 3)
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().add(
+                            const Duration(days: 2),
+                          ),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 30),
+                          ),
+                        );
+                        if (date != null) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: const TimeOfDay(hour: 10, minute: 0),
+                          );
+                          if (time != null) {
+                            final fullDateTime = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                            setState(() {
+                              selectedTimes.add(fullDateTime);
+                            });
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Time'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple.shade100,
+                        foregroundColor: Colors.purple,
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: TextEditingController(),
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      hintText: 'Add a message for the freelancer (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: selectedTimes.isEmpty
+                    ? null
+                    : () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+                child: const Text('Send Invitation'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result == true && selectedTimes.isNotEmpty) {
+      await _sendInterviewInvitation(proposal, selectedTimes);
+    }
+  }
+
+  Future<void> _sendInterviewInvitation(
+    Proposal proposal,
+    List<DateTime> times,
+  ) async {
+    setState(() => _isSendingInterview = true);
+
+    final result = await ApiService.createInterviewInvitation(
+      proposalId: proposal.id!,
+      suggestedTimes: times,
+      message:
+          'I would like to interview you for this project. Please select a time that works for you.',
+      durationMinutes: 30,
+    );
+
+    setState(() => _isSendingInterview = false);
+
+    if (result['success'] == true) {
+      Fluttertoast.showToast(
+        msg: '✅ Interview invitation sent with ${times.length} time options!',
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const InterviewsScreen()),
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: result['message'] ?? 'Error sending invitation',
+      );
+    }
+  }
+
+  Future<void> _showSmartTimeSuggestions(Proposal proposal) async {
+    setState(() => _loadingSuggestions = true);
+
+    final suggestions = await ApiService.getTimeSuggestions(
+      proposalId: proposal.id!,
+      freelancerId: proposal.userId!,
+    );
+
+    setState(() => _loadingSuggestions = false);
+
+    if (suggestions.isEmpty) {
+      Fluttertoast.showToast(
+        msg: 'No smart suggestions available. Using manual selection.',
+        backgroundColor: Colors.orange,
+      );
+      _showInterviewTimePicker(proposal);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.purple),
+            SizedBox(width: 8),
+            Text('AI Time Suggestions'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'AI analyzed availability and suggests these optimal times:',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              ...suggestions.map((time) {
+                return ListTile(
+                  leading: const Icon(Icons.access_time, color: Colors.purple),
+                  title: Text(_formatDateTime(time)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _sendInterviewWithTime(proposal, [time]);
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showInterviewTimePicker(proposal);
+            },
+            child: const Text('Manual Selection'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendInterviewWithTime(
+    Proposal proposal,
+    List<DateTime> times,
+  ) async {
+    setState(() => _isSendingInterview = true);
+
+    final result = await ApiService.createInterviewInvitation(
+      proposalId: proposal.id!,
+      suggestedTimes: times,
+      message: 'AI-suggested interview time based on availability.',
+      durationMinutes: 30,
+    );
+
+    setState(() => _isSendingInterview = false);
+
+    if (result['success'] == true) {
+      Fluttertoast.showToast(msg: '✅ Interview invitation sent!');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const InterviewsScreen()),
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: result['message'] ?? 'Error sending invitation',
+      );
+    }
+  }
+
   Widget _buildProposalCard(Proposal proposal) {
     print('🔍 Building proposal card for: ${proposal.id}');
-  print('🔍 Proposal status: ${proposal.status}');
-  print('🔍 Is pending: ${proposal.status == 'pending'}');
+    print('🔍 Proposal status: ${proposal.status}');
+    print('🔍 Is pending: ${proposal.status == 'pending'}');
+
     Color statusColor;
     String statusText;
     IconData statusIcon;
@@ -566,98 +1131,251 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
                 topRight: Radius.circular(16),
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.blueGrey.shade100,
-                  backgroundImage: proposal.freelancer?.avatar != null
-                      ? NetworkImage(proposal.freelancer!.avatar!)
-                      : null,
-                  child: proposal.freelancer?.avatar == null
-                      ? Text(
-                          proposal.freelancer?.name?[0].toUpperCase() ?? 'F',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 16),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.blueGrey.shade100,
+                      backgroundImage: proposal.freelancer?.avatar != null
+                          ? NetworkImage(proposal.freelancer!.avatar!)
+                          : null,
+                      child: proposal.freelancer?.avatar == null
+                          ? Text(
+                              proposal.freelancer?.name?[0].toUpperCase() ??
+                                  'F',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
 
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        proposal.freelancer?.name ?? 'Unknown',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      if (proposal.freelancerProfile?.title != null)
-                        Text(
-                          proposal.freelancerProfile!.title!,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      const SizedBox(height: 4),
-                      Row(
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoChip(
-                            icon: Icons.star,
-                            value:
-                                proposal.freelancerProfile?.rating
-                                    ?.toStringAsFixed(1) ??
-                                '0.0',
-                            color: Colors.amber,
+                          Text(
+                            proposal.freelancer?.name ?? 'Unknown',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          _buildInfoChip(
-                            icon: Icons.work_outline,
-                            value:
-                                '${proposal.freelancerProfile?.experienceYears ?? 0} yrs',
-                            color: Colors.blue,
+                          if (proposal.freelancerProfile?.title != null)
+                            Text(
+                              proposal.freelancerProfile!.title!,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _buildInfoChip(
+                                icon: Icons.star,
+                                value:
+                                    proposal.freelancerProfile?.rating
+                                        ?.toStringAsFixed(1) ??
+                                    '0.0',
+                                color: Colors.amber,
+                              ),
+                              const SizedBox(width: 8),
+                              _buildInfoChip(
+                                icon: Icons.work_outline,
+                                value:
+                                    '${proposal.freelancerProfile?.experienceYears ?? 0} yrs',
+                                color: Colors.blue,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(statusIcon, size: 14, color: statusColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
 
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                if (proposal.status == 'pending') ...[
+                  const SizedBox(height: 16),
+                  Row(
                     children: [
-                      Icon(statusIcon, size: 14, color: statusColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        statusText,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/negotiation',
+                              arguments: proposal,
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: const BorderSide(color: Colors.blue),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.handshake, size: 18),
+                              SizedBox(width: 8),
+                              Text("Negotiate"),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'manual') {
+                              _showInterviewTimePicker(proposal);
+                            } else if (value == 'smart') {
+                              _sendSmartInterviewInvitation(proposal);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.purple,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.interpreter_mode,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Interview",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
+                          ),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'manual',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Manual (Choose Times)'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'smart',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome,
+                                    size: 18,
+                                    color: Colors.purple,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Smart (AI Optimized)'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              handleProposalStatus(proposal.id!, 'accepted'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle, size: 18),
+                              SizedBox(width: 8),
+                              Text("Accept"),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () =>
+                              handleProposalStatus(proposal.id!, 'rejected'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cancel, size: 18),
+                              SizedBox(width: 8),
+                              Text("Reject"),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -765,107 +1483,6 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
                   ],
                 ),
 
-                if (proposal.status == 'pending') ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/negotiation',
-                              arguments: proposal,
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                            side: const BorderSide(color: Colors.blue),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.handshake, size: 18), 
-                              SizedBox(width: 8),
-                              Text(
-                                "Negotiate",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              handleProposalStatus(proposal.id!, 'accepted'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_circle, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                "Accept",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              handleProposalStatus(proposal.id!, 'rejected'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.cancel, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                "Reject",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-
-           
                 if (proposal.status == 'accepted')
                   Container(
                     margin: const EdgeInsets.only(top: 16),

@@ -22,6 +22,7 @@ import 'create_project_screen.dart';
 import 'project_proposals_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'freelancer_profile_preview_screen.dart';
+import '../interview/interviews_screen.dart';
 
 class DashboardOverview {
   final _Stats stats;
@@ -1051,6 +1052,17 @@ class _ClientDashboardState extends State<ClientDashboard>
                 );
               }, iconColor: Colors.red),
               const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.interpreter_mode),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const InterviewsScreen()),
+                  );
+                },
+                tooltip: 'Interviews',
+              ),
+              const SizedBox(width: 8),
               _buildIconButton(Icons.subscriptions, () {
                 Navigator.pushNamed(context, '/subscription/plans');
               }, iconColor: const Color(0xff14A800)),
@@ -1076,6 +1088,73 @@ class _ClientDashboardState extends State<ClientDashboard>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildInterviewsCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.purple.shade50, Colors.blue.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.purple.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.purple, Colors.blue],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.interpreter_mode,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Interview Invitations',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Invite freelancers for interviews before hiring',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const InterviewsScreen()),
+              );
+            },
+            icon: const Icon(Icons.arrow_forward, size: 18),
+            label: const Text('View'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1172,6 +1251,17 @@ class _ClientDashboardState extends State<ClientDashboard>
             label: 'Contracts',
             color: _warning,
             onTap: _navigateToContracts,
+          ),
+          _buildQuickAction(
+            icon: Icons.interpreter_mode,
+            label: 'Interviews',
+            color: Colors.purple,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const InterviewsScreen()),
+              );
+            },
           ),
           const SizedBox(width: 12),
           _buildQuickAction(

@@ -1214,6 +1214,14 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             ),
           ),
 
+          IconButton(
+            icon: const Icon(Icons.interpreter_mode),
+            onPressed: () {
+              Navigator.pushNamed(context, '/interviews');
+            },
+            tooltip: 'Interviews',
+          ),
+
           Stack(
             children: [
               IconButton(

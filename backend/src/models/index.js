@@ -28,6 +28,7 @@ import SavedFilter from "./SavedFilter.js";
 import WorkSubmission from "./WorkSubmission.js";
 import UserFavorite from "./UserFavorite.js";
 import FinancialTransaction from "./FinancialTransaction.js";
+import InterviewInvitation from "./InterviewInvitation.js";
 
 User.hasOne(UserSubscription, { foreignKey: "user_id" });
 UserSubscription.belongsTo(User, { foreignKey: "user_id" });
@@ -115,6 +116,16 @@ Project.hasMany(UserFavorite, { foreignKey: "project_id" });
 UserFavorite.belongsTo(User, { foreignKey: "user_id" });
 User.hasMany(UserFavorite, { foreignKey: "user_id" });
 
+Proposal.hasOne(InterviewInvitation, { foreignKey: "proposal_id" });
+InterviewInvitation.belongsTo(Proposal, { foreignKey: "proposal_id" });
+
+InterviewInvitation.belongsTo(User, { as: "client", foreignKey: "client_id" });
+InterviewInvitation.belongsTo(User, {
+  as: "freelancer",
+  foreignKey: "freelancer_id",
+});
+InterviewInvitation.belongsTo(Project, { foreignKey: "project_id" });
+
 export {
   sequelize,
   User,
@@ -144,4 +155,5 @@ export {
   WorkSubmission,
   UserFavorite,
   FinancialTransaction,
+  InterviewInvitation,
 };

@@ -28,7 +28,6 @@ import profileRoutes from "./src/routes/profileRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
 import landingRoutes from "./src/routes/landingRoutes.js";
 import adminLandingRoutes from "./src/routes/adminLandingRoutes.js";
-import seedSkillTests from "./src/seed/seedSkillTests.js";
 import { protect, authorizeRoles } from "./src/middleware/authMiddleware.js";
 import skillTestRoutes from "./src/routes/skillTestRoutes.js";
 import subscriptionRoutes from "./src/routes/subscriptionRoutes.js";
@@ -43,6 +42,9 @@ import favoriteRoutes from "./src/routes/favoriteRoutes.js";
 import workSubmissionRoutes from "./src/routes/workSubmissionRoutes.js";
 import financialRoutes from "./src/routes/financialRoutes.js";
 import advancedSearchRoutes from "./src/routes/advancedSearchRoutes.js";
+import interviewRoutes from "./src/routes/interviewRoutes.js";
+import { initWebSocket } from "./src/services/websocketService.js";
+import SmartReminderService from "./src/services/smartReminderService.js";
 
 dotenv.config();
 
@@ -54,36 +56,40 @@ console.log(
 
 const app = express();
 
-app.use("/api/stripe", stripeWebhookRoutes);
-
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-  );
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With, Accept",
-  );
-  res.header("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-  next();
-});
+// ==================== MIDDLEWARE ====================
+app.use(
+  cors({
+    origin: "*",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+    ],
+  }),
+);
 
 app.use((req, res, next) => {
   console.log(`📡 ${req.method} ${req.url}`);
   next();
 });
 
+app.use("/api/stripe", stripeWebhookRoutes);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ==================== CREATE HTTP SERVER ====================
 const server = http.createServer(app);
-const io = initSocket(server);
+
+const io = initWebSocket(server);
+app.set("io", io);
+
+const chatIo = initSocket(server);
+
+SmartReminderService.init();
 
 const uploadDirs = [
   "uploads/cvs",
@@ -92,6 +98,7 @@ const uploadDirs = [
   "uploads/chats",
   "uploads/covers",
   "uploads/logos",
+  "uploads/temp",
 ];
 uploadDirs.forEach((dir) => {
   if (!fs.existsSync(dir)) {
@@ -104,7 +111,6 @@ app.use("/uploads", express.static("uploads"));
 app.get("/", (req, res) => res.send("API is running..."));
 
 // ==================== API ROUTES ====================
-
 app.use("/api/auth", authRoutes);
 app.use("/api/freelancer", freelancerRoutes);
 app.use("/api/projects", projectRoutes);
@@ -131,6 +137,7 @@ app.use("/api/favorites", favoriteRoutes);
 app.use("/api/work-submissions", workSubmissionRoutes);
 app.use("/api/financial", financialRoutes);
 app.use("/api/search", advancedSearchRoutes);
+app.use("/api/interviews", interviewRoutes);
 app.use(
   "/api/admin/landing",
   protect,
@@ -138,6 +145,7 @@ app.use(
   adminLandingRoutes,
 );
 
+// ==================== USER USAGE API ====================
 app.get("/api/user/usage", protect, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id);
@@ -160,6 +168,7 @@ app.get("/api/user/usage", protect, async (req, res) => {
   }
 });
 
+// ==================== PAYMENT REDIRECTS ====================
 app.get("/payment-success", (req, res) => {
   const { session_id, contract_id } = req.query;
   res.redirect(
@@ -175,9 +184,7 @@ app.get("/payment-cancel", (req, res) => {
 });
 
 // ==================== FLUTTER WEB ROUTING SUPPORT ====================
-
 app.get("/api/subscription/success", (req, res) => {
-  const sessionId = req.query.session_id;
   const queryString = new URLSearchParams(req.query).toString();
   const redirectUrl = `${process.env.FRONTEND_URL}/subscription_success${queryString ? "?" + queryString : ""}`;
   console.log("🔄 Stripe success -> Flutter:", redirectUrl);
@@ -219,7 +226,6 @@ app.use("/api/subscription", (req, res, next) => {
 });
 
 // ==================== ERROR HANDLERS ====================
-
 app.use((req, res) => {
   console.log(`❌ 404 - Route not found: ${req.method} ${req.url}`);
   res.status(404).json({ message: `Cannot ${req.method} ${req.path}` });
@@ -231,7 +237,6 @@ app.use((err, req, res, next) => {
 });
 
 // ==================== START SERVER ====================
-
 const PORT = process.env.PORT || 5001;
 
 async function startServer() {
@@ -242,12 +247,15 @@ async function startServer() {
     CronService.initialize();
 
     server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🔌 Socket.io ready for real-time events`);
+      console.log(`\n🚀 Server running on port ${PORT}`);
+      console.log(`🔌 WebSocket (Interview) enabled`);
+      console.log(`💬 Socket.io (Chat) enabled`);
+      console.log(`⏰ Smart Reminder Service enabled`);
       console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL}`);
       console.log(
-        `💳 Stripe webhook secret: ${process.env.STRIPE_WEBHOOK_SECRET ? "Present" : "Missing"}`,
+        `💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? "Configured" : "Missing"}`,
       );
+      console.log(`\n✅ All systems operational!\n`);
     });
   } catch (err) {
     console.error("❌ DB connection error:", err);
@@ -255,6 +263,7 @@ async function startServer() {
   }
 }
 
+// ==================== CLEANUP JOBS ====================
 setInterval(
   async () => {
     try {
@@ -268,6 +277,6 @@ setInterval(
   24 * 60 * 60 * 1000,
 );
 
+// ==================== EXPORTS ====================
+export { io, stripe, server };
 startServer();
-
-export { io, stripe };

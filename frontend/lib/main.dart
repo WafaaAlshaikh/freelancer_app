@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:freelancer_platform/models/contract_model.dart';
+import 'package:freelancer_platform/models/interview_model.dart';
 import 'package:freelancer_platform/models/project_model.dart';
 import 'package:freelancer_platform/models/proposal_model.dart';
 import 'package:freelancer_platform/screens/admin/admin_dashboard_screen.dart';
@@ -15,7 +16,10 @@ import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.da
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/financial_dashboard_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/work_submission_screen.dart';
+import 'package:freelancer_platform/screens/interview/interview_calendar_screen.dart';
+import 'package:freelancer_platform/screens/interview/interview_stats_screen.dart';
 import 'package:freelancer_platform/screens/landing/landing_screen.dart';
+import 'package:freelancer_platform/screens/landing/landing_screen_enhanced.dart';
 import 'package:freelancer_platform/screens/payment/payment_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/test_results_screen.dart';
 import 'package:freelancer_platform/screens/subscription/my_subscription_screen.dart';
@@ -29,6 +33,7 @@ import 'package:freelancer_platform/screens/workspace/connect_github_screen.dart
 import 'package:freelancer_platform/screens/rating/add_rating_screen.dart';
 import 'package:freelancer_platform/screens/workspace/calendar_screen.dart';
 import 'package:freelancer_platform/screens/contract/my_contracts_screen.dart';
+import 'package:freelancer_platform/services/websocket_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/verify_screen.dart';
@@ -54,6 +59,10 @@ import 'screens/chat/chats_list_screen.dart';
 import 'services/socket_service.dart';
 import 'package:freelancer_platform/screens/subscription/subscription_success_screen.dart';
 import 'package:freelancer_platform/screens/subscription/subscription_cancel_screen.dart';
+import 'screens/interview/interviews_screen.dart';
+import 'screens/interview/interview_detail_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,6 +94,13 @@ void main() async {
 
   await Future.delayed(const Duration(seconds: 1));
 
+  try {
+    await WebSocketService.init();
+    print('✅ WebSocket Service initialized');
+  } catch (e) {
+    print('❌ WebSocket Service init error: $e');
+  }
+
   print('✅ App initialized with userId: $savedUserId');
 
   runApp(FreelancerApp(initialRole: savedRole));
@@ -97,12 +113,13 @@ class FreelancerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Freelancer Platform',
       theme: AppTheme.lightTheme,
       initialRoute: _getInitialRoute(),
       routes: {
-        '/': (_) => const LandingScreen(),
+        '/': (_) => const LandingScreenEnhanced(),
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignupScreen(),
         '/verify': (_) => const VerifyScreen(),
@@ -212,6 +229,24 @@ class FreelancerApp extends StatelessWidget {
             final project = settings.arguments as Project;
             return MaterialPageRoute(
               builder: (_) => EditProjectScreen(project: project),
+            );
+
+          case '/interviews':
+            return MaterialPageRoute(builder: (_) => const InterviewsScreen());
+
+          case '/interview-detail':
+            final invitation = settings.arguments as InterviewInvitation;
+            return MaterialPageRoute(
+              builder: (_) => InterviewDetailScreen(invitation: invitation),
+            );
+
+          case '/interview-stats':
+            return MaterialPageRoute(
+              builder: (_) => const InterviewStatsScreen(),
+            );
+          case '/interview-calendar':
+            return MaterialPageRoute(
+              builder: (_) => const InterviewCalendarScreen(),
             );
 
           case '/chat':

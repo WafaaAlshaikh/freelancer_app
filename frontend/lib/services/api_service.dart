@@ -2,8 +2,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:freelancer_platform/models/favorite_model.dart';
 import 'package:freelancer_platform/models/financial_model.dart';
+import 'package:freelancer_platform/models/interview_model.dart';
 import 'package:freelancer_platform/models/project_model.dart';
 import 'package:freelancer_platform/models/search_response.dart';
 import 'package:freelancer_platform/models/work_submission_model.dart';
@@ -16,9 +18,24 @@ import 'package:flutter/foundation.dart';
 import '../models/subscription_plan_model.dart';
 import '../models/coupon_model.dart';
 import '../models/subscription_stats_model.dart';
+import 'package:dio/dio.dart';
 
 class ApiService {
-  static String? token;
+  static const String BASE_URL = 'http://localhost:5001/api';
+  static String? _token;
+
+  static final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: {'Content-Type': 'application/json'},
+      validateStatus: (status) {
+        return status != null && status < 500;
+      },
+    ),
+  );
+
   static String get baseUrl {
     if (kIsWeb) {
       return 'http://localhost:5001/api';
@@ -28,8 +45,53 @@ class ApiService {
 
   static Map<String, String> get headers => {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer $token',
+    if (_token != null) 'Authorization': 'Bearer $_token',
   };
+
+  static set token(String? newToken) {
+    _token = newToken;
+    if (newToken != null) {
+      _dio.options.headers['Authorization'] = 'Bearer $newToken';
+    } else {
+      _dio.options.headers.remove('Authorization');
+    }
+  }
+
+  static String? get token => _token;
+
+  static void _addInterceptors() {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          print('📡 Request: ${options.method} ${options.path}');
+          print('📡 Headers: ${options.headers}');
+          if (options.data != null) {
+            print('📡 Body: ${options.data}');
+          }
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          print(
+            '✅ Response: ${response.statusCode} ${response.requestOptions.path}',
+          );
+          return handler.next(response);
+        },
+        onError: (error, handler) {
+          print('❌ Error: ${error.message}');
+          if (error.response != null) {
+            print('❌ Status: ${error.response!.statusCode}');
+            print('❌ Data: ${error.response!.data}');
+          }
+          return handler.next(error);
+        },
+      ),
+    );
+  }
+
+  static void init() {
+    _addInterceptors();
+    print('✅ ApiService initialized with baseUrl: $baseUrl');
+  }
 
   static Future<Map<String, dynamic>> signup(
     String name,
@@ -82,11 +144,17 @@ class ApiService {
     String password,
   ) async {
     try {
+      final url = Uri.parse('$baseUrl/auth/login');
+      print('🌐 Login URL: $url');
+
       final response = await http.post(
-        Uri.parse('$BASE_URL/auth/login'),
+        url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
+
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -96,15 +164,18 @@ class ApiService {
 
         if (data['user'] != null && data['user']['id'] != null) {
           await TokenStorage.saveUserId(data['user']['id']);
+          print('✅ User ID saved: ${data['user']['id']}');
         }
 
         if (data['user'] != null && data['user']['role'] != null) {
           await TokenStorage.saveUserRole(data['user']['role']);
+          print('✅ User role saved: ${data['user']['role']}');
         }
       }
 
       return data;
     } catch (e) {
+      print('❌ Login error: $e');
       return {'message': 'Connection error: $e'};
     }
   }
@@ -2691,6 +2762,353 @@ class ApiService {
     } catch (e) {
       print('Error checking favorite: $e');
       return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> createInterviewInvitation({
+    required int proposalId,
+    List<DateTime>? suggestedTimes,
+    String? message,
+    int? durationMinutes,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/invite'),
+        headers: headers,
+        body: jsonEncode({
+          'proposal_id': proposalId,
+          'suggested_times': suggestedTimes
+              ?.map((t) => t.toIso8601String())
+              .toList(),
+          'message': message,
+          'duration_minutes': durationMinutes,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating interview invitation: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserInterviews({
+    String? status,
+  }) async {
+    try {
+      final url = status != null && status != 'all'
+          ? '$BASE_URL/interviews/my?status=$status'
+          : '$BASE_URL/interviews/my';
+      final response = await http.get(Uri.parse(url), headers: headers);
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting interviews: $e');
+      return {'success': false, 'invitations': [], 'stats': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getInterviewById(int invitationId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/interviews/$invitationId'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting interview: $e');
+      return {'success': false, 'invitation': null};
+    }
+  }
+
+  static Future<Map<String, dynamic>> respondToInterview({
+    required int invitationId,
+    required String status,
+    DateTime? selectedTime,
+    String? responseMessage,
+  }) async {
+    try {
+      final body = {'status': status};
+
+      if (selectedTime != null) {
+        body['selected_time'] = selectedTime.toIso8601String();
+      }
+      if (responseMessage != null) {
+        body['response_message'] = responseMessage;
+      }
+
+      print('📤 Sending to backend: $body');
+
+      final response = await http.put(
+        Uri.parse('$BASE_URL/interviews/$invitationId/respond'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print('📥 Response: ${response.body}');
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error responding to interview: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> rescheduleInterview({
+    required int invitationId,
+    required DateTime newTime,
+    String? reason,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/interviews/$invitationId/reschedule'),
+        headers: headers,
+        body: jsonEncode({
+          'new_time': newTime.toIso8601String(),
+          'reason': reason,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error rescheduling interview: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> addInterviewNotes({
+    required int invitationId,
+    required String meetingNotes,
+    String? feedback,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/$invitationId/notes'),
+        headers: headers,
+        body: jsonEncode({'meeting_notes': meetingNotes, 'feedback': feedback}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error adding interview notes: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> cancelInterview({
+    required int invitationId,
+    String? reason,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$BASE_URL/interviews/$invitationId/cancel'),
+        headers: headers,
+        body: jsonEncode({'reason': reason}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error cancelling interview: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<InterviewStats> getInterviewStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/interviews/stats'),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      return InterviewStats.fromJson(data['stats'] ?? {});
+    } catch (e) {
+      print('Error getting interview stats: $e');
+      return InterviewStats();
+    }
+  }
+
+  static Future<Map<String, dynamic>> createSmartInterviewInvitation({
+    required int proposalId,
+    String? message,
+    int? durationMinutes,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/smart-invite'),
+        headers: headers,
+        body: jsonEncode({
+          'proposal_id': proposalId,
+          'message': message,
+          'duration_minutes': durationMinutes,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating smart interview invitation: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSmartAnalytics() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/interviews/smart-analytics'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting smart analytics: $e');
+      return {'success': false, 'analytics': {}};
+    }
+  }
+
+  static Future<List<DateTime>> getTimeSuggestions({
+    required int proposalId,
+    required int freelancerId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/interviews/time-suggestions?proposalId=$proposalId&freelancerId=$freelancerId',
+        ),
+        headers: headers,
+      );
+      final data = jsonDecode(response.body);
+      if (data['success'] == true && data['suggestions'] != null) {
+        return (data['suggestions'] as List)
+            .map((t) => DateTime.parse(t))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error getting time suggestions: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> createGroupInterviewInvitation({
+    required int proposalId,
+    required List<int> freelancerIds,
+    required List<DateTime> suggestedTimes,
+    String? message,
+    int durationMinutes = 30,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/group-invite'),
+        headers: headers,
+        body: jsonEncode({
+          'proposal_id': proposalId,
+          'freelancer_ids': freelancerIds,
+          'suggested_times': suggestedTimes
+              .map((t) => t.toIso8601String())
+              .toList(),
+          'message': message,
+          'duration_minutes': durationMinutes,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating group interview: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> addToCalendar({
+    required int invitationId,
+    required String calendarType,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/$invitationId/add-to-calendar'),
+        headers: headers,
+        body: jsonEncode({'calendarType': calendarType}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error adding to calendar: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> sendManualReminder(
+    int invitationId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/$invitationId/send-reminder'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error sending reminder: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> addPostInterviewFeedback({
+    required int invitationId,
+    required int rating,
+    String? comment,
+    String? improvements,
+    bool? wouldHireAgain,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/$invitationId/feedback'),
+        headers: headers,
+        body: jsonEncode({
+          'rating': rating,
+          'comment': comment,
+          'improvements': improvements,
+          'would_hire_again': wouldHireAgain,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error adding feedback: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<String> exportInterviewStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/interviews/export-stats'),
+        headers: headers,
+      );
+      return response.body;
+    } catch (e) {
+      print('Error exporting stats: $e');
+      return '';
+    }
+  }
+
+  static Future<Map<String, dynamic>> compareFreelancers({
+    required List<int> freelancerIds,
+    required int projectId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/interviews/compare-freelancers'),
+        headers: headers,
+        body: jsonEncode({
+          'freelancerIds': freelancerIds,
+          'projectId': projectId,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error comparing freelancers: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getQuestionLibrary() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/interviews/question-library'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting question library: $e');
+      return {'success': false, 'questions': {}};
     }
   }
 }

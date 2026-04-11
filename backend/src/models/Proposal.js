@@ -29,30 +29,36 @@ const Proposal = sequelize.define("Proposal", {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM("pending", "accepted", "rejected", "negotiating"),
+    type: DataTypes.ENUM(
+      "pending",
+      "accepted",
+      "rejected",
+      "negotiating",
+      "interviewing",
+    ),
     defaultValue: "pending",
   },
   milestones: {
     type: DataTypes.TEXT,
     defaultValue: "[]",
     get() {
-      const rawValue = this.getDataValue('milestones');
+      const rawValue = this.getDataValue("milestones");
       return rawValue ? JSON.parse(rawValue) : [];
     },
     set(value) {
-      this.setDataValue('milestones', JSON.stringify(value));
-    }
+      this.setDataValue("milestones", JSON.stringify(value));
+    },
   },
   negotiated_data: {
     type: DataTypes.TEXT,
     defaultValue: "{}",
     get() {
-      const rawValue = this.getDataValue('negotiated_data');
+      const rawValue = this.getDataValue("negotiated_data");
       return rawValue ? JSON.parse(rawValue) : {};
     },
     set(value) {
-      this.setDataValue('negotiated_data', JSON.stringify(value));
-    }
+      this.setDataValue("negotiated_data", JSON.stringify(value));
+    },
   },
   createdAt: {
     type: DataTypes.DATE,
