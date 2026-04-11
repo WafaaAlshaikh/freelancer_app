@@ -333,6 +333,7 @@ export const getProjectProposals = async (req, res) => {
     });
   }
 };
+
 export const updateProposalStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -395,6 +396,17 @@ export const updateProposalStatus = async (req, res) => {
         proposal.price,
       );
 
+      if (!contract || !contract.id) {
+        console.error("❌ Failed to create contract");
+        return res.status(500).json({
+          message: "Failed to create contract",
+          proposal,
+        });
+      }
+
+      console.log("✅ Contract draft created:", contract.id);
+      console.log("✅ Contract data:", JSON.stringify(contract, null, 2));
+
       await NotificationService.createNotification({
         userId: proposal.UserId,
         type: "proposal_accepted",
@@ -408,12 +420,18 @@ export const updateProposalStatus = async (req, res) => {
         },
       });
 
-      console.log("✅ Contract draft created:", contract.id);
-
       return res.json({
+        success: true,
         message: "✅ Proposal accepted. Please review and sign the contract.",
-        proposal,
-        contract,
+        proposal: proposal.toJSON(),
+        contract: {
+          id: contract.id,
+          agreed_amount: contract.agreed_amount,
+          status: contract.status,
+          projectId: contract.ProjectId,
+          freelancerId: contract.FreelancerId,
+          clientId: contract.ClientId,
+        },
         requiresSignature: true,
       });
     }
@@ -431,12 +449,17 @@ export const updateProposalStatus = async (req, res) => {
     });
 
     res.json({
+      success: true,
       message: "✅ Proposal rejected",
       proposal,
     });
   } catch (err) {
     console.error("❌ Error in updateProposalStatus:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
@@ -714,6 +737,27 @@ export const acceptProposalWithNegotiation = async (req, res) => {
     });
 
     await SubscriptionService.incrementActiveProjectsCount(req.user.id);
+
+    const sowResult = await AIService.generateProfessionalSOW(
+      {
+        title: project.title,
+        description: project.description,
+        category: project.category,
+        skills: project.skills ? JSON.parse(project.skills) : [],
+        budget: agreedPrice,
+        duration: project.duration,
+        clientName: req.user.name,
+        clientEmail: req.user.email,
+      },
+      freelancer,
+      finalMilestones,
+      "",
+    );
+
+    await contract.update({
+      contract_document: sowResult.html,
+      ai_analysis: sowResult.analysis,
+    });
 
     const paymentIntent = await PaymentService.createEscrowPaymentIntent(
       contract.id,
@@ -1344,5 +1388,148 @@ export const getClientProfile = async (req, res) => {
   } catch (error) {
     console.error("❌ Error in getClientProfile:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const createContractFromProposalDirect = async (req, res) => {
+  try {
+    const { proposalId, agreedAmount, milestones, sowHtml, sowAnalysis } =
+      req.body;
+    const clientId = req.user.id;
+
+    console.log("📝 Creating contract from proposal:", proposalId);
+    console.log("📄 Has SOW HTML:", !!sowHtml);
+
+    const proposal = await Proposal.findByPk(proposalId, {
+      include: [
+        { model: Project },
+        { model: User, as: "freelancer", attributes: ["id", "name", "email"] },
+      ],
+    });
+
+    if (!proposal) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Proposal not found" });
+    }
+
+    if (proposal.Project.UserId !== clientId) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const existingContract = await Contract.findOne({
+      where: { ProjectId: proposal.ProjectId },
+    });
+
+    if (existingContract) {
+      console.log("⚠️ Contract already exists:", existingContract.id);
+      return res.json({
+        success: true,
+        contract: {
+          id: existingContract.id,
+          agreed_amount: existingContract.agreed_amount,
+          status: existingContract.status,
+        },
+      });
+    }
+
+    const finalMilestones = milestones || [
+      {
+        title: "Project Start",
+        description: "Begin work on project",
+        amount: agreedAmount * 0.3,
+        percentage: 30,
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        status: "pending",
+      },
+      {
+        title: "Milestone 1",
+        description: "First deliverable",
+        amount: agreedAmount * 0.4,
+        percentage: 40,
+        due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        status: "pending",
+      },
+      {
+        title: "Final Delivery",
+        description: "Complete project",
+        amount: agreedAmount * 0.3,
+        percentage: 30,
+        due_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+        status: "pending",
+      },
+    ];
+
+    let contractDocument;
+    if (sowHtml) {
+      contractDocument = sowHtml;
+      console.log("✅ Using SOW HTML as contract document");
+    } else {
+      contractDocument = ContractService.generateContractDocument({
+        projectId: proposal.ProjectId,
+        freelancerId: proposal.UserId,
+        clientId: clientId,
+        agreed_amount: agreedAmount,
+      });
+      console.log("📄 Using regular contract document");
+    }
+
+    const contract = await Contract.create({
+      ProjectId: proposal.ProjectId,
+      FreelancerId: proposal.UserId,
+      ClientId: clientId,
+      agreed_amount: agreedAmount,
+      contract_document: contractDocument,
+      status: "draft",
+      terms: sowHtml
+        ? "AI-generated SOW document"
+        : "Standard terms and conditions apply.",
+      milestones: JSON.stringify(finalMilestones),
+      ai_analysis: sowAnalysis ? JSON.stringify(sowAnalysis) : null,
+    });
+
+    console.log("✅ Contract created with ID:", contract.id);
+    console.log("✅ Contract document type:", sowHtml ? "SOW" : "Regular");
+
+    await proposal.update({ status: "accepted" });
+
+    await Proposal.update(
+      { status: "rejected" },
+      {
+        where: {
+          ProjectId: proposal.ProjectId,
+          id: { [Op.ne]: proposalId },
+          status: "pending",
+        },
+      },
+    );
+
+    await NotificationService.createNotification({
+      userId: proposal.UserId,
+      type: "contract_created",
+      title: "New Contract Created",
+      body: `A ${sowHtml ? "SOW document" : "contract"} has been created for "${proposal.Project.title}". Please review and sign.`,
+      data: {
+        contractId: contract.id,
+        projectId: proposal.ProjectId,
+        screen: "contract",
+      },
+    });
+
+    res.json({
+      success: true,
+      contract: {
+        id: contract.id,
+        agreed_amount: contract.agreed_amount,
+        status: contract.status,
+        projectId: contract.ProjectId,
+        freelancerId: contract.FreelancerId,
+        clientId: contract.ClientId,
+        hasSOW: !!sowHtml,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error creating contract:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

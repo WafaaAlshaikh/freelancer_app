@@ -72,6 +72,33 @@ class Proposal {
       return [];
     }
 
+    Project? project;
+    if (json['project'] != null) {
+      try {
+        project = Project.fromJson(json['project']);
+      } catch (e) {
+        print('⚠️ Error parsing project: $e');
+      }
+    }
+
+    User? freelancer;
+    if (json['freelancer'] != null) {
+      try {
+        freelancer = User.fromJson(json['freelancer']);
+      } catch (e) {
+        print('⚠️ Error parsing freelancer: $e');
+      }
+    }
+
+    FreelancerProfile? freelancerProfile;
+    if (json['profile'] != null) {
+      try {
+        freelancerProfile = FreelancerProfile.fromJson(json['profile']);
+      } catch (e) {
+        print('⚠️ Error parsing freelancer profile: $e');
+      }
+    }
+
     return Proposal(
       id: json['id'],
       projectId: json['ProjectId'],
@@ -85,15 +112,9 @@ class Proposal {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
           : null,
-      project: json['project'] != null
-          ? Project.fromJson(json['project'])
-          : null,
-      freelancer: json['freelancer'] != null
-          ? User.fromJson(json['freelancer'])
-          : null,
-      freelancerProfile: json['profile'] != null
-          ? FreelancerProfile.fromJson(json['profile'])
-          : null,
+      project: project,
+      freelancer: freelancer,
+      freelancerProfile: freelancerProfile,
       milestones: parseMilestones(json['milestones']),
       contractId: json['contractId'],
     );

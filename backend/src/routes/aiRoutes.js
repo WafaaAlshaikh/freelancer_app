@@ -5,6 +5,11 @@ import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 import AIMatchingService from "../services/aiMatchingService.js";
 import AIService from "../services/aiService.js";
 import AIChatController from "../controllers/aiChatController.js";
+import {
+  generateSOW,
+  analyzeProjectWithMarket,
+  getMarketRecommendations,
+} from "../controllers/sowController.js";
 
 const router = express.Router();
 
@@ -205,9 +210,23 @@ router.get(
   },
 );
 
-// AI Chatbot Routes
 router.post("/chat", protect, AIChatController.chat);
 router.get("/chat/history", protect, AIChatController.getChatHistory);
 router.delete("/chat/history", protect, AIChatController.clearChatHistory);
 
+router.post("/generate-sow", protect, authorizeRoles("client"), generateSOW);
+
+router.get(
+  "/analyze-with-market/:projectId",
+  protect,
+  authorizeRoles("client", "freelancer"),
+  analyzeProjectWithMarket,
+);
+
+router.get(
+  "/market-recommendations/:projectId",
+  protect,
+  authorizeRoles("client"),
+  getMarketRecommendations,
+);
 export default router;

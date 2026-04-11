@@ -990,11 +990,21 @@ Use professional legal language but make it clear and readable.
     agreed_amount,
   ) {
     try {
+      console.log("📝 Creating contract draft for:", {
+        projectId,
+        freelancerId,
+        clientId,
+        agreed_amount,
+      });
+
       const existingContract = await Contract.findOne({
         where: { ProjectId: projectId },
       });
-      if (existingContract)
-        throw new Error("Contract already exists for this project");
+
+      if (existingContract) {
+        console.log("⚠️ Contract already exists:", existingContract.id);
+        return existingContract;
+      }
 
       const defaultMilestones = [
         {
@@ -1029,25 +1039,25 @@ Use professional legal language but make it clear and readable.
         },
       ];
 
-      const contractDocument = this.generateContractHtml({
-        project: await Project.findByPk(projectId),
-        freelancer: await User.findByPk(freelancerId),
-        client: await User.findByPk(clientId),
-        agreedAmount: agreed_amount,
-        milestones: defaultMilestones,
-        projectType: "general",
+      const contractDocument = this.generateContractDocument({
+        projectId,
+        freelancerId,
+        clientId,
+        agreed_amount,
       });
 
       const contract = await Contract.create({
         ProjectId: projectId,
         FreelancerId: freelancerId,
         ClientId: clientId,
-        agreed_amount,
+        agreed_amount: agreed_amount,
         contract_document: contractDocument,
         status: "draft",
         terms: "Standard terms and conditions apply.",
         milestones: JSON.stringify(defaultMilestones),
       });
+
+      console.log("✅ Contract created with ID:", contract.id);
 
       await NotificationService.createNotification({
         userId: freelancerId,
@@ -1059,6 +1069,7 @@ Use professional legal language but make it clear and readable.
 
       return contract;
     } catch (error) {
+      console.error("❌ Error in createContractDraft:", error);
       throw error;
     }
   }

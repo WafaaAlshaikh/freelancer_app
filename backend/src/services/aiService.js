@@ -910,6 +910,645 @@ Calculate optimal pricing for this freelancer on this project:
       return null;
     }
   }
+
+  static async getMarketInsights(projectData) {
+    try {
+      console.log("📊 Getting market insights for:", projectData.category);
+
+      const { category, budget, duration, skills } = projectData;
+
+      const similarProjects = await Project.findAll({
+        where: {
+          category: category,
+          status: "completed",
+          budget: {
+            [Op.between]: [budget * 0.5, budget * 1.5],
+          },
+        },
+        limit: 20,
+        include: [
+          {
+            model: Contract,
+            required: true,
+            where: { status: "completed" },
+          },
+        ],
+      });
+
+      if (similarProjects.length === 0) {
+        return {
+          market_average_duration: duration || 21,
+          market_average_cost: budget,
+          similar_projects_count: 0,
+          success_rate: 85,
+          confidence_score: 40,
+          message: "Not enough data, using industry standards",
+        };
+      }
+
+      let totalDuration = 0;
+      let totalActualCost = 0;
+      let totalBudget = 0;
+
+      for (const project of similarProjects) {
+        totalDuration += project.duration || duration;
+        totalBudget += project.budget || budget;
+        if (project.Contract) {
+          totalActualCost +=
+            parseFloat(project.Contract.agreed_amount) || project.budget;
+        }
+      }
+
+      const avgDuration = totalDuration / similarProjects.length;
+      const avgBudget = totalBudget / similarProjects.length;
+      const avgActualCost = totalActualCost / similarProjects.length;
+
+      const completedCount = similarProjects.filter(
+        (p) => p.status === "completed",
+      ).length;
+      const successRate = (completedCount / similarProjects.length) * 100;
+
+      return {
+        market_average_duration: Math.round(avgDuration),
+        market_average_cost: Math.round(avgBudget),
+        market_actual_cost: Math.round(avgActualCost),
+        similar_projects_count: similarProjects.length,
+        success_rate: Math.round(successRate),
+        confidence_score: Math.min(100, similarProjects.length * 5),
+        recommendations: this.generateRecommendations(
+          projectData,
+          avgBudget,
+          avgDuration,
+        ),
+      };
+    } catch (error) {
+      console.error("❌ Market insights error:", error);
+      return null;
+    }
+  }
+
+  static generateRecommendations(
+    projectData,
+    marketAvgBudget,
+    marketAvgDuration,
+  ) {
+    const recommendations = [];
+
+    if (projectData.budget > marketAvgBudget * 1.2) {
+      recommendations.push({
+        type: "budget",
+        message: `Your budget is ${Math.round((projectData.budget / marketAvgBudget - 1) * 100)}% above market average. Consider adjusting for better responses.`,
+        suggested_action: "reduce_budget",
+      });
+    } else if (projectData.budget < marketAvgBudget * 0.8) {
+      recommendations.push({
+        type: "budget",
+        message: `Your budget is below market average. You may receive fewer quality proposals.`,
+        suggested_action: "increase_budget",
+      });
+    }
+
+    if (
+      projectData.duration &&
+      projectData.duration < marketAvgDuration * 0.7
+    ) {
+      recommendations.push({
+        type: "timeline",
+        message: `Your timeline is very aggressive. Similar projects take ${marketAvgDuration} days on average.`,
+        suggested_action: "extend_timeline",
+      });
+    }
+
+    return recommendations;
+  }
+
+  static async analyzeProjectWithMarket(projectData) {
+    try {
+      console.log("🤖 Starting comprehensive project analysis...");
+
+      const baseAnalysis = await this.analyzeProject(projectData);
+
+      const marketInsights = await this.getMarketInsights(projectData);
+
+      const combinedAnalysis = {
+        ...baseAnalysis,
+        market_insights: marketInsights,
+        confidence_score: marketInsights?.confidence_score || 70,
+        final_recommendations: this.mergeRecommendations(
+          baseAnalysis,
+          marketInsights,
+        ),
+      };
+
+      console.log("✅ Analysis complete with market insights");
+      return combinedAnalysis;
+    } catch (error) {
+      console.error("❌ Analysis error:", error);
+      return this.getDefaultProjectAnalysis(projectData);
+    }
+  }
+
+  static mergeRecommendations(analysis, marketInsights) {
+    const recommendations = [];
+
+    if (analysis.tips && analysis.tips.length) {
+      recommendations.push(
+        ...analysis.tips.map((tip) => ({
+          type: "tip",
+          message: tip,
+          priority: "medium",
+        })),
+      );
+    }
+
+    if (marketInsights?.recommendations) {
+      recommendations.push(...marketInsights.recommendations);
+    }
+
+    if (analysis.risks && analysis.risks.length) {
+      recommendations.push({
+        type: "risk",
+        message: `Key risks identified: ${analysis.risks.slice(0, 2).join(", ")}`,
+        priority: "high",
+      });
+    }
+
+    return recommendations;
+  }
+
+  static async generateProfessionalSOW(
+    projectData,
+    freelancerData,
+    milestones,
+    additionalTerms = "",
+  ) {
+    try {
+      console.log("📄 Generating professional SOW...");
+
+      const date = new Date();
+      const sowNumber = `SOW-${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}-${Math.floor(Math.random() * 1000)}`;
+
+      const totalAmount = milestones.reduce(
+        (sum, m) => sum + (m.amount || 0),
+        0,
+      );
+
+      const analysis = await this.analyzeProjectWithMarket(projectData);
+
+      const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statement of Work - ${projectData.title}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+    }
+    
+    .sow-container {
+      max-width: 1100px;
+      margin: 40px auto;
+      background: white;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    /* Header Section */
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    
+    .ai-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .sow-number {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 8px;
+    }
+    
+    /* Content Sections */
+    .content {
+      padding: 40px;
+    }
+    
+    .section {
+      margin-bottom: 32px;
+    }
+    
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #667eea;
+      border-left: 4px solid #667eea;
+      padding-left: 16px;
+      margin-bottom: 20px;
+    }
+    
+    /* Info Grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .info-card {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 12px;
+    }
+    
+    .info-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 1px;
+    }
+    
+    .info-value {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    
+    /* Milestones */
+    .milestone-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border-left: 4px solid #10b981;
+    }
+    
+    .milestone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .milestone-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .milestone-amount {
+      font-size: 20px;
+      font-weight: 700;
+      color: #10b981;
+    }
+    
+    .milestone-desc {
+      color: #666;
+      margin-bottom: 12px;
+    }
+    
+    .milestone-meta {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      color: #888;
+    }
+    
+    /* Total Amount */
+    .total-section {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 24px 0;
+      text-align: center;
+    }
+    
+    .total-amount {
+      font-size: 36px;
+      font-weight: 800;
+    }
+    
+    /* AI Analysis */
+    .ai-analysis {
+      background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+      padding: 24px;
+      border-radius: 12px;
+      margin: 24px 0;
+    }
+    
+    /* Signature Section */
+    .signature-section {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      margin-top: 40px;
+      padding-top: 40px;
+      border-top: 2px dashed #ddd;
+    }
+    
+    .signature-box {
+      text-align: center;
+    }
+    
+    .signature-line {
+      margin-top: 40px;
+      padding-top: 8px;
+      border-top: 1px solid #ddd;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    /* Footer */
+    .footer {
+      background: #f8f9fa;
+      padding: 24px;
+      text-align: center;
+      font-size: 11px;
+      color: #888;
+    }
+    
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+        margin: 0;
+      }
+      .sow-container {
+        margin: 0;
+        box-shadow: none;
+      }
+      .header {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sow-container">
+    <div class="header">
+      <div class="ai-badge">
+        🤖 AI-Generated Document
+      </div>
+      <h1 style="font-size: 32px; margin-bottom: 8px;">Statement of Work</h1>
+      <div class="sow-number">Document ID: ${sowNumber}</div>
+      <div>Date: ${date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
+    </div>
+    
+    <div class="content">
+      <!-- Parties Information -->
+      <div class="section">
+        <h2 class="section-title">Parties Involved</h2>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-label">Client</div>
+            <div class="info-value">${this.escapeHtml(projectData.clientName || "Client")}</div>
+            <div style="font-size: 13px; color: #666;">${projectData.clientEmail || ""}</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Freelancer / Service Provider</div>
+            <div class="info-value">${this.escapeHtml(freelancerData.name || "Freelancer")}</div>
+            <div style="font-size: 13px; color: #666;">${freelancerData.email || ""}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Project Overview -->
+      <div class="section">
+        <h2 class="section-title">Project Overview</h2>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-label">Project Title</div>
+            <div class="info-value">${this.escapeHtml(projectData.title)}</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Category</div>
+            <div class="info-value">${projectData.category || "General"}</div>
+          </div>
+        </div>
+        <div class="info-card" style="margin-top: 12px;">
+          <div class="info-label">Description</div>
+          <div class="info-value" style="font-size: 14px; font-weight: normal;">${this.escapeHtml(projectData.description)}</div>
+        </div>
+      </div>
+      
+      <!-- Required Skills -->
+      ${
+        projectData.skills && projectData.skills.length
+          ? `
+      <div class="section">
+        <h2 class="section-title">Required Skills & Technologies</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${projectData.skills.map((skill) => `<span style="background: #e0e7ff; color: #4f46e5; padding: 6px 12px; border-radius: 20px; font-size: 13px;">${this.escapeHtml(skill)}</span>`).join("")}
+        </div>
+      </div>
+      `
+          : ""
+      }
+      
+      <!-- AI Market Analysis -->
+      <div class="ai-analysis">
+        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+          <span>🧠</span> AI Market Analysis
+        </h3>
+        <div class="info-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div>
+            <div class="info-label">Difficulty Level</div>
+            <div class="info-value" style="font-size: 16px;">${analysis.difficulty_level || "Intermediate"}</div>
+          </div>
+          <div>
+            <div class="info-label">Est. Duration</div>
+            <div class="info-value" style="font-size: 16px;">${analysis.estimated_duration_days || "21"} days</div>
+          </div>
+          <div>
+            <div class="info-label">Confidence Score</div>
+            <div class="info-value" style="font-size: 16px;">${analysis.confidence_score || "85"}%</div>
+          </div>
+        </div>
+        ${
+          analysis.market_insights
+            ? `
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.1);">
+          <div class="info-label">Market Insights</div>
+          <div style="font-size: 14px; margin-top: 8px;">
+            Based on ${analysis.market_insights.similar_projects_count || 0} similar projects:
+            • Average market price: $${analysis.market_insights.market_average_cost || 0}
+            • Average duration: ${analysis.market_insights.market_average_duration || 0} days
+            • Success rate: ${analysis.market_insights.success_rate || 0}%
+          </div>
+        </div>
+        `
+            : ""
+        }
+      </div>
+      
+      <!-- Scope of Work -->
+      <div class="section">
+        <h2 class="section-title">Scope of Work</h2>
+        <p>The Service Provider agrees to deliver the following scope of work:</p>
+        <ul style="margin-top: 12px; margin-left: 20px;">
+          <li>Complete all deliverables as described in the project requirements</li>
+          <li>Provide weekly progress updates</li>
+          <li>Deliver source code and documentation upon completion</li>
+          <li>Provide ${analysis.estimated_duration_days || 30} days of post-completion support</li>
+        </ul>
+      </div>
+      
+      <!-- Milestones & Payment Schedule -->
+      <div class="section">
+        <h2 class="section-title">Milestones & Payment Schedule</h2>
+        ${milestones
+          .map(
+            (milestone, index) => `
+          <div class="milestone-card">
+            <div class="milestone-header">
+              <span class="milestone-title">Milestone ${index + 1}: ${this.escapeHtml(milestone.title)}</span>
+              <span class="milestone-amount">$${milestone.amount?.toLocaleString() || 0}</span>
+            </div>
+            <div class="milestone-desc">${this.escapeHtml(milestone.description || "No description provided")}</div>
+            <div class="milestone-meta">
+              <span>📅 Due: ${milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : "To be determined"}</span>
+              <span>📊 ${milestone.percentage || 0}% of total</span>
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+        
+        <div class="total-section">
+          <div>Total Contract Value</div>
+          <div class="total-amount">$${totalAmount.toLocaleString()}</div>
+          <div style="font-size: 13px; margin-top: 8px;">Payment will be held in escrow and released upon milestone approval</div>
+        </div>
+      </div>
+      
+      <!-- Terms & Conditions -->
+      <div class="section">
+        <h2 class="section-title">Terms & Conditions</h2>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">1. Intellectual Property</h3>
+          <p>Upon full payment, all intellectual property rights, including source code, designs, and documentation, shall transfer to the Client. The Service Provider retains the right to include the work in their portfolio.</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">2. Confidentiality</h3>
+          <p>Both parties agree to keep all project-related information confidential. The Service Provider shall not disclose any proprietary information to third parties without written consent.</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">3. Payment Terms</h3>
+          <p>All payments are processed through the platform's secure escrow system. Milestone payments are released only after client approval of deliverables.</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">4. Timeline & Delivery</h3>
+          <p>The Service Provider agrees to deliver milestones according to the schedule above. Any delays must be communicated 48 hours in advance.</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">5. Quality Assurance</h3>
+          <p>All deliverables must meet industry standards and the specifications outlined in this document. The Client has 7 days after each milestone to request revisions.</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">6. Termination</h3>
+          <p>Either party may terminate this agreement with 7 days written notice. In case of termination, payment will be made for completed work.</p>
+        </div>
+        
+        ${
+          additionalTerms
+            ? `
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">7. Additional Terms</h3>
+          <p>${this.escapeHtml(additionalTerms)}</p>
+        </div>
+        `
+            : ""
+        }
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 8px;">8. Dispute Resolution</h3>
+          <p>Any disputes arising from this agreement shall be resolved through the platform's dispute resolution process. Both parties agree to cooperate in good faith.</p>
+        </div>
+      </div>
+      
+      <!-- Risk Analysis -->
+      ${
+        analysis.risks && analysis.risks.length
+          ? `
+      <div class="section">
+        <h2 class="section-title">Risk Analysis & Mitigation</h2>
+        <ul style="margin-left: 20px;">
+          ${analysis.risks.map((risk) => `<li style="margin-bottom: 8px;">⚠️ ${this.escapeHtml(risk)}</li>`).join("")}
+        </ul>
+      </div>
+      `
+          : ""
+      }
+      
+      <!-- Signatures -->
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div><strong>Client Signature</strong></div>
+          <div style="font-size: 12px; color: #888; margin-top: 8px;">Date: _____________</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div><strong>Service Provider Signature</strong></div>
+          <div style="font-size: 12px; color: #888; margin-top: 8px;">Date: _____________</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>This Statement of Work is generated by AI and is legally binding.</p>
+      <p>© ${new Date().getFullYear()} Freelancer Platform - All rights reserved.</p>
+      <p>Document ID: ${sowNumber} | Generated: ${date.toISOString()}</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      console.log("✅ SOW generated successfully");
+      return { html, sowNumber, analysis };
+    } catch (error) {
+      console.error("❌ SOW generation error:", error);
+      throw error;
+    }
+  }
+
+  static escapeHtml(text) {
+    if (!text) return "";
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 }
 
 export default AIService;

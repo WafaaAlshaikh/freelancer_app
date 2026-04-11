@@ -1,5 +1,8 @@
 // screens/client/project_proposals_screen.dart
 import 'package:flutter/material.dart';
+import 'package:freelancer_platform/models/project_model.dart';
+import 'package:freelancer_platform/models/user_model.dart';
+import 'package:freelancer_platform/screens/client/sow_generator_screen.dart';
 import '../../services/api_service.dart';
 import '../../models/proposal_model.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -20,6 +23,8 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
   bool loadingSuggestions = true;
   bool _isSendingInterview = false;
   bool _loadingSuggestions = false;
+  bool _isProcessing = false;
+  bool _isGeneratingSOW = false;
 
   @override
   void initState() {
@@ -55,26 +60,200 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
   }
 
   Future<void> handleProposalStatus(int proposalId, String status) async {
-    final result = await ApiService.updateProposalStatus(
-      proposalId: proposalId,
-      status: status,
+    setState(() => _isProcessing = true);
+
+    try {
+      final result = await ApiService.updateProposalStatus(
+        proposalId: proposalId,
+        status: status,
+      );
+
+      print('📦 Update proposal status result: $result');
+
+      if (result['success'] == true || result['proposal'] != null) {
+        Fluttertoast.showToast(msg: "✅ Proposal $status successfully");
+
+        if (status == 'accepted' && result['contract'] != null) {
+          final contractId = result['contract']['id'];
+          print('✅ Contract ID received: $contractId');
+
+          final proposalsData = await ApiService.getProjectProposals(
+            widget.projectId,
+          );
+          final proposalJson = proposalsData.firstWhere(
+            (p) => p['id'] == proposalId,
+            orElse: () => null,
+          );
+
+          if (proposalJson == null) {
+            throw Exception('Proposal data not found');
+          }
+
+          final proposal = Proposal.fromJson(proposalJson);
+
+          Project? projectData;
+
+          if (proposal.project != null) {
+            projectData = proposal.project;
+            print('✅ Project found in proposal: ${projectData!.title}');
+          }
+
+          if (projectData == null && proposal.projectId != null) {
+            print(
+              '📡 Fetching project from API with ID: ${proposal.projectId}',
+            );
+            final projectResponse = await ApiService.getProjectById(
+              proposal.projectId!,
+            );
+            print('📦 Project response: $projectResponse');
+
+            if (projectResponse['project'] != null) {
+              projectData = Project.fromJson(projectResponse['project']);
+              print('✅ Project fetched from API: ${projectData.title}');
+            } else if (projectResponse != null &&
+                projectResponse['id'] != null) {
+              projectData = Project.fromJson(projectResponse);
+              print('✅ Project fetched directly: ${projectData.title}');
+            }
+          }
+
+          if (projectData == null) {
+            print(
+              '📡 Fetching project from API with widget ID: ${widget.projectId}',
+            );
+            final projectResponse = await ApiService.getProjectById(
+              widget.projectId,
+            );
+
+            if (projectResponse['project'] != null) {
+              projectData = Project.fromJson(projectResponse['project']);
+            } else if (projectResponse != null &&
+                projectResponse['id'] != null) {
+              projectData = Project.fromJson(projectResponse);
+            }
+          }
+
+          if (projectData == null) {
+            print('📡 Fetching project from projects list');
+            final allProjects = await ApiService.getMyProjects2();
+            final foundProject = allProjects.firstWhere(
+              (p) => p['id'] == (proposal.projectId ?? widget.projectId),
+              orElse: () => null,
+            );
+
+            if (foundProject != null) {
+              projectData = Project.fromJson(foundProject);
+              print('✅ Project found in projects list: ${projectData.title}');
+            }
+          }
+
+          if (projectData == null) {
+            print('❌ All attempts to fetch project failed!');
+            print('   proposal.projectId: ${proposal.projectId}');
+            print('   widget.projectId: ${widget.projectId}');
+            throw Exception('Project data not found after multiple attempts');
+          }
+
+          User? freelancerData = proposal.freelancer;
+
+          if (freelancerData == null && proposal.userId != null) {
+            print('📡 Fetching freelancer data for ID: ${proposal.userId}');
+            final freelancerResponse =
+                await ApiService.getFreelancerPublicProfile(proposal.userId!);
+
+            if (freelancerResponse['user'] != null) {
+              freelancerData = User.fromJson(freelancerResponse['user']);
+            } else if (freelancerResponse != null &&
+                freelancerResponse['id'] != null) {
+              freelancerData = User.fromJson(freelancerResponse);
+            }
+          }
+
+          if (freelancerData == null) {
+            print('⚠️ Could not fetch freelancer data, creating placeholder');
+            freelancerData = User(
+              id: proposal.userId ?? 0,
+              name: proposal.freelancer?.name ?? 'Freelancer',
+              email: '',
+              avatar: null,
+            );
+          }
+
+          print('✅ Final project: ${projectData.title}');
+          print('✅ Final freelancer: ${freelancerData.name}');
+
+          final completeProposal = Proposal(
+            id: proposal.id,
+            projectId: proposal.projectId,
+            userId: proposal.userId,
+            price: proposal.price,
+            deliveryTime: proposal.deliveryTime,
+            proposalText: proposal.proposalText,
+            status: proposal.status,
+            createdAt: proposal.createdAt,
+            project: projectData,
+            freelancer: freelancerData,
+            freelancerProfile: proposal.freelancerProfile,
+            milestones: proposal.milestones,
+            contractId: proposal.contractId,
+          );
+
+          await _navigateToSOWGenerator(completeProposal, contractId);
+        } else {
+          fetchProposals();
+          fetchSuggestedFreelancers();
+        }
+      } else {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Error updating proposal',
+          backgroundColor: Colors.red,
+        );
+      }
+    } catch (e, stacktrace) {
+      print('❌ Error in handleProposalStatus: $e');
+      print('📚 Stacktrace: $stacktrace');
+      Fluttertoast.showToast(msg: 'Error: $e', backgroundColor: Colors.red);
+    } finally {
+      setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _showSOWGeneratorWithContract(
+    int proposalId,
+    int contractId,
+  ) async {
+    final proposals = await ApiService.getProjectProposals(widget.projectId);
+    final proposal = proposals.firstWhere(
+      (p) => p['id'] == proposalId,
+      orElse: () => null,
     );
 
-    if (result['proposal'] != null) {
-      Fluttertoast.showToast(msg: "✅ Proposal $status successfully");
+    if (proposal == null) {
+      Fluttertoast.showToast(msg: 'Proposal data not found');
+      return;
+    }
 
-      if (status == 'accepted' && result['contract'] != null) {
-        final contractId = result['contract']['id'];
+    final proposalObj = Proposal.fromJson(proposal);
 
-        Navigator.pushNamed(
-          context,
-          '/contract',
-          arguments: {'contractId': contractId, 'userRole': 'client'},
-        );
-      } else {
-        fetchProposals();
-        fetchSuggestedFreelancers();
-      }
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SOWGeneratorScreen(
+          project: proposalObj.project!,
+          freelancer: proposalObj.freelancer!,
+          agreedAmount: proposalObj.price!,
+          contractId: contractId,
+          proposalId: proposalObj.id!,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      Navigator.pushNamed(
+        context,
+        '/contract',
+        arguments: {'contractId': contractId, 'userRole': 'client'},
+      );
     }
   }
 
@@ -82,6 +261,170 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
     if (score >= 80) return Colors.green;
     if (score >= 60) return Colors.orange;
     return Colors.blue;
+  }
+
+  void _showSOWGenerator(Proposal proposal) async {
+    setState(() => _isGeneratingSOW = true);
+
+    try {
+      print('🎯 Creating contract for proposal: ${proposal.id}');
+      print('🔍 Project ID from widget: ${widget.projectId}');
+      print('🔍 Proposal projectId: ${proposal.projectId}');
+
+      Project projectData;
+      User freelancerData;
+
+      final actualProjectId = proposal.projectId ?? widget.projectId;
+      print('🔍 Using project ID: $actualProjectId');
+
+      print('📡 Fetching project data from API...');
+      final projectResponse = await ApiService.getProjectById(actualProjectId);
+      print('📦 Project response: $projectResponse');
+
+      if (projectResponse['project'] == null) {
+        print('⚠️ Project not found, trying alternative method...');
+        final allProjects = await ApiService.getMyProjects2();
+        final foundProject = allProjects.firstWhere(
+          (p) => p['id'] == actualProjectId,
+          orElse: () => null,
+        );
+
+        if (foundProject != null) {
+          projectData = Project.fromJson(foundProject);
+        } else {
+          throw Exception('Project data not found for ID: $actualProjectId');
+        }
+      } else {
+        projectData = Project.fromJson(projectResponse['project']);
+      }
+
+      print('✅ Project loaded: ${projectData.title}');
+
+      if (proposal.freelancer != null) {
+        freelancerData = proposal.freelancer!;
+        print('✅ Using existing freelancer data: ${freelancerData.name}');
+      } else {
+        print('📡 Fetching freelancer data from API...');
+        final freelancerResponse = await ApiService.getFreelancerPublicProfile(
+          proposal.userId!,
+        );
+        if (freelancerResponse['user'] != null) {
+          freelancerData = User.fromJson(freelancerResponse['user']);
+        } else {
+          freelancerData = User(
+            id: proposal.userId!,
+            name: proposal.freelancer?.name ?? 'Freelancer',
+            email: '',
+            avatar: null,
+          );
+        }
+      }
+
+      print('✅ Freelancer: ${freelancerData.name}');
+
+      final contractResult = await ApiService.createContractDirectly(
+        proposalId: proposal.id!,
+        agreedAmount: proposal.price ?? 0,
+        milestones: proposal.milestones,
+      );
+
+      print('📦 Contract result: $contractResult');
+
+      if (contractResult['success'] == true &&
+          contractResult['contract'] != null) {
+        final contractId = contractResult['contract']['id'];
+        print('✅ Contract created with ID: $contractId');
+
+        setState(() => _isGeneratingSOW = false);
+
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SOWGeneratorScreen(
+              project: projectData,
+              freelancer: freelancerData,
+              agreedAmount: proposal.price!,
+              contractId: contractId,
+              proposalId: proposal.id!,
+            ),
+          ),
+        );
+
+        if (result == true) {
+          Navigator.pushNamed(
+            context,
+            '/contract',
+            arguments: {'contractId': contractId, 'userRole': 'client'},
+          );
+        }
+      } else {
+        setState(() => _isGeneratingSOW = false);
+        Fluttertoast.showToast(
+          msg: contractResult['message'] ?? 'Failed to create contract',
+          backgroundColor: Colors.red,
+        );
+      }
+    } catch (e) {
+      print('❌ Error in _showSOWGenerator: $e');
+      setState(() => _isGeneratingSOW = false);
+      Fluttertoast.showToast(msg: 'Error: $e', backgroundColor: Colors.red);
+    }
+  }
+
+  Future<void> _navigateToSOWGenerator(
+    Proposal proposal,
+    int contractId,
+  ) async {
+    if (proposal.project == null) {
+      Fluttertoast.showToast(
+        msg: 'Project data is missing. Please refresh and try again.',
+        backgroundColor: Colors.red,
+      );
+      return;
+    }
+
+    if (proposal.freelancer == null) {
+      Fluttertoast.showToast(
+        msg: 'Freelancer data is missing. Please refresh and try again.',
+        backgroundColor: Colors.red,
+      );
+      return;
+    }
+
+    if (proposal.price == null) {
+      Fluttertoast.showToast(
+        msg: 'Price data is missing. Please refresh and try again.',
+        backgroundColor: Colors.red,
+      );
+      return;
+    }
+
+    print('✅ Navigating to SOW Generator with:');
+    print('   Project: ${proposal.project!.title}');
+    print('   Freelancer: ${proposal.freelancer!.name}');
+    print('   Price: ${proposal.price}');
+    print('   ContractId: $contractId');
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SOWGeneratorScreen(
+          project: proposal.project!,
+          freelancer: proposal.freelancer!,
+          agreedAmount: proposal.price!,
+          contractId: contractId,
+          proposalId: proposal.id!,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      Navigator.pushNamed(
+        context,
+        '/contract',
+        arguments: {'contractId': contractId, 'userRole': 'client'},
+      );
+    }
   }
 
   @override
@@ -1482,6 +1825,68 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
                     ),
                   ],
                 ),
+
+                if (proposal.status == 'accepted')
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isGeneratingSOW
+                                ? null
+                                : () => _showSOWGenerator(proposal),
+                            icon: _isGeneratingSOW
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.description, size: 18),
+                            label: Text(
+                              _isGeneratingSOW ? 'Creating...' : 'Generate SOW',
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              print(
+                                '👁️ View Contract clicked for proposal: ${proposal.id}',
+                              );
+                              // TODO: جلب contractId من الـ API
+                              Fluttertoast.showToast(
+                                msg: 'View Contract - Coming Soon',
+                              );
+                            },
+                            icon: const Icon(Icons.visibility, size: 18),
+                            label: const Text('View Contract'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              side: const BorderSide(color: Colors.blue),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 if (proposal.status == 'accepted')
                   Container(

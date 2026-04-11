@@ -355,7 +355,9 @@ class ApiService {
         headers: headers,
       );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final data = jsonDecode(response.body);
+        print('📦 getProjectProposals response: ${data.length} proposals');
+        return data;
       }
       return [];
     } catch (e) {
@@ -792,14 +794,26 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getProjectById(int projectId) async {
     try {
+      print('📡 getProjectById called with ID: $projectId');
       final response = await http.get(
         Uri.parse('$BASE_URL/projects/$projectId'),
         headers: headers,
       );
-      return jsonDecode(response.body);
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data.containsKey('project')) {
+          return data;
+        } else {
+          return {'project': data};
+        }
+      }
+      return {'project': null};
     } catch (e) {
-      print('Error getting project: $e');
-      return {'message': 'Connection error: $e'};
+      print('❌ Error getting project: $e');
+      return {'project': null};
     }
   }
 
@@ -3109,6 +3123,157 @@ class ApiService {
     } catch (e) {
       print('Error getting question library: $e');
       return {'success': false, 'questions': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createContractWithSOW({
+    required int proposalId,
+    required double agreedAmount,
+    List<Map<String, dynamic>>? milestones,
+    required String sowHtml,
+    required Map<String, dynamic> sowAnalysis,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/client/contracts/create-from-proposal'),
+        headers: headers,
+        body: jsonEncode({
+          'proposalId': proposalId,
+          'agreedAmount': agreedAmount,
+          'milestones': milestones,
+          'sowHtml': sowHtml,
+          'sowAnalysis': sowAnalysis,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating contract with SOW: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> analyzeProjectWithMarket(
+    int projectId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ai/analyze-with-market/$projectId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['analysis'] ?? {};
+      }
+      return {};
+    } catch (e) {
+      print('Error analyzing project with market: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> generateSOW({
+    required int projectId,
+    required int freelancerId,
+    required double agreedAmount,
+    required List<Map<String, dynamic>> milestones,
+    String? additionalTerms,
+    required int contractId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ai/generate-sow'),
+        headers: headers,
+        body: jsonEncode({
+          'projectId': projectId,
+          'freelancerId': freelancerId,
+          'agreedAmount': agreedAmount,
+          'milestones': milestones,
+          'additionalTerms': additionalTerms,
+        }),
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error generating SOW: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getMarketRecommendations(
+    int projectId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ai/market-recommendations/$projectId'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting market recommendations: $e');
+      return {'success': false, 'recommendations': []};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createContractDirectly({
+    required int proposalId,
+    required double agreedAmount,
+    List<Map<String, dynamic>>? milestones,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/client/contracts/create-from-proposal'),
+        headers: headers,
+        body: jsonEncode({
+          'proposalId': proposalId,
+          'agreedAmount': agreedAmount,
+          'milestones': milestones,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating contract: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateContractWithSOW({
+    required int contractId,
+    required String sowHtml,
+    required Map<String, dynamic> sowAnalysis,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/contracts/$contractId/update-sow'),
+        headers: headers,
+        body: jsonEncode({'sowHtml': sowHtml, 'sowAnalysis': sowAnalysis}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error updating contract with SOW: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<String?> generateSOWPDF({
+    required int contractId,
+    required Map<String, dynamic> sowData,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/contracts/$contractId/generate-pdf'),
+        headers: headers,
+        body: jsonEncode({'sowData': sowData}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['pdfUrl'];
+      }
+      return null;
+    } catch (e) {
+      print('Error generating PDF: $e');
+      return null;
     }
   }
 }
