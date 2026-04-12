@@ -4,6 +4,9 @@ import {
   Project,
   User,
   Notification,
+  FreelancerProfile,
+  Rating,
+  Contract,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import NotificationService from "../services/notificationService.js";
@@ -1120,42 +1123,91 @@ export const compareFreelancers = async (req, res) => {
   try {
     const { freelancerIds, projectId } = req.body;
 
+    const project = await Project.findByPk(projectId);
+
     const comparisons = await Promise.all(
       freelancerIds.map(async (id) => {
         const user = await User.findByPk(id, {
-          include: [{ model: UserProfile, as: "profile" }],
+          include: [{ model: FreelancerProfile }],
         });
 
-        const interviews = await InterviewInvitation.findAll({
-          where: { freelancer_id: id, status: "completed" },
-          include: [{ model: Project }],
+        const projectSkills = project.skills ? JSON.parse(project.skills) : [];
+        const freelancerSkills = user.FreelancerProfile?.skills
+          ? JSON.parse(user.FreelancerProfile.skills)
+          : [];
+
+        const matchedSkills = projectSkills.filter((skill) =>
+          freelancerSkills.some(
+            (fs) =>
+              fs.toLowerCase().includes(skill.toLowerCase()) ||
+              skill.toLowerCase().includes(fs.toLowerCase()),
+          ),
+        );
+        const skillsMatch =
+          projectSkills.length > 0
+            ? Math.round((matchedSkills.length / projectSkills.length) * 100)
+            : 50;
+
+        const ratings = await Rating.findAll({
+          where: { toUserId: id, role: "client" },
         });
 
-        const averageRating =
-          interviews.reduce((sum, i) => sum + (i.feedback_rating || 0), 0) /
-          (interviews.length || 1);
-        const completionRate =
-          interviews.filter((i) => i.status === "completed").length /
-          (interviews.length || 1);
+        const avgRating =
+          ratings.length > 0
+            ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+            : 0;
+
+        const contracts = await Contract.findAll({
+          where: { FreelancerId: id, status: "completed" },
+        });
+
+        const onTimeCount = contracts.filter((c) => {
+          const deadline = new Date(c.end_date);
+          const completedAt = c.completed_at || c.updatedAt;
+          return completedAt <= deadline;
+        }).length;
+
+        const onTimeDelivery =
+          contracts.length > 0 ? (onTimeCount / contracts.length) * 100 : 0;
+
+        const overallScore =
+          avgRating * 20 +
+          skillsMatch * 0.25 +
+          (user.FreelancerProfile?.completion_rate || 0) * 0.2 +
+          onTimeDelivery * 0.15 +
+          (Math.min(user.FreelancerProfile?.response_time || 24, 24) / 24) *
+            10 +
+          Math.min(
+            (user.FreelancerProfile?.completed_projects_count || 0) / 20,
+            1,
+          ) *
+            10;
 
         return {
           id: user.id,
           name: user.name,
           avatar: user.avatar,
-          skills: user.profile?.skills || [],
-          experience: user.profile?.experience_years || 0,
-          rating: averageRating,
-          completionRate: completionRate * 100,
-          totalInterviews: interviews.length,
-          projectsCompleted: user.profile?.completed_projects || 0,
+          title: user.FreelancerProfile?.title || "Freelancer",
+          rating: avgRating,
+          skills: freelancerSkills,
+          experience: user.FreelancerProfile?.experience_years || 0,
+          projectsCompleted:
+            user.FreelancerProfile?.completed_projects_count || 0,
+          completionRate: user.FreelancerProfile?.completion_rate || 0,
+          onTimeDelivery: onTimeDelivery,
+          responseTime: user.FreelancerProfile?.response_time || 24,
+          hourlyRate: user.FreelancerProfile?.hourly_rate || 0,
+          totalReviews: ratings.length,
+          skillsMatch: skillsMatch,
+          projectBudget: project.budget,
+          overallScore: Math.min(overallScore, 100),
         };
       }),
     );
 
-    res.json({
-      success: true,
-      comparisons,
-    });
+    comparisons.sort((a, b) => b.overallScore - a.overallScore);
+
+    res.json({ success: true, comparisons });
   } catch (error) {
     console.error("Error comparing freelancers:", error);
     res.status(500).json({ success: false, message: error.message });

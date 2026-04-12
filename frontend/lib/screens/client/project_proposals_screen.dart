@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../models/proposal_model.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../interview/interviews_screen.dart';
+import 'compare_freelancers_screen.dart';
 
 class ProjectProposalsScreen extends StatefulWidget {
   final int projectId;
@@ -442,6 +443,43 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
           preferredSize: const Size.fromHeight(1),
           child: Container(color: Colors.grey.shade200, height: 1),
         ),
+        actions: [
+          if (suggestedFreelancers.isNotEmpty)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.compare_arrows, color: Colors.purple),
+              onSelected: (value) {
+                if (value == 'compare') {
+                  final freelancerIds = suggestedFreelancers
+                      .map((f) => f['id'] as int)
+                      .toList();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CompareFreelancersScreen(
+                        projectId: widget.projectId,
+                        freelancerIds: freelancerIds,
+                      ),
+                    ),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'compare',
+                  child: Row(
+                    children: [
+                      Icon(Icons.compare_arrows, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('Compare Freelancers'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+          IconButton(icon: const Icon(Icons.filter_list), onPressed: () {}),
+        ],
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())

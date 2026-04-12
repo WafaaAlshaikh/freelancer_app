@@ -10,6 +10,7 @@ import 'package:freelancer_platform/screens/admin/admin_dashboard_screen.dart';
 import 'package:freelancer_platform/screens/admin/users_management_screen.dart';
 import 'package:freelancer_platform/screens/ai/ai_chat_screen.dart';
 import 'package:freelancer_platform/screens/chat/chat_screen.dart';
+import 'package:freelancer_platform/screens/client/compare_freelancers_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
 import 'package:freelancer_platform/screens/features/features_shop_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.dart';
@@ -197,7 +198,14 @@ class FreelancerApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => const SubscriptionComparisonScreen(),
             );
-
+          case '/compare-freelancers':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => CompareFreelancersScreen(
+                projectId: args['projectId'],
+                freelancerIds: args['freelancerIds'],
+              ),
+            );
           case '/subscription/my':
             return MaterialPageRoute(
               builder: (_) => const MySubscriptionScreen(),

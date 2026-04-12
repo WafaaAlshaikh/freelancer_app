@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:freelancer_platform/models/usage_limits_model.dart';
+import 'package:freelancer_platform/screens/client/compare_freelancers_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
 import 'enhanced_client_profile_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -1083,6 +1084,52 @@ class _ClientDashboardState extends State<ClientDashboard>
                   Navigator.pushNamed(context, '/wallet', arguments: 'client');
                 },
                 tooltip: 'Wallet',
+              ),
+
+              IconButton(
+                icon: const Icon(Icons.compare_arrows),
+                onPressed: () async {
+                  final topFreelancers = _data?.topFreelancers ?? [];
+                  if (topFreelancers.length >= 2) {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CompareFreelancersScreen(
+                          projectId:
+                              _myProjects
+                                  .firstWhere(
+                                    (p) => p.status == 'open',
+                                    orElse: () => Project(),
+                                  )
+                                  .id ??
+                              0,
+                          freelancerIds: topFreelancers
+                              .map((f) => f.id)
+                              .toList(),
+                        ),
+                      ),
+                    );
+                    if (result != null && mounted) {
+                      _navigateToFreelancerProfile(
+                        result,
+                        projectId: _myProjects
+                            .firstWhere(
+                              (p) => p.status == 'open',
+                              orElse: () => Project(),
+                            )
+                            .id
+                            ?.toString(),
+                      );
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Not enough freelancers to compare'),
+                      ),
+                    );
+                  }
+                },
+                tooltip: 'Compare Freelancers',
               ),
             ],
           ),
