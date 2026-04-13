@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../models/freelancer_model.dart';
 import '../../services/api_service.dart';
+import '../../utils/constants.dart';
 import '../../widgets/skill_chip.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
@@ -32,6 +33,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController nameController;
+  late TextEditingController taglineController;
   late TextEditingController titleController;
   late TextEditingController bioController;
   late TextEditingController locationController;
@@ -62,6 +64,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   final TextEditingController skillController = TextEditingController();
   final TextEditingController languageController = TextEditingController();
+  late TextEditingController weeklyHoursController;
+  String _availability = 'full_time';
 
   final TextEditingController degreeController = TextEditingController();
   final TextEditingController institutionController = TextEditingController();
@@ -82,6 +86,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     nameController.dispose();
+    taglineController.dispose();
     titleController.dispose();
     bioController.dispose();
     locationController.dispose();
@@ -89,6 +94,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     hourlyRateController.dispose();
     skillController.dispose();
     languageController.dispose();
+    weeklyHoursController.dispose();
     websiteController.dispose();
     githubController.dispose();
     linkedinController.dispose();
@@ -104,6 +110,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void initializeControllers() {
     nameController = TextEditingController(text: widget.profile.name ?? '');
+    taglineController = TextEditingController(
+      text: widget.profile.tagline ?? '',
+    );
     titleController = TextEditingController(text: widget.profile.title ?? '');
     bioController = TextEditingController(text: widget.profile.bio ?? '');
     locationController = TextEditingController(
@@ -114,6 +123,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     hourlyRateController = TextEditingController(
       text: widget.profile.hourlyRate?.toString() ?? '',
+    );
+    const allowedAvail = {
+      'full_time',
+      'part_time',
+      'as_needed',
+      'not_available',
+    };
+    final av = widget.profile.availability ?? 'full_time';
+    _availability = allowedAvail.contains(av) ? av : 'full_time';
+    weeklyHoursController = TextEditingController(
+      text: (widget.profile.weeklyHours ?? 40).toString(),
     );
 
     websiteController = TextEditingController(
@@ -419,6 +439,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final data = {
         'name': nameController.text.trim(),
+        'tagline': taglineController.text.trim(),
         'title': titleController.text.trim(),
         'bio': bioController.text.trim(),
         'location': locationController.text.trim(),
@@ -427,6 +448,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             : null,
         'experience_years': int.tryParse(experienceController.text) ?? 0,
         'hourly_rate': double.tryParse(hourlyRateController.text),
+        'availability': _availability,
+        'weekly_hours': int.tryParse(weeklyHoursController.text) ?? 40,
         'skills': skills,
         'languages': languages,
         'education': education,
@@ -582,12 +605,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       CircleAvatar(
                         radius: 60,
                         backgroundColor: AppColors.accentLight.withOpacity(0.3),
-                        backgroundImage: avatarUrl != null
-                            ? NetworkImage(
-                                avatarUrl!.startsWith('http')
-                                    ? avatarUrl!
-                                    : 'http://localhost:5000$avatarUrl',
-                              )
+                        backgroundImage:
+                            (avatarUrl != null && avatarUrl!.isNotEmpty)
+                            ? NetworkImage(apiMediaUrl(avatarUrl))
                             : null,
                         child: avatarUrl == null
                             ? Text(
@@ -778,6 +798,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       prefixIcon: const Icon(
                         Icons.person,
+                        color: AppColors.accent,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: taglineController,
+                    decoration: InputDecoration(
+                      labelText: "Tagline",
+                      hintText: "Short headline (shown to clients)",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accent,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.short_text,
                         color: AppColors.accent,
                       ),
                       filled: true,
@@ -1441,6 +1490,63 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     label: "Behance / Dribbble",
                     placeholder: "https://behance.net/username",
                     controller: behanceController,
+                  ),
+                ],
+              ),
+            ),
+
+            _buildInfoCard(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(
+                    "Availability",
+                    icon: Icons.schedule_outlined,
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _availability,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'full_time',
+                        child: Text('Full-time'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'part_time',
+                        child: Text('Part-time'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'as_needed',
+                        child: Text('As needed'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'not_available',
+                        child: Text('Not available'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) setState(() => _availability = v);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: weeklyHoursController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Weekly hours (available)",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
                   ),
                 ],
               ),

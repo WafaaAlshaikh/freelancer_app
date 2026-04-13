@@ -54,6 +54,11 @@ const Coupon = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    /** subscription | contract | both */
+    application_scope: {
+      type: DataTypes.STRING(20),
+      defaultValue: "subscription",
+    },
   },
   {
     tableName: "Coupons",

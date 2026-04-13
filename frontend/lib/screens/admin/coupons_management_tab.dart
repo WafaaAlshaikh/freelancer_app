@@ -227,6 +227,11 @@ class _CouponsManagementTabState extends State<CouponsManagementTab> {
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Text(
+            _scopeLabel(coupon.applicationScope),
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          ),
           if (coupon.applicablePlans != null &&
               coupon.applicablePlans!.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -257,6 +262,17 @@ class _CouponsManagementTabState extends State<CouponsManagementTab> {
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
+
+  String _scopeLabel(String scope) {
+    switch (scope) {
+      case 'contract':
+        return 'Applies to: contract escrow checkout';
+      case 'both':
+        return 'Applies to: subscription & contract';
+      default:
+        return 'Applies to: subscription checkout';
+    }
+  }
 }
 
 class CouponFormDialog extends StatefulWidget {
@@ -279,6 +295,7 @@ class _CouponFormDialogState extends State<CouponFormDialog> {
   late TextEditingController _maxUsesController;
   late List<String> _applicablePlans;
   late bool _isActive;
+  late String _applicationScope;
   final TextEditingController _planInputController = TextEditingController();
 
   @override
@@ -298,6 +315,7 @@ class _CouponFormDialogState extends State<CouponFormDialog> {
     );
     _applicablePlans = List<String>.from(widget.coupon?.applicablePlans ?? []);
     _isActive = widget.coupon?.isActive ?? true;
+    _applicationScope = widget.coupon?.applicationScope ?? 'subscription';
   }
 
   @override
@@ -360,6 +378,7 @@ class _CouponFormDialogState extends State<CouponFormDialog> {
           : int.parse(_maxUsesController.text),
       'applicable_plans': _applicablePlans.isEmpty ? null : _applicablePlans,
       'is_active': _isActive,
+      'application_scope': _applicationScope,
     };
 
     Coupon? result;
@@ -418,6 +437,26 @@ class _CouponFormDialogState extends State<CouponFormDialog> {
                   ),
                 ],
                 onChanged: (v) => setState(() => _discountType = v!),
+              ),
+              DropdownButtonFormField<String>(
+                value: _applicationScope,
+                decoration: const InputDecoration(
+                  labelText: 'Where this coupon applies',
+                  helperText:
+                      'Contract = escrow payment on contracts; Subscription = plan checkout',
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'subscription',
+                    child: Text('Subscription only'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'contract',
+                    child: Text('Contract escrow only'),
+                  ),
+                  DropdownMenuItem(value: 'both', child: Text('Both')),
+                ],
+                onChanged: (v) => setState(() => _applicationScope = v!),
               ),
               TextFormField(
                 controller: _discountValueController,

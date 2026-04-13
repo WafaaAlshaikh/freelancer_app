@@ -16,6 +16,7 @@ import ContractService from "../services/contractService.js";
 import NotificationService from "../services/notificationService.js";
 import PaymentService from "../services/paymentService.js";
 import SubscriptionService from "../services/subscriptionService.js";
+import CommissionService from "../services/commissionService.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
@@ -1081,30 +1082,43 @@ export const createDirectPayment = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    console.log(
-      "💰 Creating Payment Intent for amount:",
-      contract.agreed_amount,
-    );
-    console.log(
-      "🔑 Using Stripe key:",
-      process.env.STRIPE_SECRET_KEY ? "Present" : "Missing",
-    );
+    const agreed = parseFloat(contract.agreed_amount || 0);
+    const discount = parseFloat(contract.coupon_discount_amount || 0);
+    const chargeAmount = Math.max(0.5, agreed - discount);
+    const cents = Math.round(chargeAmount * 100);
+    if (cents < 50) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount too small for card payment (min $0.50)",
+      });
+    }
+
+    let commissionPreview = { rate: 0.05, platformFee: agreed * 0.05 };
+    try {
+      commissionPreview = await CommissionService.calculateCommission(
+        userId,
+        agreed,
+      );
+    } catch (e) {
+      console.warn("commission preview:", e.message);
+    }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(contract.agreed_amount * 100),
+      amount: cents,
       currency: "usd",
       metadata: {
-        contractId: contract.id,
+        contractId: String(contract.id),
         type: "escrow",
         projectTitle: contract.Project?.title || "Project Payment",
+        agreed_amount: String(agreed),
+        coupon_discount: String(discount),
+        coupon_code: contract.coupon_code || "",
       },
       description: `Contract #${contract.id} - ${contract.Project?.title}`,
       automatic_payment_methods: {
         enabled: true,
       },
     });
-
-    console.log("✅ Payment Intent created:", paymentIntent.id);
 
     await contract.update({
       escrow_id: paymentIntent.id,
@@ -1115,7 +1129,16 @@ export const createDirectPayment = async (req, res) => {
       success: true,
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount: contract.agreed_amount,
+      amount: chargeAmount,
+      agreed_amount: agreed,
+      coupon_discount: discount,
+      coupon_code: contract.coupon_code,
+      amount_to_charge: chargeAmount,
+      commission_preview: {
+        rate_percent: Math.round(commissionPreview.rate * 1000) / 10,
+        estimated_fee_on_release: commissionPreview.platformFee,
+        note: "Fee is estimated from your current subscription; charged when funds are released to the freelancer.",
+      },
     });
   } catch (err) {
     console.error("Error creating direct payment:", err);

@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { Transaction, Wallet } from "../models/index.js";
 import NotificationService from "./notificationService.js";
 import SubscriptionService from "./subscriptionService.js";

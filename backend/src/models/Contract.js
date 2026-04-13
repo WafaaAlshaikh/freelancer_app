@@ -167,6 +167,19 @@ const Contract = sequelize.define("Contract", {
       this.setDataValue('milestone_progress', JSON.stringify(value));
     }
   },
+  coupon_code: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  coupon_discount_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+  },
+  /** Actual USD funded into escrow after Stripe (may differ from agreed_amount if coupon applied). */
+  funded_escrow_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+  },
 }, {
   timestamps: true,
 });

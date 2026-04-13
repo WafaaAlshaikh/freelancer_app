@@ -5,6 +5,7 @@ import {
   UserSubscription,
   Transaction,
   Wallet,
+  InterviewInvitation,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import NotificationService from "./notificationService.js";
@@ -73,6 +74,31 @@ class SubscriptionService {
     if (user) {
       await user.increment("proposal_count_this_month");
     }
+  }
+
+  static async countClientInterviewsThisMonth(clientId) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    return InterviewInvitation.count({
+      where: {
+        client_id: clientId,
+        createdAt: { [Op.gte]: start },
+      },
+    });
+  }
+
+  /** Client-side limit: invitations created this calendar month vs plan.interview_limit */
+  static async getClientInterviewUsage(clientId) {
+    const used = await this.countClientInterviewsThisMonth(clientId);
+    const sub = await this.getUserSubscription(clientId);
+    const limit = sub.plan?.interview_limit;
+    const unlimited = limit == null;
+    return {
+      interviews_used: used,
+      interviews_limit: unlimited ? null : limit,
+      remaining: unlimited ? null : Math.max(0, limit - used),
+      can_create: unlimited || used < limit,
+    };
   }
 
   static async canCreateActiveProject(userId) {

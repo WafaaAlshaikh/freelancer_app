@@ -34,7 +34,8 @@ import 'package:freelancer_platform/screens/workspace/connect_github_screen.dart
 import 'package:freelancer_platform/screens/rating/add_rating_screen.dart';
 import 'package:freelancer_platform/screens/workspace/calendar_screen.dart';
 import 'package:freelancer_platform/screens/contract/my_contracts_screen.dart';
-import 'package:freelancer_platform/services/websocket_service.dart';
+import 'package:freelancer_platform/services/websocket_service.dart'
+    show WebSocketService, navigatorKey;
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/verify_screen.dart';
@@ -54,6 +55,7 @@ import 'theme/app_theme.dart';
 import 'utils/token_storage.dart';
 import 'services/api_service.dart';
 import 'screens/contract/contract_screen.dart';
+import 'package:freelancer_platform/screens/contract/contract_progress_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/chat/chats_list_screen.dart';
@@ -62,8 +64,6 @@ import 'package:freelancer_platform/screens/subscription/subscription_success_sc
 import 'package:freelancer_platform/screens/subscription/subscription_cancel_screen.dart';
 import 'screens/interview/interviews_screen.dart';
 import 'screens/interview/interview_detail_screen.dart';
-
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -275,6 +275,17 @@ class FreelancerApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) =>
                   ContractScreen(contractId: contractId, userRole: userRole),
+            );
+
+          case '/contract/progress':
+            final args = settings.arguments as Map<String, dynamic>;
+            final contractId = args['contractId'] as int;
+            final userRole = args['userRole'] as String;
+            return MaterialPageRoute(
+              builder: (_) => ContractProgressScreen(
+                contractId: contractId,
+                userRole: userRole,
+              ),
             );
 
           case '/add-rating':

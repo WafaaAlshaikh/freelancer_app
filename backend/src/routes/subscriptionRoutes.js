@@ -29,8 +29,9 @@ router.post("/confirm-checkout", protect, confirmCheckoutSession);
 
 router.post("/validate-coupon", protect, async (req, res) => {
   try {
-    const { code, planSlug } = req.body;
-    const result = await CouponService.validateCoupon(code, planSlug);
+    const { code, planSlug, scope } = req.body;
+    const context = scope === "contract" ? "contract" : "subscription";
+    const result = await CouponService.validateCoupon(code, planSlug, context);
     res.json(result);
   } catch (error) {
     console.error("Error validating coupon:", error);

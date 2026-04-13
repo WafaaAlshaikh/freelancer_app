@@ -875,6 +875,53 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> getContractProgress(
+    int contractId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/contracts/$contractId/progress'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting contract progress: $e');
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> applyContractCoupon({
+    required int contractId,
+    required String code,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/contracts/$contractId/coupon'),
+        headers: headers,
+        body: jsonEncode({'code': code.trim()}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error applying contract coupon: $e');
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> removeContractCoupon(
+    int contractId,
+  ) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$BASE_URL/contracts/$contractId/coupon'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error removing contract coupon: $e');
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
   static Future<Map<String, dynamic>> signContract(int contractId) async {
     try {
       final response = await http.post(

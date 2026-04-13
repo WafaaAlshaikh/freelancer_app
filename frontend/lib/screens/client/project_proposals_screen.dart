@@ -1,6 +1,7 @@
 // screens/client/project_proposals_screen.dart
 import 'package:flutter/material.dart';
 import 'package:freelancer_platform/models/project_model.dart';
+import 'package:freelancer_platform/models/usage_limits_model.dart';
 import 'package:freelancer_platform/models/user_model.dart';
 import 'package:freelancer_platform/screens/client/sow_generator_screen.dart';
 import '../../services/api_service.dart';
@@ -26,12 +27,79 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
   bool _loadingSuggestions = false;
   bool _isProcessing = false;
   bool _isGeneratingSOW = false;
+  UsageLimits? _usage;
 
   @override
   void initState() {
     super.initState();
     fetchProposals();
     fetchSuggestedFreelancers();
+    _loadUsage();
+  }
+
+  Future<void> _loadUsage() async {
+    final r = await ApiService.getUserUsage();
+    if (!mounted) return;
+    if (r['success'] == true && r['usage'] != null) {
+      setState(() {
+        _usage = UsageLimits.fromJson(Map<String, dynamic>.from(r['usage']));
+      });
+    }
+  }
+
+  bool _consumeInterviewLimit(Map<String, dynamic> result) {
+    if (result['error']?.toString() == 'interview_limit') {
+      Fluttertoast.showToast(
+        msg:
+            result['message']?.toString() ??
+            'Monthly interview invitation limit reached',
+        backgroundColor: Colors.red,
+        timeInSecForIosWeb: 5,
+      );
+      _loadUsage();
+      return true;
+    }
+    return false;
+  }
+
+  Widget _interviewUsageStrip() {
+    final u = _usage;
+    if (u == null || !u.hasInterviewLimit) return const SizedBox.shrink();
+    final rem = u.interviewsRemaining;
+    final lim = u.interviewsLimit;
+    if (rem == null || lim == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: rem <= 2 ? Colors.purple.shade50 : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: rem <= 0 ? Colors.red.shade200 : Colors.purple.shade100,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.interpreter_mode, color: Colors.purple.shade700, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              rem <= 0
+                  ? 'No interview invitations left this month ($lim/mo). Upgrade your plan to invite more.'
+                  : '$rem of $lim interview invitations left this month.',
+              style: const TextStyle(fontSize: 12, height: 1.35),
+            ),
+          ),
+          if (rem <= 2)
+            TextButton(
+              onPressed: () =>
+                  Navigator.pushNamed(context, '/subscription/plans'),
+              child: const Text('Plans'),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> fetchProposals() async {
@@ -485,6 +553,7 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
               slivers: [
+                SliverToBoxAdapter(child: _interviewUsageStrip()),
                 if (!loadingSuggestions && suggestedFreelancers.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Container(
@@ -898,10 +967,12 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
         MaterialPageRoute(builder: (_) => const InterviewsScreen()),
       );
     } else {
-      Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error sending smart invitation',
-        backgroundColor: Colors.red,
-      );
+      if (!_consumeInterviewLimit(Map<String, dynamic>.from(result))) {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Error sending smart invitation',
+          backgroundColor: Colors.red,
+        );
+      }
     }
   }
 
@@ -1158,6 +1229,14 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
         msg: 'Group invitations sent to ${freelancerIds.length} freelancers',
         backgroundColor: Colors.purple,
       );
+    } else {
+      if (!_consumeInterviewLimit(Map<String, dynamic>.from(result))) {
+        Fluttertoast.showToast(
+          msg:
+              result['message']?.toString() ?? 'Could not send group interview',
+          backgroundColor: Colors.red,
+        );
+      }
     }
   }
 
@@ -1353,9 +1432,11 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
         MaterialPageRoute(builder: (_) => const InterviewsScreen()),
       );
     } else {
-      Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error sending invitation',
-      );
+      if (!_consumeInterviewLimit(Map<String, dynamic>.from(result))) {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Error sending invitation',
+        );
+      }
     }
   }
 
@@ -1447,9 +1528,11 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
         MaterialPageRoute(builder: (_) => const InterviewsScreen()),
       );
     } else {
-      Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error sending invitation',
-      );
+      if (!_consumeInterviewLimit(Map<String, dynamic>.from(result))) {
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Error sending invitation',
+        );
+      }
     }
   }
 

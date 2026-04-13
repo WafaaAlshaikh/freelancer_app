@@ -3,7 +3,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../data/project_post_templates.dart';
 import '../../services/api_service.dart';
+import '../../services/draft_local_storage.dart';
 import '../../widgets/ai_analysis_card.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -27,6 +29,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
   bool analyzing = false;
   Map<String, dynamic>? aiAnalysis;
   bool showAIAnalysis = false;
+
+  Timer? _draftSaveTimer;
+  DateTime? _draftSavedAt;
+  bool _restoringDraft = false;
 
   final List<String> availableSkills = [
     'Flutter',
@@ -68,6 +74,175 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     super.initState();
     titleController.addListener(_debounceAnalysis);
     descriptionController.addListener(_debounceAnalysis);
+    titleController.addListener(_scheduleProjectDraftSave);
+    descriptionController.addListener(_scheduleProjectDraftSave);
+    budgetController.addListener(_scheduleProjectDraftSave);
+    durationController.addListener(_scheduleProjectDraftSave);
+    categoryController.addListener(_scheduleProjectDraftSave);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadSavedProjectDraft(),
+    );
+  }
+
+  Map<String, dynamic> _projectDraftSnapshot() {
+    return {
+      'title': titleController.text,
+      'description': descriptionController.text,
+      'budget': budgetController.text,
+      'duration': durationController.text,
+      'category': categoryController.text,
+      'skills': List<String>.from(selectedSkills),
+    };
+  }
+
+  bool _hasDraftPayload() {
+    return titleController.text.trim().isNotEmpty ||
+        descriptionController.text.trim().isNotEmpty ||
+        budgetController.text.trim().isNotEmpty ||
+        selectedSkills.isNotEmpty;
+  }
+
+  void _scheduleProjectDraftSave() {
+    if (_restoringDraft) return;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(const Duration(milliseconds: 1200), () async {
+      if (!mounted || !_hasDraftPayload()) return;
+      await DraftLocalStorage.saveProjectCreateDraft(_projectDraftSnapshot());
+      if (mounted) setState(() => _draftSavedAt = DateTime.now());
+    });
+  }
+
+  Future<void> _loadSavedProjectDraft() async {
+    final d = await DraftLocalStorage.getProjectCreateDraft();
+    if (!mounted || d == null) return;
+    if (!DraftLocalStorage.isMeaningfulProjectDraft(d)) return;
+    _restoringDraft = true;
+    setState(() {
+      titleController.text = d['title']?.toString() ?? '';
+      descriptionController.text = d['description']?.toString() ?? '';
+      budgetController.text = d['budget']?.toString() ?? '';
+      durationController.text = d['duration']?.toString() ?? '';
+      categoryController.text = d['category']?.toString() ?? '';
+      final sk = d['skills'];
+      if (sk is List) {
+        selectedSkills = sk.map((e) => e.toString()).toList();
+      }
+    });
+    _restoringDraft = false;
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Continued from your saved draft'),
+        action: SnackBarAction(
+          label: 'Clear',
+          onPressed: _confirmClearProjectDraft,
+        ),
+      ),
+    );
+  }
+
+  void _applyTemplate(ProjectPostTemplate t) {
+    setState(() {
+      titleController.text = t.title;
+      descriptionController.text = t.description;
+      categoryController.text = t.category;
+      budgetController.text = t.budgetHint;
+      durationController.text = t.durationHint;
+      selectedSkills = t.skills
+          .where((s) => availableSkills.contains(s))
+          .toList();
+    });
+    _scheduleProjectDraftSave();
+    _debounceAnalysis();
+    Fluttertoast.showToast(msg: 'Template applied — edit and post when ready');
+  }
+
+  Future<void> _confirmClearProjectDraft() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear draft?'),
+        content: const Text('Remove the saved project draft from this device?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await DraftLocalStorage.clearProjectCreateDraft();
+    setState(() {
+      titleController.clear();
+      descriptionController.clear();
+      budgetController.clear();
+      durationController.clear();
+      categoryController.clear();
+      selectedSkills.clear();
+      aiAnalysis = null;
+      showAIAnalysis = false;
+      _draftSavedAt = null;
+    });
+    Fluttertoast.showToast(msg: 'Draft cleared');
+  }
+
+  void _openTemplatesSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.35,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (_, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text(
+              'Project templates',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Prefill fields — still edit before posting.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            ...ProjectPostTemplates.all.map((t) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(t.name),
+                  subtitle: Text(t.subtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _applyTemplate(t);
+                  },
+                ),
+              );
+            }),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _confirmClearProjectDraft();
+              },
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Clear saved draft'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Timer? _debounceTimer;
@@ -141,8 +316,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     setState(() => loading = false);
 
     if (result['project'] != null) {
+      await DraftLocalStorage.clearProjectCreateDraft();
+      await DraftLocalStorage.clearPublishReminderSnooze();
       Fluttertoast.showToast(msg: "✅ Project created successfully");
-      Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
     } else {
       Fluttertoast.showToast(
         msg: result['message'] ?? "Error creating project",
@@ -159,6 +336,25 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
+          if (_draftSavedAt != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Text(
+                  'Draft saved',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          IconButton(
+            tooltip: 'Templates',
+            icon: const Icon(Icons.article_outlined),
+            onPressed: _openTemplatesSheet,
+          ),
           if (analyzing)
             const Padding(
               padding: EdgeInsets.all(12),
@@ -185,6 +381,38 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
               const Text(
                 "Fill in the details below. AI will analyze and suggest improvements.",
                 style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.teal.shade100),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.cloud_done_outlined,
+                      size: 18,
+                      color: Colors.teal.shade800,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Your progress is saved automatically on this device.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.teal.shade900,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -373,6 +601,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                         }
                       });
                       _analyzeProject();
+                      _scheduleProjectDraftSave();
                     },
                     backgroundColor: Colors.grey.shade100,
                     selectedColor: Colors.blue.shade100,
@@ -414,8 +643,14 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _draftSaveTimer?.cancel();
     titleController.removeListener(_debounceAnalysis);
     descriptionController.removeListener(_debounceAnalysis);
+    titleController.removeListener(_scheduleProjectDraftSave);
+    descriptionController.removeListener(_scheduleProjectDraftSave);
+    budgetController.removeListener(_scheduleProjectDraftSave);
+    durationController.removeListener(_scheduleProjectDraftSave);
+    categoryController.removeListener(_scheduleProjectDraftSave);
     titleController.dispose();
     descriptionController.dispose();
     budgetController.dispose();

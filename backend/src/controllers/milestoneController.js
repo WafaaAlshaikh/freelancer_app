@@ -9,10 +9,10 @@ export const updateMilestoneProgress = async (req, res) => {
     const userId = req.user.id;
 
     const contract = await Contract.findOne({
-      where: { 
+      where: {
         id: contractId,
-        FreelancerId: userId
-      }
+        FreelancerId: userId,
+      },
     });
 
     if (!contract) {
@@ -20,7 +20,7 @@ export const updateMilestoneProgress = async (req, res) => {
     }
 
     let milestones = contract.milestones;
-    if (typeof milestones === 'string') {
+    if (typeof milestones === "string") {
       milestones = JSON.parse(milestones);
     }
 
@@ -29,33 +29,41 @@ export const updateMilestoneProgress = async (req, res) => {
     }
 
     if (progress !== undefined) {
-      milestones[milestoneIndex].progress = Math.min(100, Math.max(0, parseFloat(progress)));
+      milestones[milestoneIndex].progress = Math.min(
+        100,
+        Math.max(0, parseFloat(progress)),
+      );
     }
-    
+
     if (status) {
       milestones[milestoneIndex].status = status;
     }
-    
-    if (status === 'completed' && milestones[milestoneIndex].status !== 'completed') {
+
+    if (
+      status === "completed" &&
+      milestones[milestoneIndex].status !== "completed"
+    ) {
       milestones[milestoneIndex].completed_at = new Date();
     }
 
-    const totalProgress = milestones.reduce((sum, m) => sum + (m.progress || 0), 0) / milestones.length;
+    const totalProgress =
+      milestones.reduce((sum, m) => sum + (m.progress || 0), 0) /
+      milestones.length;
 
     await contract.update({
       milestones: JSON.stringify(milestones),
     });
 
-    if (status === 'completed') {
+    if (status === "completed") {
       await NotificationService.createNotification({
         userId: contract.ClientId,
-        type: 'milestone_completed',
-        title: 'Milestone Completed',
+        type: "milestone_completed",
+        title: "Milestone Completed",
         body: `Milestone "${milestones[milestoneIndex].title}" has been marked as completed. Please review.`,
         data: {
           contractId: contract.id,
           milestoneIndex,
-          screen: 'contract',
+          screen: "contract_progress",
         },
       });
     }
@@ -63,9 +71,8 @@ export const updateMilestoneProgress = async (req, res) => {
     res.json({
       message: "✅ Milestone updated",
       milestone: milestones[milestoneIndex],
-      totalProgress
+      totalProgress,
     });
-
   } catch (err) {
     console.error("Error updating milestone:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -78,10 +85,10 @@ export const approveMilestone = async (req, res) => {
     const userId = req.user.id;
 
     const contract = await Contract.findOne({
-      where: { 
+      where: {
         id: contractId,
-        ClientId: userId
-      }
+        ClientId: userId,
+      },
     });
 
     if (!contract) {
@@ -89,7 +96,7 @@ export const approveMilestone = async (req, res) => {
     }
 
     let milestones = contract.milestones;
-    if (typeof milestones === 'string') {
+    if (typeof milestones === "string") {
       milestones = JSON.parse(milestones);
     }
 
@@ -99,36 +106,49 @@ export const approveMilestone = async (req, res) => {
 
     const milestone = milestones[milestoneIndex];
 
-    if (milestone.status !== 'completed') {
+    if (milestone.status !== "completed") {
       return res.status(400).json({ message: "Milestone not completed yet" });
     }
 
-    if (milestone.status === 'approved') {
+    if (milestone.status === "approved") {
       return res.status(400).json({ message: "Milestone already approved" });
     }
 
-    milestone.status = 'approved';
+    const pool =
+      contract.funded_escrow_amount != null
+        ? parseFloat(contract.funded_escrow_amount)
+        : parseFloat(contract.agreed_amount);
+    const alreadyReleased = parseFloat(contract.released_amount || 0);
+    const milestoneAmt = parseFloat(milestone.amount || 0);
+    if (alreadyReleased + milestoneAmt > pool + 0.01) {
+      return res.status(400).json({
+        message:
+          "Cannot approve: total milestone releases would exceed funded escrow",
+      });
+    }
+
+    milestone.status = "approved";
     milestone.approved_at = new Date();
     milestones[milestoneIndex] = milestone;
 
-    await contract.update({ 
+    await contract.update({
       milestones: JSON.stringify(milestones),
-      released_amount: (contract.released_amount || 0) + (milestone.amount || 0)
+      released_amount:
+        (contract.released_amount || 0) + (milestone.amount || 0),
     });
 
     await NotificationService.createNotification({
       userId: contract.FreelancerId,
-      type: 'payment_released',
-      title: 'Milestone Payment Released! 💰',
+      type: "payment_released",
+      title: "Milestone Payment Released! 💰",
       body: `$${milestone.amount} has been released for "${milestone.title}"`,
-      data: { contractId: contract.id, screen: 'contract' },
+      data: { contractId: contract.id, screen: "contract_progress" },
     });
 
     res.json({
       message: "✅ Milestone approved",
-      milestone
+      milestone,
     });
-
   } catch (err) {
     console.error("Error approving milestone:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -143,11 +163,8 @@ export const addReminder = async (req, res) => {
     const contract = await Contract.findOne({
       where: {
         id: contractId,
-        [Op.or]: [
-          { FreelancerId: userId },
-          { ClientId: userId }
-        ]
-      }
+        [Op.or]: [{ FreelancerId: userId }, { ClientId: userId }],
+      },
     });
 
     if (!contract) {
@@ -155,7 +172,7 @@ export const addReminder = async (req, res) => {
     }
 
     let reminders = contract.reminders;
-    if (typeof reminders === 'string') {
+    if (typeof reminders === "string") {
       reminders = JSON.parse(reminders);
     }
 
@@ -166,32 +183,31 @@ export const addReminder = async (req, res) => {
       dueDate,
       createdAt: new Date(),
       createdBy: userId,
-      completed: false
+      completed: false,
     };
 
     reminders.push(newReminder);
 
     await contract.update({
-      reminders: JSON.stringify(reminders)
+      reminders: JSON.stringify(reminders),
     });
 
     await NotificationService.createNotification({
       userId: userId,
-      type: 'reminder',
-      title: 'Reminder Set 📅',
+      type: "reminder",
+      title: "Reminder Set 📅",
       body: `Reminder "${title}" set for ${new Date(dueDate).toLocaleDateString()}`,
       data: {
         contractId: contract.id,
         reminderId: newReminder.id,
-        screen: 'calendar',
+        screen: "calendar",
       },
     });
 
     res.json({
       message: "✅ Reminder added",
-      reminder: newReminder
+      reminder: newReminder,
     });
-
   } catch (err) {
     console.error("Error adding reminder:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -208,11 +224,11 @@ export const completeReminder = async (req, res) => {
     }
 
     let reminders = contract.reminders;
-    if (typeof reminders === 'string') {
+    if (typeof reminders === "string") {
       reminders = JSON.parse(reminders);
     }
 
-    const reminderIndex = reminders.findIndex(r => r.id === reminderId);
+    const reminderIndex = reminders.findIndex((r) => r.id === reminderId);
     if (reminderIndex === -1) {
       return res.status(404).json({ message: "Reminder not found" });
     }
@@ -221,11 +237,10 @@ export const completeReminder = async (req, res) => {
     reminders[reminderIndex].completedAt = new Date();
 
     await contract.update({
-      reminders: JSON.stringify(reminders)
+      reminders: JSON.stringify(reminders),
     });
 
     res.json({ message: "✅ Reminder completed" });
-
   } catch (err) {
     console.error("Error completing reminder:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -241,27 +256,24 @@ export const getCalendar = async (req, res) => {
 
     const contracts = await Contract.findAll({
       where: {
-        [Op.or]: [
-          { FreelancerId: userId },
-          { ClientId: userId }
-        ],
+        [Op.or]: [{ FreelancerId: userId }, { ClientId: userId }],
         status: {
-          [Op.in]: ['active', 'pending_client', 'pending_freelancer']
-        }
+          [Op.in]: ["active", "pending_client", "pending_freelancer"],
+        },
       },
-      include: [Project]
+      include: [Project],
     });
 
     const events = [];
 
-    contracts.forEach(contract => {
+    contracts.forEach((contract) => {
       let milestones = contract.milestones;
-      if (typeof milestones === 'string') {
+      if (typeof milestones === "string") {
         milestones = JSON.parse(milestones);
       }
 
       let reminders = contract.reminders;
-      if (typeof reminders === 'string') {
+      if (typeof reminders === "string") {
         reminders = JSON.parse(reminders);
       }
 
@@ -274,11 +286,11 @@ export const getCalendar = async (req, res) => {
                 id: `milestone-${contract.id}-${index}`,
                 title: milestone.title,
                 date: dueDate,
-                type: 'milestone',
+                type: "milestone",
                 contractId: contract.id,
                 projectTitle: contract.Project?.title,
                 status: milestone.status,
-                progress: milestone.progress
+                progress: milestone.progress,
               });
             }
           }
@@ -286,7 +298,7 @@ export const getCalendar = async (req, res) => {
       }
 
       if (Array.isArray(reminders)) {
-        reminders.forEach(reminder => {
+        reminders.forEach((reminder) => {
           if (reminder.dueDate) {
             const dueDate = new Date(reminder.dueDate);
             if (dueDate >= startDate && dueDate <= endDate) {
@@ -294,9 +306,9 @@ export const getCalendar = async (req, res) => {
                 id: `reminder-${contract.id}-${reminder.id}`,
                 title: reminder.title,
                 date: dueDate,
-                type: 'reminder',
+                type: "reminder",
                 contractId: contract.id,
-                completed: reminder.completed
+                completed: reminder.completed,
               });
             }
           }
@@ -305,7 +317,6 @@ export const getCalendar = async (req, res) => {
     });
 
     res.json(events);
-
   } catch (err) {
     console.error("Error getting calendar:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -317,42 +328,45 @@ export const getUpcomingEvents = async (req, res) => {
     const { days = 30 } = req.query;
     const userId = req.user.id;
     const now = new Date();
-    const future = new Date(now.getTime() + parseInt(days) * 24 * 60 * 60 * 1000);
+    const future = new Date(
+      now.getTime() + parseInt(days) * 24 * 60 * 60 * 1000,
+    );
 
     const contracts = await Contract.findAll({
       where: {
-        [Op.or]: [
-          { FreelancerId: userId },
-          { ClientId: userId }
-        ],
-        status: ['active', 'pending_client', 'pending_freelancer']
+        [Op.or]: [{ FreelancerId: userId }, { ClientId: userId }],
+        status: ["active", "pending_client", "pending_freelancer"],
       },
-      include: [Project]
+      include: [Project],
     });
 
     const events = [];
 
-    contracts.forEach(contract => {
+    contracts.forEach((contract) => {
       let milestones = contract.milestones;
-      if (typeof milestones === 'string') {
+      if (typeof milestones === "string") {
         milestones = JSON.parse(milestones);
       }
 
       milestones.forEach((milestone, index) => {
-        if (milestone.due_date && milestone.status !== 'completed' && milestone.status !== 'approved') {
+        if (
+          milestone.due_date &&
+          milestone.status !== "completed" &&
+          milestone.status !== "approved"
+        ) {
           const dueDate = new Date(milestone.due_date);
           if (dueDate >= now && dueDate <= future) {
             const daysLeft = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
-            
+
             events.push({
               id: `milestone-${contract.id}-${index}`,
               title: milestone.title,
               date: dueDate,
-              type: 'milestone',
+              type: "milestone",
               contractId: contract.id,
               projectTitle: contract.Project?.title,
               daysLeft: daysLeft,
-              status: milestone.status
+              status: milestone.status,
             });
           }
         }
@@ -360,7 +374,6 @@ export const getUpcomingEvents = async (req, res) => {
     });
 
     res.json(events);
-
   } catch (err) {
     console.error("Error in getUpcomingEvents:", err);
     res.status(500).json({ message: "Server error", error: err.message });

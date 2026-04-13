@@ -29,11 +29,65 @@ class _ContractScreenState extends State<ContractScreen> {
   bool loading = true;
   bool signing = false;
   bool _isProcessing = false;
+  bool _couponBusy = false;
+  final TextEditingController _couponController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     fetchContract();
+  }
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
+
+  double get _clientEscrowAmountDue {
+    if (contract == null) return 0;
+    final a = contract!.agreedAmount ?? 0;
+    final d = contract!.couponDiscountAmount ?? 0;
+    return (a - d).clamp(0.0, double.infinity);
+  }
+
+  Future<void> _applyContractCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) {
+      Fluttertoast.showToast(msg: 'Enter a coupon code');
+      return;
+    }
+    setState(() => _couponBusy = true);
+    final r = await ApiService.applyContractCoupon(
+      contractId: widget.contractId,
+      code: code,
+    );
+    if (!mounted) return;
+    setState(() => _couponBusy = false);
+    if (r['success'] == true) {
+      Fluttertoast.showToast(msg: r['message']?.toString() ?? 'Coupon applied');
+      _couponController.clear();
+      fetchContract();
+    } else {
+      Fluttertoast.showToast(
+        msg: r['message']?.toString() ?? 'Could not apply coupon',
+      );
+    }
+  }
+
+  Future<void> _removeContractCoupon() async {
+    setState(() => _couponBusy = true);
+    final r = await ApiService.removeContractCoupon(widget.contractId);
+    if (!mounted) return;
+    setState(() => _couponBusy = false);
+    if (r['success'] == true) {
+      Fluttertoast.showToast(msg: r['message']?.toString() ?? 'Coupon removed');
+      fetchContract();
+    } else {
+      Fluttertoast.showToast(
+        msg: r['message']?.toString() ?? 'Could not remove coupon',
+      );
+    }
   }
 
   Future<void> fetchContract() async {
@@ -311,6 +365,21 @@ class _ContractScreenState extends State<ContractScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
+          if (contract?.status == 'active')
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/contract/progress',
+                  arguments: {
+                    'contractId': widget.contractId,
+                    'userRole': widget.userRole,
+                  },
+                );
+              },
+              icon: const Icon(Icons.timeline, size: 20),
+              label: const Text('Progress'),
+            ),
           if (contract?.status == 'active' && widget.userRole == 'freelancer')
             IconButton(
               icon: const Icon(Icons.calendar_month),
@@ -806,6 +875,73 @@ class _ContractScreenState extends State<ContractScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
+                              if (!isEscrowFunded &&
+                                  widget.userRole == 'client') ...[
+                                TextField(
+                                  controller: _couponController,
+                                  textCapitalization:
+                                      TextCapitalization.characters,
+                                  decoration: InputDecoration(
+                                    labelText: 'Contract coupon (escrow)',
+                                    hintText: 'Apply before paying',
+                                    border: const OutlineInputBorder(),
+                                    suffixIcon: _couponBusy
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(12),
+                                            child: SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          )
+                                        : IconButton(
+                                            icon: const Icon(Icons.local_offer),
+                                            tooltip: 'Apply',
+                                            onPressed: _couponBusy
+                                                ? null
+                                                : _applyContractCoupon,
+                                          ),
+                                  ),
+                                  onSubmitted: (_) => _applyContractCoupon(),
+                                ),
+                                if (contract?.couponCode != null &&
+                                    contract!.couponCode!.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Chip(
+                                          avatar: const Icon(
+                                            Icons.sell,
+                                            size: 18,
+                                          ),
+                                          label: Text(
+                                            '${contract!.couponCode} · -\$${_formatAmount(contract!.couponDiscountAmount)}',
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: _couponBusy
+                                            ? null
+                                            : _removeContractCoupon,
+                                        child: const Text('Remove'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                const SizedBox(height: 12),
+                                if ((contract?.couponDiscountAmount ?? 0) > 0)
+                                  Text(
+                                    'Amount due now: \$${_formatAmount(_clientEscrowAmountDue)} (after coupon)',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green.shade800,
+                                    ),
+                                  ),
+                                const SizedBox(height: 8),
+                              ],
                               if (!isEscrowFunded)
                                 SizedBox(
                                   width: double.infinity,
@@ -826,7 +962,7 @@ class _ContractScreenState extends State<ContractScreen> {
                                     label: Text(
                                       _isProcessing
                                           ? 'Processing...'
-                                          : 'Pay \$${_formatAmount(contract?.agreedAmount)}',
+                                          : 'Pay \$${_formatAmount(_clientEscrowAmountDue)}',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,

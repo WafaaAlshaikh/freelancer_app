@@ -43,6 +43,11 @@ const SubscriptionPlan = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    /** Max interview invitations a client may create per calendar month; null = unlimited */
+    interview_limit: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     ai_insights: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

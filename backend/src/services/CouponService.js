@@ -1,4 +1,5 @@
 import Coupon from "../models/Coupon.js";
+import SubscriptionLog from "../models/SubscriptionLog.js";
 import { Op } from "sequelize";
 
 class CouponService {
@@ -26,13 +27,19 @@ class CouponService {
       max_uses: data.max_uses || null,
       applicable_plans: data.applicable_plans || null,
       is_active: data.is_active !== undefined ? data.is_active : true,
+      application_scope: data.application_scope || data.scope || "subscription",
     };
 
     const coupon = await Coupon.create(couponData);
     return coupon;
   }
 
-  static async validateCoupon(code, planSlug = null) {
+  /**
+   * @param {string} code
+   * @param {string|null} planSlug — subscription plan slug (subscription context only)
+   * @param {'subscription'|'contract'} context
+   */
+  static async validateCoupon(code, planSlug = null, context = "subscription") {
     const coupon = await Coupon.findOne({
       where: {
         code: code.toUpperCase(),
@@ -50,24 +57,45 @@ class CouponService {
       return { valid: false, message: "Coupon has reached maximum uses" };
     }
 
-    if (coupon.applicable_plans && planSlug) {
-      if (!coupon.applicable_plans.includes(planSlug)) {
-        return { valid: false, message: "Coupon not applicable for this plan" };
-      }
+    const scope = coupon.application_scope || "subscription";
+
+    if (context === "subscription" && scope === "contract") {
+      return {
+        valid: false,
+        message: "This coupon is only valid for contract payments",
+      };
     }
+    if (context === "contract" && scope === "subscription") {
+      return {
+        valid: false,
+        message: "This coupon is only valid for subscriptions",
+      };
+    }
+
+    if (
+      context === "subscription" &&
+      coupon.applicable_plans &&
+      planSlug &&
+      !coupon.applicable_plans.includes(planSlug)
+    ) {
+      return { valid: false, message: "Coupon not applicable for this plan" };
+    }
+
+    const pct = parseFloat(coupon.discount_percent || 0);
+    const amt = parseFloat(coupon.discount_amount || 0);
 
     return {
       valid: true,
       coupon,
       discount:
-        coupon.discount_percent > 0
-          ? { type: "percentage", value: coupon.discount_percent }
-          : { type: "amount", value: coupon.discount_amount },
+        pct > 0
+          ? { type: "percentage", value: pct }
+          : { type: "amount", value: amt },
     };
   }
 
   static async applyCoupon(code, userId, subscriptionId = null) {
-    const validation = await this.validateCoupon(code);
+    const validation = await this.validateCoupon(code, null, "subscription");
 
     if (!validation.valid) {
       return validation;
@@ -89,6 +117,15 @@ class CouponService {
       discount: validation.discount,
       coupon: coupon,
     };
+  }
+
+  /** Call when contract escrow payment succeeds (once per contract). */
+  static async recordContractCouponUse(code) {
+    if (!code) return;
+    const coupon = await Coupon.findOne({
+      where: { code: code.toUpperCase() },
+    });
+    if (coupon) await coupon.increment("used_count");
   }
 
   static async getAllCoupons(page = 1, limit = 20) {

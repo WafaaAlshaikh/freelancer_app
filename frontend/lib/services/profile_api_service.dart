@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import '../utils/constants.dart';
+import '../utils/constants.dart' show BASE_URL, apiMediaUrl;
 import '../utils/token_storage.dart';
 import 'api_service.dart';
 
@@ -10,7 +10,6 @@ class ProfileApiService {
   static String get baseUrl => BASE_URL;
   static Map<String, String> get headers => ApiService.headers;
 
-  // ─── Freelancer ───────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> getMyFreelancerProfile() async {
     try {
       final res = await http.get(
@@ -95,7 +94,6 @@ class ProfileApiService {
     }
   }
 
-  // ─── Client ───────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> getMyClientProfile() async {
     try {
       final res = await http.get(
@@ -203,7 +201,6 @@ class ProfileApiService {
     }
   }
 
-  // ─── Search ───────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> searchFreelancers({
     String? q,
     String? skills,
@@ -238,9 +235,5 @@ class ProfileApiService {
     }
   }
 
-  static String fullImageUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    if (path.startsWith('http')) return path;
-    return 'http://localhost:5000$path';
-  }
+  static String fullImageUrl(String? path) => apiMediaUrl(path);
 }

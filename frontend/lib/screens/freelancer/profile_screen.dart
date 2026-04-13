@@ -13,9 +13,15 @@ import 'package:freelancer_platform/screens/freelancer/financial_dashboard_scree
 import 'package:freelancer_platform/screens/notifications/notifications_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/skill_tests_screen.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../models/freelancer_model.dart';
-import '../../models/project_model.dart';
+import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
+
+import '../../models/calendar_event.dart';
 import '../../models/contract_model.dart';
+import '../../models/freelancer_model.dart';
+import '../../models/interview_model.dart';
+import '../../models/project_model.dart';
+import '../../models/usage_limits_model.dart';
 import '../../services/api_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/auth_service.dart';
@@ -506,13 +512,130 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _PaymentCard extends StatelessWidget {
-  const _PaymentCard();
+class _FreelancerHomeScheduleCard extends StatefulWidget {
+  const _FreelancerHomeScheduleCard();
+
+  @override
+  State<_FreelancerHomeScheduleCard> createState() =>
+      _FreelancerHomeScheduleCardState();
+}
+
+class _FreelancerHomeScheduleCardState
+    extends State<_FreelancerHomeScheduleCard> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime _selectedDay = DateTime.now();
+  List<CalendarEvent> _milestones = [];
+  List<InterviewInvitation> _interviews = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final y = _focusedDay.year;
+      final m = _focusedDay.month;
+      final raw = await ApiService.getCalendarEvents(y, m);
+      final invRes = await ApiService.getUserInterviews();
+
+      final events = <CalendarEvent>[];
+      if (raw is List) {
+        for (final e in raw) {
+          try {
+            events.add(
+              CalendarEvent.fromJson(Map<String, dynamic>.from(e as Map)),
+            );
+          } catch (_) {}
+        }
+      }
+
+      List<InterviewInvitation> inv = [];
+      if (invRes['invitations'] != null) {
+        for (final j in invRes['invitations'] as List) {
+          try {
+            inv.add(
+              InterviewInvitation.fromJson(Map<String, dynamic>.from(j as Map)),
+            );
+          } catch (_) {}
+        }
+      }
+
+      inv = inv
+          .where(
+            (i) =>
+                i.selectedTime != null &&
+                (i.status == 'accepted' ||
+                    i.status == 'pending' ||
+                    i.status == 'rescheduled'),
+          )
+          .toList();
+
+      if (!mounted) return;
+      setState(() {
+        _milestones = events;
+        _interviews = inv;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  List<dynamic> _markersForDay(DateTime day) {
+    final out = <dynamic>[];
+    for (final e in _milestones) {
+      if (isSameDay(e.date, day)) out.add(e);
+    }
+    for (final i in _interviews) {
+      if (i.selectedTime != null && isSameDay(i.selectedTime!, day)) {
+        out.add(i);
+      }
+    }
+    return out;
+  }
+
+  List<_ScheduleListItem> _itemsForSelectedDay() {
+    final out = <_ScheduleListItem>[];
+    for (final e in _milestones) {
+      if (isSameDay(e.date, _selectedDay)) {
+        out.add(
+          _ScheduleListItem(
+            time: e.date,
+            title: e.title,
+            subtitle: e.projectTitle ?? e.type,
+            color: e.color,
+            icon: e.type == 'reminder' ? Icons.alarm : Icons.flag_outlined,
+          ),
+        );
+      }
+    }
+    for (final i in _interviews) {
+      if (i.selectedTime != null && isSameDay(i.selectedTime!, _selectedDay)) {
+        out.add(
+          _ScheduleListItem(
+            time: i.selectedTime!,
+            title: 'Interview',
+            subtitle: i.project?.title ?? 'Project #${i.projectId}',
+            color: Colors.deepPurple,
+            icon: Icons.video_call_outlined,
+          ),
+        );
+      }
+    }
+    out.sort((a, b) => a.time.compareTo(b.time));
+    return out;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final dayItems = _itemsForSelectedDay();
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(16),
@@ -527,69 +650,216 @@ class _PaymentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Payment Details',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Card number',
-            style: TextStyle(fontSize: 11, color: Colors.grey),
+          Row(
+            children: [
+              Icon(Icons.calendar_month, size: 18, color: AppColors.accent),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'Your schedule',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (_loading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  onPressed: _load,
+                  tooltip: 'Refresh',
+                ),
+            ],
           ),
           const SizedBox(height: 4),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
+          Text(
+            'Milestones, reminders & interviews',
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 8),
+          TableCalendar<dynamic>(
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2032, 12, 31),
+            focusedDay: _focusedDay,
+            selectedDayPredicate: (d) => isSameDay(_selectedDay, d),
+            calendarFormat: CalendarFormat.twoWeeks,
+            availableCalendarFormats: const {CalendarFormat.twoWeeks: '2w'},
+            startingDayOfWeek: StartingDayOfWeek.monday,
+            rowHeight: 30,
+            daysOfWeekHeight: 16,
+            headerStyle: HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+              titleTextStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+              leftChevronIcon: const Icon(Icons.chevron_left, size: 20),
+              rightChevronIcon: const Icon(Icons.chevron_right, size: 20),
+              headerPadding: EdgeInsets.zero,
+              headerMargin: const EdgeInsets.only(bottom: 4),
             ),
-            child: const Text(
-              '236 *** **** 265',
-              style: TextStyle(letterSpacing: 2, fontSize: 13),
+            daysOfWeekStyle: DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade700,
+              ),
+              weekendStyle: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            calendarStyle: CalendarStyle(
+              outsideDaysVisible: false,
+              cellMargin: const EdgeInsets.all(2),
+              markersMaxCount: 3,
+              markerDecoration: BoxDecoration(
+                color: AppColors.accent,
+                shape: BoxShape.circle,
+              ),
+              todayDecoration: BoxDecoration(
+                color: AppColors.accent.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              selectedDecoration: BoxDecoration(
+                color: AppColors.accent,
+                shape: BoxShape.circle,
+              ),
+              defaultTextStyle: const TextStyle(fontSize: 11),
+              weekendTextStyle: const TextStyle(fontSize: 11),
+            ),
+            eventLoader: _markersForDay,
+            onDaySelected: (selected, focused) {
+              setState(() {
+                _selectedDay = selected;
+                _focusedDay = focused;
+              });
+            },
+            onPageChanged: (focused) {
+              _focusedDay = focused;
+              _load();
+            },
+          ),
+          const Divider(height: 16),
+          Text(
+            DateFormat.yMMMd().format(_selectedDay),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade800,
             ),
           ),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 2.4,
-            children: [
-              _pmItem(
-                'Western Union',
-                Colors.orange.shade50,
-                Colors.orange.shade700,
+          const SizedBox(height: 6),
+          if (dayItems.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Nothing on this day',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
-              _pmItem('G Pay', Colors.blue.shade50, Colors.blue.shade700),
-              _pmItem('Mastercard', Colors.red.shade50, Colors.red.shade700),
-              _pmItem('VISA', Colors.green.shade50, Colors.green.shade700),
-            ],
+            )
+          else
+            ...dayItems
+                .take(4)
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(item.icon, size: 14, color: item.color),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                item.subtitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade600,
+                                  height: 1.2,
+                                ),
+                              ),
+                              Text(
+                                DateFormat.jm().format(item.time),
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: item.color,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          if (dayItems.length > 4)
+            Text(
+              '+${dayItems.length - 4} more',
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+            ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/calendar'),
+              icon: const Icon(Icons.open_in_new, size: 14),
+              label: const Text(
+                'Full calendar',
+                style: TextStyle(fontSize: 11),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                side: const BorderSide(color: AppColors.accent),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _pmItem(String label, Color bg, Color textColor) {
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: textColor,
-        ),
-      ),
-    );
-  }
+class _ScheduleListItem {
+  final DateTime time;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final IconData icon;
+
+  _ScheduleListItem({
+    required this.time,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.icon,
+  });
 }
 
 class _PremiumCard extends StatelessWidget {
@@ -677,6 +947,75 @@ class _PremiumCard extends StatelessWidget {
   }
 }
 
+class _FreelancerProposalUsageBanner extends StatelessWidget {
+  final UsageLimits usage;
+  final VoidCallback onUpgrade;
+
+  const _FreelancerProposalUsageBanner({
+    required this.usage,
+    required this.onUpgrade,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rem = usage.remainingProposals;
+    final lim = usage.proposalsLimit;
+    if (lim == null || rem < 0) return const SizedBox.shrink();
+
+    final isMax = rem <= 0;
+    final bg = isMax ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB);
+    final border = isMax ? const Color(0xFFFECACA) : const Color(0xFFFDE68A);
+    final fg = isMax ? const Color(0xFFB91C1C) : const Color(0xFFB45309);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isMax ? Icons.block : Icons.warning_amber_rounded,
+            color: fg,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isMax ? 'Proposal limit reached' : 'Proposals running low',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: fg,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isMax
+                      ? '$lim proposals per month on your plan.'
+                      : '$rem of $lim proposals left this month.',
+                  style: TextStyle(fontSize: 11, color: fg.withOpacity(0.9)),
+                ),
+              ],
+            ),
+          ),
+          if (isMax)
+            TextButton(
+              onPressed: onUpgrade,
+              style: TextButton.styleFrom(foregroundColor: fg),
+              child: const Text('Upgrade'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class FreelancerHomeScreen extends StatefulWidget {
   const FreelancerHomeScreen({super.key});
 
@@ -704,6 +1043,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   ProjectFilter _projectFilter = ProjectFilter.bestMatches;
   List<Project> _savedProjects = [];
   bool _loadingSaved = false;
+  UsageLimits? _usage;
 
   @override
   void initState() {
@@ -731,7 +1071,22 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       fetchStats(),
       fetchActiveContracts(),
       fetchPortfolio(),
+      _loadUsage(),
     ]);
+  }
+
+  Future<void> _loadUsage() async {
+    try {
+      final r = await ApiService.getUserUsage();
+      if (!mounted) return;
+      if (r['usage'] != null) {
+        setState(() {
+          _usage = UsageLimits.fromJson(
+            Map<String, dynamic>.from(r['usage'] as Map),
+          );
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSavedProjects() async {
@@ -1850,6 +2205,15 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildProfileHeaderCard(),
+            const SizedBox(height: 12),
+            if (_usage != null &&
+                _usage!.hasProposalLimit &&
+                (_usage!.remainingProposals <= 2))
+              _FreelancerProposalUsageBanner(
+                usage: _usage!,
+                onUpgrade: () =>
+                    Navigator.pushNamed(context, '/subscription/plans'),
+              ),
             const SizedBox(height: 16),
             _buildActiveProjectsList(),
             const SizedBox(height: 16),
@@ -2004,7 +2368,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          const _PaymentCard(),
+          const _FreelancerHomeScheduleCard(),
           const SizedBox(height: 14),
           _PremiumCard(
             onSubscribe: () =>

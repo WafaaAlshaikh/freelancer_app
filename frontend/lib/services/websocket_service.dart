@@ -1,8 +1,10 @@
 // lib/services/websocket_service.dart
+import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../utils/constants.dart';
 import '../utils/token_storage.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -24,9 +26,11 @@ class WebSocketService {
         return;
       }
 
+      final origin = Uri.parse(BASE_URL).origin;
       final options = IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
+          .setPath('/socket.io-interview')
           .setReconnectionAttempts(_maxReconnectAttempts)
           .setReconnectionDelay(1000)
           .setReconnectionDelayMax(5000)
@@ -35,10 +39,9 @@ class WebSocketService {
           .setAuth({'userId': userId.toString(), 'token': token})
           .build();
 
-      final serverUrl = 'http://localhost:5001';
-      print('🔌 WebSocket connecting to: $serverUrl');
+      print('🔌 WebSocket connecting to: $origin (path /socket.io-interview)');
 
-      _socket = IO.io(serverUrl, options);
+      _socket = IO.io(origin, options);
 
       _socket!.onConnect((_) {
         print('✅ WebSocket connected successfully');
@@ -132,6 +135,10 @@ class WebSocketService {
         print('🔌 Server acknowledged connection: $data');
       });
 
+      _socket!.on('notification', (raw) {
+        _handlePushNotification(raw);
+      });
+
       _socket!.on('error', (error) {
         print('❌ WebSocket error event: $error');
       });
@@ -141,6 +148,82 @@ class WebSocketService {
       print('❌ Error initializing WebSocket: $e');
       _isConnected = false;
     }
+  }
+
+  static void _handlePushNotification(dynamic raw) {
+    if (raw is! Map) return;
+    final payload = Map<String, dynamic>.from(raw);
+    final title = payload['title']?.toString() ?? 'Notification';
+    final body = payload['body']?.toString() ?? '';
+
+    dynamic d = payload['data'];
+    Map<String, dynamic>? data;
+    if (d is String) {
+      try {
+        final j = jsonDecode(d);
+        if (j is Map) data = Map<String, dynamic>.from(j);
+      } catch (_) {}
+    } else if (d is Map) {
+      data = Map<String, dynamic>.from(d);
+    }
+
+    final ctx = navigatorKey.currentContext;
+    final screen = data?['screen']?.toString();
+    final contractIdRaw = data?['contractId'];
+
+    if (ctx != null &&
+        (screen == 'contract_progress' || screen == 'contract') &&
+        contractIdRaw != null) {
+      final contractId = contractIdRaw is int
+          ? contractIdRaw
+          : int.tryParse(contractIdRaw.toString());
+      if (contractId != null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              body.isNotEmpty ? body : title,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () async {
+                final role = await TokenStorage.getUserRole() ?? 'client';
+                final nav = navigatorKey.currentState;
+                if (nav == null) return;
+                if (screen == 'contract_progress') {
+                  nav.pushNamed(
+                    '/contract/progress',
+                    arguments: {
+                      'contractId': contractId,
+                      'userRole': role,
+                    },
+                  );
+                } else {
+                  nav.pushNamed(
+                    '/contract',
+                    arguments: {
+                      'contractId': contractId,
+                      'userRole': role,
+                    },
+                  );
+                }
+              },
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    Fluttertoast.showToast(
+      msg: body.isNotEmpty ? '$title\n$body' : title,
+      timeInSecForIosWeb: 5,
+      backgroundColor: const Color(0xFF4F46E5),
+      textColor: Colors.white,
+      gravity: ToastGravity.TOP,
+    );
   }
 
   static void _showNotification({

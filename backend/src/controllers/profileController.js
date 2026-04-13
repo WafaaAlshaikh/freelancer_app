@@ -691,6 +691,8 @@ export const getFreelancerPublicProfile = async (req, res) => {
         "profile_views",
         "last_seen",
         "createdAt",
+        "is_verified",
+        "verification_level",
       ],
     });
 
@@ -712,8 +714,22 @@ export const getFreelancerPublicProfile = async (req, res) => {
         ["featured", "DESC"],
         ["completion_date", "DESC"],
       ],
-      limit: 20,
+      limit: 24,
     });
+
+    const totalReviews = await Rating.count({
+      where: { toUserId: userId, role: "client" },
+    });
+
+    let avgRating = 0;
+    if (totalReviews > 0) {
+      const sum = await Rating.sum("rating", {
+        where: { toUserId: userId, role: "client" },
+      });
+      avgRating = Math.round((parseFloat(sum) / totalReviews) * 10) / 10;
+    } else if (profile?.rating) {
+      avgRating = Math.round(parseFloat(profile.rating) * 10) / 10;
+    }
 
     const ratingsData = await Rating.findAll({
       where: { toUserId: userId, role: "client" },
@@ -721,13 +737,8 @@ export const getFreelancerPublicProfile = async (req, res) => {
         { model: User, as: "fromUser", attributes: ["id", "name", "avatar"] },
       ],
       order: [["createdAt", "DESC"]],
-      limit: 10,
+      limit: 12,
     });
-
-    const avgRating =
-      ratingsData.length > 0
-        ? ratingsData.reduce((s, r) => s + r.rating, 0) / ratingsData.length
-        : 0;
 
     const completedContracts = await Contract.count({
       where: { FreelancerId: userId, status: "completed" },
@@ -742,6 +753,27 @@ export const getFreelancerPublicProfile = async (req, res) => {
       parseJSON(profile?.top_skills).length > 0
         ? parseJSON(profile?.top_skills)
         : skills.slice(0, 8);
+
+    const socialFromProfile = parseJSON(profile?.social_links, {});
+
+    const contact_links = {
+      website: user.website || profile?.website || socialFromProfile.website || null,
+      github: user.github || profile?.github || socialFromProfile.github || null,
+      linkedin:
+        user.linkedin || profile?.linkedin || socialFromProfile.linkedin || null,
+      behance: profile?.behance || socialFromProfile.behance || null,
+      dribbble: profile?.dribbble || socialFromProfile.dribbble || null,
+      twitter: user.twitter || socialFromProfile.twitter || null,
+    };
+
+    const displayBio =
+      (profile?.bio && String(profile.bio).trim()) ||
+      (user.bio && String(user.bio).trim()) ||
+      "";
+    const displayLocation =
+      (profile?.location && String(profile.location).trim()) ||
+      (user.location && String(user.location).trim()) ||
+      "";
 
     res.json({
       user: {
@@ -759,6 +791,8 @@ export const getFreelancerPublicProfile = async (req, res) => {
         last_seen: user.last_seen,
         member_since: user.createdAt,
         profile_views: user.profile_views,
+        is_verified: user.is_verified,
+        verification_level: user.verification_level,
       },
       profile: profile
         ? {
@@ -780,19 +814,41 @@ export const getFreelancerPublicProfile = async (req, res) => {
             cv_url: profile.cv_url,
             is_available: profile.is_available,
             is_featured: profile.is_featured,
+            is_verified: profile.is_verified,
+            is_top_rated: profile.is_top_rated,
+            is_rising_talent: profile.is_rising_talent,
             response_time: profile.response_time,
-            total_earnings: profile.total_earnings,
             job_success_score: profile.job_success_score,
+            timezone: profile.timezone,
+            display_bio: displayBio,
+            display_location: displayLocation,
           }
-        : null,
+        : {
+            display_bio: displayBio,
+            display_location: displayLocation,
+            skills: [],
+            top_skills: [],
+            categories: [],
+            languages: [],
+            education: [],
+            certifications: [],
+            work_experience: [],
+          },
+      contact_links,
+      trust: {
+        identity_verified: !!user.is_verified,
+        profile_verified: !!profile?.is_verified,
+        top_rated: !!profile?.is_top_rated,
+        rising_talent: !!profile?.is_rising_talent,
+      },
       stats: {
-        rating: Math.round(avgRating * 10) / 10,
-        total_reviews: ratingsData.length,
+        rating: avgRating,
+        total_reviews: totalReviews,
         completed_projects: completedContracts,
         active_projects: activeContracts,
-        total_earnings: profile?.total_earnings || 0,
         job_success_score: profile?.job_success_score || 0,
         response_time: profile?.response_time || 0,
+        portfolio_count: portfolioItems.length,
       },
       portfolio: portfolioItems.map((p) => ({
         id: p.id,

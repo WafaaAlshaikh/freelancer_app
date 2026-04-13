@@ -1,7 +1,6 @@
 // lib/screens/payment/payment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_dotenv/flutter_dotenv.dart' show dotenv;
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -178,6 +177,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  double _parseMoney(dynamic v) {
+    if (v == null) return 0;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     double amount = 0.0;
@@ -190,6 +196,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
       } else if (amountValue is String) {
         amount = double.tryParse(amountValue) ?? 0.0;
       }
+    }
+
+    final agreed = _parseMoney(
+      widget.paymentIntent['agreed_amount'] ?? widget.paymentIntent['amount'],
+    );
+    final discount = _parseMoney(widget.paymentIntent['coupon_discount']);
+    final chargeFallback = _parseMoney(
+      widget.paymentIntent['amount_to_charge'],
+    );
+    final displayCharge = amount > 0
+        ? amount
+        : (chargeFallback > 0 ? chargeFallback : agreed - discount);
+    final commission = widget.paymentIntent['commission_preview'];
+    Map<String, dynamic>? commissionMap;
+    if (commission is Map) {
+      commissionMap = Map<String, dynamic>.from(commission);
     }
 
     return Scaffold(
@@ -243,18 +265,62 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Contract Amount', style: TextStyle(fontSize: 16)),
-                  Text(
-                    '\$${amount.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                  _paymentLine('Contract total', agreed),
+                  if (discount > 0) ...[
+                    const SizedBox(height: 6),
+                    _paymentLine(
+                      'Coupon discount',
+                      -discount,
+                      valueColor: Colors.green.shade700,
                     ),
+                  ],
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Charged now (escrow)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '\$${displayCharge.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
+                  if (commissionMap != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Commission (on release): ~${commissionMap['rate_percent'] ?? '—'}% · est. fee \$${_parseMoney(commissionMap['estimated_fee_on_release'] ?? commissionMap['estimated_fee']).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                        height: 1.35,
+                      ),
+                    ),
+                    if (commissionMap['note'] != null &&
+                        commissionMap['note'].toString().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          commissionMap['note'].toString(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),
@@ -375,6 +441,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _paymentLine(String label, double signedAmount, {Color? valueColor}) {
+    final negative = signedAmount < 0;
+    final body = '\$${signedAmount.abs().toStringAsFixed(2)}';
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+        ),
+        Text(
+          negative ? '-$body' : body,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: valueColor ?? Colors.black87,
+          ),
+        ),
+      ],
     );
   }
 }

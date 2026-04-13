@@ -36,6 +36,9 @@ class Contract {
   final String? githubBranch;
   final List<Map<String, dynamic>>? reminders;
   final Map<String, dynamic>? milestoneProgress;
+  final String? couponCode;
+  final double? couponDiscountAmount;
+  final double? fundedEscrowAmount;
 
   Contract({
     this.id,
@@ -69,6 +72,9 @@ class Contract {
     this.githubBranch,
     this.reminders,
     this.milestoneProgress,
+    this.couponCode,
+    this.couponDiscountAmount,
+    this.fundedEscrowAmount,
   });
 
   factory Contract.fromJson(Map<String, dynamic> json) {
@@ -186,6 +192,13 @@ class Contract {
       githubBranch: json['github_branch'],
       reminders: parseReminders(json['reminders']),
       milestoneProgress: parseMilestoneProgress(json['milestone_progress']),
+      couponCode: json['coupon_code']?.toString(),
+      couponDiscountAmount: json['coupon_discount_amount'] != null
+          ? parseToDouble(json['coupon_discount_amount'])
+          : null,
+      fundedEscrowAmount: json['funded_escrow_amount'] != null
+          ? parseToDouble(json['funded_escrow_amount'])
+          : null,
     );
   }
 

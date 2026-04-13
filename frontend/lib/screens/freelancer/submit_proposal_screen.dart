@@ -1,8 +1,11 @@
 // screens/freelancer/submit_proposal_screen.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:freelancer_platform/models/usage_limits_model.dart';
 import '../../models/project_model.dart';
 import '../../services/api_service.dart';
+import '../../services/draft_local_storage.dart';
 import '../../widgets/milestone_editor.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -38,11 +41,18 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
   bool showAIMilestones = false;
   bool _checkingLimits = false;
 
+  Timer? _proposalDraftTimer;
+  DateTime? _proposalDraftSavedAt;
+  bool _ignoreProposalDraftListeners = false;
+
   @override
   void initState() {
     super.initState();
     priceController.text = widget.project.budget?.toStringAsFixed(0) ?? '';
     deliveryController.text = widget.project.duration?.toString() ?? '';
+    priceController.addListener(_scheduleProposalDraftSave);
+    deliveryController.addListener(_scheduleProposalDraftSave);
+    messageController.addListener(_scheduleProposalDraftSave);
 
     if (widget.smartPricing != null) {
       smartPricing = widget.smartPricing;
@@ -59,6 +69,65 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
 
   Future<void> _loadAllAIData() async {
     await Future.wait([_loadSmartPricing(), _loadProjectAnalysis()]);
+    if (!mounted) return;
+    await _restoreProposalDraftIfAny();
+  }
+
+  void _scheduleProposalDraftSave() {
+    if (_ignoreProposalDraftListeners) return;
+    final id = widget.project.id;
+    if (id == null) return;
+    _proposalDraftTimer?.cancel();
+    _proposalDraftTimer = Timer(const Duration(milliseconds: 1300), () {
+      _persistProposalDraft(id);
+    });
+  }
+
+  Future<void> _persistProposalDraft(int projectId) async {
+    if (_ignoreProposalDraftListeners) return;
+    final price = priceController.text.trim();
+    final del = deliveryController.text.trim();
+    final msg = messageController.text.trim();
+    if (price.isEmpty && del.isEmpty && msg.isEmpty && milestones.isEmpty) {
+      return;
+    }
+    await DraftLocalStorage.saveProposalDraft(projectId, {
+      'price': price,
+      'delivery': del,
+      'message': msg,
+      'milestones': milestones
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList(),
+    });
+    if (mounted) setState(() => _proposalDraftSavedAt = DateTime.now());
+  }
+
+  Future<void> _restoreProposalDraftIfAny() async {
+    final id = widget.project.id;
+    if (id == null) return;
+    final d = await DraftLocalStorage.getProposalDraft(id);
+    if (d == null || !mounted) return;
+
+    _ignoreProposalDraftListeners = true;
+    setState(() {
+      final p = d['price']?.toString();
+      if (p != null && p.isNotEmpty) priceController.text = p;
+      final del = d['delivery']?.toString();
+      if (del != null && del.isNotEmpty) deliveryController.text = del;
+      final msg = d['message']?.toString();
+      if (msg != null && msg.isNotEmpty) messageController.text = msg;
+      final ms = DraftLocalStorage.milestonesFromJson(d['milestones']);
+      if (ms.isNotEmpty) milestones = ms;
+    });
+    _ignoreProposalDraftListeners = false;
+
+    if (mounted) {
+      Fluttertoast.showToast(
+        msg: 'Restored your saved proposal draft',
+        backgroundColor: Colors.teal,
+        textColor: Colors.white,
+      );
+    }
   }
 
   Future<void> _loadSmartPricing() async {
@@ -457,13 +526,14 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       );
 
       if (result['proposal'] != null) {
+        await DraftLocalStorage.clearProposalDraft(widget.project.id!);
         Fluttertoast.showToast(
           msg: "✅ Proposal submitted successfully!",
           timeInSecForIosWeb: 3,
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
-        Navigator.pop(context, true);
+        if (mounted) Navigator.pop(context, true);
       } else {
         Fluttertoast.showToast(
           msg: result['message'] ?? "Error submitting proposal",
@@ -493,6 +563,20 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
+          if (_proposalDraftSavedAt != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Text(
+                  'Draft saved',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.teal.shade800,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           if (loadingPricing || loadingMilestones)
             const Padding(
               padding: EdgeInsets.all(12),
@@ -511,6 +595,38 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.teal.shade100),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.save_outlined,
+                      size: 18,
+                      color: Colors.teal.shade800,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Proposal autosaves on this device while you edit.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.teal.shade900,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -1085,6 +1201,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   setState(() {
                     milestones = newMilestones;
                   });
+                  _scheduleProposalDraftSave();
                 },
               ),
 
@@ -1317,6 +1434,10 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
 
   @override
   void dispose() {
+    _proposalDraftTimer?.cancel();
+    priceController.removeListener(_scheduleProposalDraftSave);
+    deliveryController.removeListener(_scheduleProposalDraftSave);
+    messageController.removeListener(_scheduleProposalDraftSave);
     priceController.dispose();
     deliveryController.dispose();
     messageController.dispose();

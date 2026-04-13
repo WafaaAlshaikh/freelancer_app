@@ -4,6 +4,7 @@ import 'dart:convert';
 class FreelancerProfile {
   int? id;
   String? name;
+  String? tagline;
   String? title;
   String? bio;
   String? location;
@@ -30,10 +31,13 @@ class FreelancerProfile {
   final double? totalEarnings;
   final int? jobSuccessScore;
   final int? responseTime;
+  String? availability;
+  int? weeklyHours;
 
   FreelancerProfile({
     this.id,
     this.name,
+    this.tagline,
     this.title,
     this.bio,
     this.location,
@@ -57,6 +61,8 @@ class FreelancerProfile {
     this.totalEarnings,
     this.jobSuccessScore,
     this.responseTime,
+    this.availability,
+    this.weeklyHours,
     this.isFeatured = false,
     this.featuredUntil,
   });
@@ -188,6 +194,7 @@ class FreelancerProfile {
     return FreelancerProfile(
       id: json['id'],
       name: json['name'],
+      tagline: json['tagline']?.toString(),
       title: json['title'],
       bio: json['bio'],
       location: json['location'],
@@ -211,6 +218,8 @@ class FreelancerProfile {
       totalEarnings: toDoubleSafe(json['total_earnings']),
       jobSuccessScore: toIntSafe(json['job_success_score']),
       responseTime: toIntSafe(json['response_time']),
+      availability: json['availability']?.toString(),
+      weeklyHours: toIntSafe(json['weekly_hours']),
       isFeatured: json['is_featured'] as bool? ?? false,
       featuredUntil: json['featured_until'] != null
           ? DateTime.tryParse(json['featured_until'])
@@ -220,6 +229,7 @@ class FreelancerProfile {
 
   Map<String, dynamic> toJson() => {
     'name': name,
+    'tagline': tagline,
     'title': title,
     'bio': bio,
     'location': location,
@@ -232,6 +242,8 @@ class FreelancerProfile {
     'certifications': certifications,
     'is_available': isAvailable,
     'hourly_rate': hourlyRate,
+    'availability': availability,
+    'weekly_hours': weeklyHours,
     'website': website,
     'github': github,
     'linkedin': linkedin,

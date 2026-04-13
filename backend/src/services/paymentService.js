@@ -7,6 +7,7 @@ import {
   Project,
 } from "../models/index.js";
 import NotificationService from "./notificationService.js";
+import CouponService from "./CouponService.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -139,10 +140,20 @@ class PaymentService {
         "to funded",
       );
 
+      const paid =
+        (session.amount_total != null
+          ? session.amount_total
+          : Math.round(parseFloat(contract.agreed_amount) * 100)) / 100;
+
       await contract.update({
         escrow_status: "funded",
         payment_status: "escrow",
+        funded_escrow_amount: paid,
       });
+
+      if (contract.coupon_code) {
+        await CouponService.recordContractCouponUse(contract.coupon_code);
+      }
 
       console.log("✅ Contract updated");
 
@@ -156,8 +167,7 @@ class PaymentService {
         });
       }
 
-      const newPendingBalance =
-        (clientWallet.pending_balance || 0) + contract.agreed_amount;
+      const newPendingBalance = (clientWallet.pending_balance || 0) + paid;
       await clientWallet.update({
         pending_balance: newPendingBalance,
       });
@@ -168,7 +178,7 @@ class PaymentService {
 
       const transaction = await Transaction.create({
         wallet_id: clientWallet.id,
-        amount: contract.agreed_amount,
+        amount: paid,
         type: "deposit",
         status: "completed",
         description: `Escrow deposit for contract #${contract.id}`,
@@ -183,16 +193,16 @@ class PaymentService {
         userId: contract.ClientId,
         type: "payment_received",
         title: "Payment Confirmed ✅",
-        body: `$${contract.agreed_amount} has been deposited into escrow for contract #${contract.id}.`,
-        data: { contractId: contract.id, screen: "contract" },
+        body: `$${paid.toFixed(2)} has been deposited into escrow for contract #${contract.id}.`,
+        data: { contractId: contract.id, screen: "contract_progress" },
       });
 
       await NotificationService.createNotification({
         userId: contract.FreelancerId,
         type: "payment_received",
         title: "Payment Secured 💰",
-        body: `The client has funded $${contract.agreed_amount} into escrow. You can now start working!`,
-        data: { contractId: contract.id, screen: "contract" },
+        body: `The client has funded $${paid.toFixed(2)} into escrow. You can now start working!`,
+        data: { contractId: contract.id, screen: "contract_progress" },
       });
 
       console.log("✅ Notifications sent");
@@ -217,10 +227,19 @@ class PaymentService {
         throw new Error("Contract not found");
       }
 
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const paid =
+        (pi.amount_received != null ? pi.amount_received : pi.amount) / 100;
+
       await contract.update({
         escrow_status: "funded",
         payment_status: "escrow",
+        funded_escrow_amount: paid,
       });
+
+      if (contract.coupon_code) {
+        await CouponService.recordContractCouponUse(contract.coupon_code);
+      }
 
       let clientWallet = await Wallet.findOne({
         where: { UserId: contract.ClientId },
@@ -232,12 +251,12 @@ class PaymentService {
         });
       }
       await clientWallet.update({
-        pending_balance: clientWallet.pending_balance + contract.agreed_amount,
+        pending_balance: clientWallet.pending_balance + paid,
       });
 
       await Transaction.create({
         wallet_id: clientWallet.id,
-        amount: contract.agreed_amount,
+        amount: paid,
         type: "deposit",
         status: "completed",
         description: `Escrow deposit for contract #${contract.id}`,
@@ -251,16 +270,16 @@ class PaymentService {
         userId: contract.ClientId,
         type: "payment_received",
         title: "Payment Confirmed",
-        body: `$${contract.agreed_amount} has been deposited into escrow for contract #${contract.id}`,
-        data: { contractId: contract.id, screen: "contract" },
+        body: `$${paid.toFixed(2)} has been deposited into escrow for contract #${contract.id}`,
+        data: { contractId: contract.id, screen: "contract_progress" },
       });
 
       await NotificationService.createNotification({
         userId: contract.FreelancerId,
         type: "payment_received",
         title: "Payment Secured",
-        body: `The client has funded $${contract.agreed_amount} into escrow. You can now start working.`,
-        data: { contractId: contract.id, screen: "contract" },
+        body: `The client has funded $${paid.toFixed(2)} into escrow. You can now start working.`,
+        data: { contractId: contract.id, screen: "contract_progress" },
       });
 
       return { success: true, contract };
@@ -299,6 +318,18 @@ class PaymentService {
 
       if (milestone.status !== "completed") {
         throw new Error("Milestone not completed yet");
+      }
+
+      const pool =
+        contract.funded_escrow_amount != null
+          ? parseFloat(contract.funded_escrow_amount)
+          : parseFloat(contract.agreed_amount);
+      const alreadyReleased = parseFloat(contract.released_amount || 0);
+      const milestoneAmt = parseFloat(milestone.amount || 0);
+      if (alreadyReleased + milestoneAmt > pool + 0.01) {
+        throw new Error(
+          "Release would exceed funded escrow. Adjust milestones or funding.",
+        );
       }
 
       milestone.status = "approved";

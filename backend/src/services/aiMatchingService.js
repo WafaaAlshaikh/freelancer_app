@@ -6,6 +6,7 @@ import {
   User,
   Contract,
   UserSkillTest,
+  SkillTest,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import Groq from "groq-sdk";
@@ -188,10 +189,11 @@ class AIMatchingService {
     );
     const freelancerId =
       freelancer.UserId || freelancer.user_id || freelancer.id;
-    const testMatch = await this.calculateTestBasedMatchScore(
-      freelancerId,
-      projectSkills,
-    );
+    // const testMatch = await this.calculateTestBasedMatchScore(
+    //   freelancerId,
+    //   projectSkills,
+    // );
+    const testMatch = { score: 0, matchedSkills: [], testsCount: 0 };
 
     return {
       total,

@@ -53,7 +53,7 @@ export const submitWork = async (req, res) => {
       data: {
         submissionId: submission.id,
         contractId: contract.id,
-        screen: "work_submissions",
+        screen: "contract_progress",
       },
     });
 
@@ -114,7 +114,7 @@ export const approveWork = async (req, res) => {
       data: {
         submissionId: submission.id,
         contractId: submission.contract_id,
-        screen: "contract",
+        screen: "contract_progress",
       },
     });
 
@@ -158,7 +158,7 @@ export const requestRevision = async (req, res) => {
       data: {
         submissionId: submission.id,
         contractId: submission.contract_id,
-        screen: "contract",
+        screen: "contract_progress",
       },
     });
 

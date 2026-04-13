@@ -230,7 +230,20 @@ export const getProfile = async (req, res) => {
     console.log("📥 [getProfile] Fetching profile for user:", req.user.id);
 
     const user = await User.findByPk(req.user.id, {
-      attributes: ["id", "name", "email", "avatar", "role"],
+      attributes: [
+        "id",
+        "name",
+        "email",
+        "avatar",
+        "role",
+        "tagline",
+        "bio",
+        "location",
+        "website",
+        "linkedin",
+        "github",
+        "twitter",
+      ],
     });
 
     if (!user) {
@@ -251,15 +264,17 @@ export const getProfile = async (req, res) => {
     const languages = parseJSON(profile.languages);
     const education = parseJSON(profile.education);
     const certifications = parseJSON(profile.certifications);
+    const workExperience = parseJSON(profile.work_experience);
 
     const responseData = {
       id: profile.id,
       name: user.name,
       email: user.email,
       avatar: user.avatar,
+      tagline: user.tagline || "",
       title: profile.title || "",
-      bio: profile.bio || "",
-      location: profile.location || "",
+      bio: profile.bio || user.bio || "",
+      location: profile.location || user.location || "",
       location_coordinates: profile.location_coordinates,
       experience_years: profile.experience_years || 0,
       rating: profile.rating || 0,
@@ -267,13 +282,16 @@ export const getProfile = async (req, res) => {
       languages: languages,
       education: education,
       certifications: certifications,
+      work_experience: workExperience,
       cv_url: profile.cv_url,
       is_available: profile.is_available ?? true,
       hourly_rate: profile.hourly_rate,
+      availability: profile.availability,
+      weekly_hours: profile.weekly_hours,
       completed_projects_count: profile.completed_projects_count || 0,
-      website: profile.website,
-      github: profile.github,
-      linkedin: profile.linkedin,
+      website: profile.website || user.website,
+      github: profile.github || user.github,
+      linkedin: profile.linkedin || user.linkedin,
       behance: profile.behance,
       total_earnings: profile.total_earnings || 0,
       job_success_score: profile.job_success_score || 0,
@@ -298,41 +316,113 @@ export const updateProfile = async (req, res) => {
     console.log("📥 [updateProfile] Updating profile for user:", req.user.id);
     console.log("📦 [updateProfile] Request body:", req.body);
 
-    let profile = await FreelancerProfile.findOne({
-      where: { UserId: req.user.id },
-    });
+    const body = { ...req.body };
 
-    const updateData = { ...req.body };
-
-    const jsonFields = ["skills", "languages", "education", "certifications"];
-    jsonFields.forEach((field) => {
-      if (updateData[field] !== undefined) {
-        if (Array.isArray(updateData[field])) {
-          updateData[field] = stringifyJSON(updateData[field]);
+    const jsonProfileKeys = [
+      "skills",
+      "languages",
+      "education",
+      "certifications",
+      "work_experience",
+      "categories",
+      "top_skills",
+    ];
+    jsonProfileKeys.forEach((field) => {
+      if (body[field] !== undefined) {
+        if (typeof body[field] === "string") {
+          try {
+            body[field] = JSON.parse(body[field]);
+          } catch {
+            /* keep string */
+          }
+        }
+        if (Array.isArray(body[field]) || typeof body[field] === "object") {
+          body[field] = stringifyJSON(body[field]);
         }
       }
     });
 
-    if (updateData.social_links !== undefined) {
-      updateData.social_links = stringifyJSON(updateData.social_links);
+    let social = body.social_links;
+    if (social !== undefined) {
+      if (typeof social === "string") {
+        try {
+          social = JSON.parse(social);
+        } catch {
+          social = {};
+        }
+      }
+      if (social && typeof social === "object") {
+        if (social.website) body.website = social.website;
+        if (social.github) body.github = social.github;
+        if (social.linkedin) body.linkedin = social.linkedin;
+        if (social.behance) body.behance = social.behance;
+        if (social.dribbble) body.dribbble = social.dribbble;
+      }
+      body.social_links = stringifyJSON(social);
     }
+
+    const userKeys = [
+      "name",
+      "tagline",
+      "bio",
+      "location",
+      "website",
+      "linkedin",
+      "github",
+      "twitter",
+    ];
+    const userUpdate = {};
+    userKeys.forEach((k) => {
+      if (body[k] !== undefined) userUpdate[k] = body[k];
+    });
+
+    const profileKeys = [
+      "title",
+      "bio",
+      "tagline",
+      "experience_years",
+      "hourly_rate",
+      "availability",
+      "weekly_hours",
+      "is_available",
+      "skills",
+      "languages",
+      "education",
+      "certifications",
+      "work_experience",
+      "categories",
+      "top_skills",
+      "social_links",
+      "location",
+      "location_coordinates",
+      "website",
+      "github",
+      "linkedin",
+      "behance",
+      "dribbble",
+    ];
+    const profileUpdate = {};
+    profileKeys.forEach((k) => {
+      if (body[k] !== undefined) profileUpdate[k] = body[k];
+    });
+
+    if (Object.keys(userUpdate).length > 0) {
+      await User.update(userUpdate, { where: { id: req.user.id } });
+    }
+
+    let profile = await FreelancerProfile.findOne({
+      where: { UserId: req.user.id },
+    });
 
     if (!profile) {
       console.log("📝 [updateProfile] Creating new profile");
       profile = await FreelancerProfile.create({
-        ...updateData,
         UserId: req.user.id,
+        ...profileUpdate,
       });
-    } else {
+    } else if (Object.keys(profileUpdate).length > 0) {
       console.log("✏️ [updateProfile] Updating existing profile");
-      await profile.update(updateData);
-    }
-
-    if (updateData.name && updateData.name !== req.user.name) {
-      await User.update(
-        { name: updateData.name },
-        { where: { id: req.user.id } },
-      );
+      await profile.update(profileUpdate);
     }
 
     if (req.file) {

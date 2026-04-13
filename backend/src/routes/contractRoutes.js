@@ -4,8 +4,17 @@ import { protect } from "../middleware/authMiddleware.js";
 import { Contract, Project, User } from "../models/index.js";
 import ESignatureService from "../services/esignatureService.js";
 import NotificationService from "../services/notificationService.js";
+import {
+  getContractProgress,
+  applyContractCoupon,
+  removeContractCoupon,
+} from "../controllers/contractWorkspaceController.js";
 
 const router = express.Router();
+
+router.get("/:contractId/progress", protect, getContractProgress);
+router.post("/:contractId/coupon", protect, applyContractCoupon);
+router.delete("/:contractId/coupon", protect, removeContractCoupon);
 
 router.get("/:contractId", protect, async (req, res) => {
   try {

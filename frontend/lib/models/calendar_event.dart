@@ -28,11 +28,13 @@ class CalendarEvent {
 
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     return CalendarEvent(
-      id: json['id'],
-      title: json['title'],
-      date: DateTime.parse(json['date']),
-      type: json['type'],
-      contractId: json['contractId'],
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      date: DateTime.parse(json['date'].toString()),
+      type: json['type']?.toString() ?? 'milestone',
+      contractId: json['contractId'] is int
+          ? json['contractId'] as int
+          : int.tryParse(json['contractId']?.toString() ?? '0') ?? 0,
       projectTitle: json['projectTitle'],
       status: json['status'],
       progress: json['progress']?.toDouble(),

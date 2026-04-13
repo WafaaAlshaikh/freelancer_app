@@ -1,11 +1,13 @@
 // screens/client/freelancer_profile_preview_screen.dart
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../services/api_service.dart';
 import '../../services/chat_service.dart';
+import '../../utils/constants.dart';
 
 class FreelancerProfilePreviewScreen extends StatefulWidget {
   final int freelancerId;
@@ -23,18 +25,15 @@ class FreelancerProfilePreviewScreen extends StatefulWidget {
 }
 
 class _FreelancerProfilePreviewScreenState
-    extends State<FreelancerProfilePreviewScreen>
-    with SingleTickerProviderStateMixin {
+    extends State<FreelancerProfilePreviewScreen> {
   Map<String, dynamic> _profileData = {};
   bool _loading = true;
   bool _isHiring = false;
-  late TabController _tabController;
 
   static const Color _primary = Color(0xFF6366F1);
   static const Color _primaryDark = Color(0xFF4F46E5);
   static const Color _success = Color(0xFF10B981);
   static const Color _warning = Color(0xFFF59E0B);
-  static const Color _danger = Color(0xFFEF4444);
   static const Color _dark = Color(0xFF1F2937);
   static const Color _gray = Color(0xFF6B7280);
   static const Color _lightGray = Color(0xFFF3F4F6);
@@ -43,14 +42,7 @@ class _FreelancerProfilePreviewScreenState
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadFreelancerProfile();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadFreelancerProfile() async {
@@ -110,17 +102,15 @@ class _FreelancerProfilePreviewScreenState
     }
   }
 
-  Future<void> _hireFreelancer() async {
+  Future<void> _hireOrOpenProjectHire() async {
     if (widget.projectId == null) {
-      Fluttertoast.showToast(
-        msg: 'Please select a project first',
-        backgroundColor: Colors.orange,
-      );
+      await _startChat();
       return;
     }
 
     setState(() => _isHiring = true);
     try {
+      if (!mounted) return;
       Navigator.pushNamed(
         context,
         '/client/hire-freelancer',
@@ -137,11 +127,16 @@ class _FreelancerProfilePreviewScreenState
     }
   }
 
-  String _getAvatarUrl(String? avatar) {
-    if (avatar == null || avatar.isEmpty) return '';
-    if (avatar.startsWith('http')) return avatar;
-    return 'http://localhost:5000$avatar';
+  void _shareProfile() {
+    final user = _profileData['user'] ?? {};
+    final profile = _profileData['profile'] ?? {};
+    final name = user['name'] ?? 'Freelancer';
+    final title = profile['title'] ?? user['tagline'] ?? '';
+    final text = title.toString().isNotEmpty ? '$name — $title' : name;
+    Share.share('$text\n(Freelancer profile)');
   }
+
+  String _mediaUrl(String? path) => apiMediaUrl(path);
 
   String _initials(String name) {
     final parts = name.trim().split(' ');
@@ -185,228 +180,30 @@ class _FreelancerProfilePreviewScreenState
     return defaultValue;
   }
 
-  Widget _buildHeader() {
-    final user = _profileData['user'] ?? {};
-    final profile = _profileData['profile'] ?? {};
-    final stats = _profileData['stats'] ?? {};
-    final name = user['name'] ?? 'Freelancer';
-    final title =
-        profile['title'] ?? user['tagline'] ?? 'Professional Freelancer';
-    final avatarUrl = _getAvatarUrl(user['avatar']);
-    final rating = _getSafeDouble(stats['rating']);
-    final completedProjects = _getSafeInt(stats['completed_projects']);
-    final jobSuccessScore = _getSafeInt(stats['job_success_score']);
+  String _availabilityLabel(String? code) {
+    switch (code) {
+      case 'full_time':
+        return 'Full-time';
+      case 'part_time':
+        return 'Part-time';
+      case 'as_needed':
+        return 'As needed';
+      case 'not_available':
+        return 'Not available';
+      default:
+        return code?.replaceAll('_', ' ') ?? '';
+    }
+  }
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_primary, _primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.share, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.more_vert, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: avatarUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: avatarUrl,
-                              fit: BoxFit.cover,
-                              placeholder: (_, __) => Container(
-                                color: Colors.white24,
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              errorWidget: (_, __, ___) => Container(
-                                color: Colors.white24,
-                                child: Center(
-                                  child: Text(
-                                    _initials(name),
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Container(
-                              color: Colors.white24,
-                              child: Center(
-                                child: Text(
-                                  _initials(name),
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildRatingStar(rating),
-                      const SizedBox(width: 8),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Container(
-                        width: 4,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.work_outline,
-                        size: 16,
-                        color: Colors.white.withOpacity(0.8),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$completedProjects projects',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Container(
-                        width: 4,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _success.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$jobSuccessScore% JSS',
-                          style: const TextStyle(
-                            color: _success,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.chat_bubble_outline,
-                          label: 'Message',
-                          onPressed: _startChat,
-                          isLoading: _isHiring,
-                          outlined: true,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.work_outline,
-                          label: widget.projectId != null
-                              ? 'Hire Now'
-                              : 'Contact',
-                          onPressed: _hireFreelancer,
-                          isLoading: _isHiring,
-                          outlined: false,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _openExternal(String? url) async {
+    if (url == null || url.isEmpty) return;
+    var u = url.trim();
+    if (!u.startsWith('http')) u = 'https://$u';
+    final uri = Uri.tryParse(u);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildRatingStar(double rating) {
@@ -438,13 +235,16 @@ class _FreelancerProfilePreviewScreenState
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: _primary,
+                ),
               )
             : Icon(icon, size: 18),
         label: Text(label),
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white),
+          foregroundColor: _primary,
+          side: const BorderSide(color: _primary),
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -458,16 +258,354 @@ class _FreelancerProfilePreviewScreenState
           ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
           : Icon(icon, size: 18),
       label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: _primary,
+        backgroundColor: _primary,
+        foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    final user = _profileData['user'] ?? {};
+    final profile = _profileData['profile'] ?? {};
+    final stats = _profileData['stats'] ?? {};
+    final trust = _profileData['trust'] ?? {};
+    final name = user['name'] ?? 'Freelancer';
+    final title =
+        profile['title'] ?? user['tagline'] ?? 'Professional Freelancer';
+    final avatarUrl = _mediaUrl(user['avatar']?.toString());
+    final coverUrl = _mediaUrl(user['cover_image']?.toString());
+    final rating = _getSafeDouble(stats['rating']);
+    final completedProjects = _getSafeInt(stats['completed_projects']);
+    final jobSuccessScore = _getSafeInt(stats['job_success_score']);
+    final totalReviews = _getSafeInt(stats['total_reviews']);
+    final isAvailable = profile['is_available'] != false;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Column(
+          children: [
+            SizedBox(
+              height: 200,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (coverUrl.isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: coverUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_primary, _primaryDark],
+                          ),
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_primary, _primaryDark],
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_primary, _primaryDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                    ),
+                  Container(color: Colors.black.withOpacity(0.45)),
+                  SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.share, color: Colors.white),
+                            onPressed: _shareProfile,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -56),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 108,
+                      height: 108,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: avatarUrl.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: avatarUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => Container(
+                                  color: _lightGray,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (_, __, ___) => Container(
+                                  color: _primary.withOpacity(0.3),
+                                  child: Center(
+                                    child: Text(
+                                      _initials(name),
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                color: _primary.withOpacity(0.35),
+                                child: Center(
+                                  child: Text(
+                                    _initials(name),
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: _dark,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: _gray,
+                        height: 1.3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        if (trust['identity_verified'] == true)
+                          _pill(Icons.verified_user, 'Verified', _success),
+                        if (trust['top_rated'] == true)
+                          _pill(Icons.military_tech, 'Top rated', _warning),
+                        if (trust['rising_talent'] == true)
+                          _pill(Icons.trending_up, 'Rising talent', _primary),
+                        _pill(
+                          isAvailable ? Icons.circle : Icons.circle_outlined,
+                          isAvailable ? 'Accepting work' : 'Limited',
+                          isAvailable ? _success : _gray,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildRatingStar(rating),
+                        const SizedBox(width: 8),
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: _dark,
+                          ),
+                        ),
+                        Text(
+                          ' ($totalReviews reviews)',
+                          style: const TextStyle(fontSize: 13, color: _gray),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '·',
+                          style: TextStyle(color: _gray.withOpacity(0.5)),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.work_outline,
+                          size: 16,
+                          color: _gray.withOpacity(0.9),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$completedProjects done',
+                          style: const TextStyle(fontSize: 13, color: _gray),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _success.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$jobSuccessScore% JSS',
+                            style: const TextStyle(
+                              color: Color(0xFF047857),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.chat_bubble_outline,
+                            label: 'Message',
+                            onPressed: _startChat,
+                            isLoading: _isHiring,
+                            outlined: true,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.work_outline,
+                            label: widget.projectId != null
+                                ? 'Hire for project'
+                                : 'Contact',
+                            onPressed: _hireOrOpenProjectHire,
+                            isLoading: _isHiring,
+                            outlined: false,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _pill(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _dark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionCard({required String title, required List<Widget> children}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _dark,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
     );
   }
@@ -477,10 +615,11 @@ class _FreelancerProfilePreviewScreenState
     final profile = _profileData['profile'] ?? {};
 
     final completedProjects = _getSafeInt(stats['completed_projects']);
-    final totalEarnings = _getSafeDouble(stats['total_earnings']);
+    final totalReviews = _getSafeInt(stats['total_reviews']);
     final activeProjects = _getSafeInt(stats['active_projects']);
+    final portfolioCount = _getSafeInt(stats['portfolio_count']);
     final responseTime = _getSafeInt(
-      profile['response_time'],
+      stats['response_time'] ?? profile['response_time'],
       defaultValue: 24,
     );
     final rating = _getSafeDouble(stats['rating']);
@@ -488,7 +627,7 @@ class _FreelancerProfilePreviewScreenState
     final hourlyRate = _getSafeDouble(profile['hourly_rate']);
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -505,7 +644,7 @@ class _FreelancerProfilePreviewScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Professional Stats',
+            'At a glance',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -526,9 +665,9 @@ class _FreelancerProfilePreviewScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  value: '\$${totalEarnings.toStringAsFixed(0)}',
-                  label: 'Earnings',
-                  icon: Icons.attach_money,
+                  value: '$totalReviews',
+                  label: 'Reviews',
+                  icon: Icons.reviews_outlined,
                   color: _primary,
                 ),
               ),
@@ -543,33 +682,38 @@ class _FreelancerProfilePreviewScreenState
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  value: '$portfolioCount',
+                  label: 'Portfolio',
+                  icon: Icons.collections_bookmark_outlined,
+                  color: const Color(0xFF8B5CF6),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           Divider(color: _border),
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildInfoRow(
-                Icons.access_time,
-                'Response Time',
-                '$responseTime hours',
-              ),
+              _buildInfoRow(Icons.access_time, 'Response', '$responseTime h'),
               const Spacer(),
-              _buildInfoRow(
-                Icons.star,
-                'Avg. Rating',
-                rating.toStringAsFixed(1),
-              ),
+              _buildInfoRow(Icons.star, 'Rating', rating.toStringAsFixed(1)),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildInfoRow(Icons.work, 'Experience', '$experienceYears years'),
+              _buildInfoRow(Icons.work, 'Experience', '$experienceYears yrs'),
               const Spacer(),
               _buildInfoRow(
                 Icons.attach_money,
-                'Hourly Rate',
-                '\$${hourlyRate.toStringAsFixed(0)}/hr',
+                'Hourly',
+                hourlyRate > 0 ? '\$${hourlyRate.toStringAsFixed(0)}/hr' : '—',
               ),
             ],
           ),
@@ -627,6 +771,29 @@ class _FreelancerProfilePreviewScreenState
     );
   }
 
+  Widget _buildAvailabilitySection() {
+    final profile = _profileData['profile'] ?? {};
+    final avail = profile['availability']?.toString();
+    final weekly = _getSafeInt(profile['weekly_hours'], defaultValue: 40);
+    if (avail == null || avail.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Availability',
+        children: [
+          _buildInfoRow(
+            Icons.schedule,
+            'Commitment',
+            _availabilityLabel(avail),
+          ),
+          const SizedBox(height: 8),
+          _buildInfoRow(Icons.timelapse, 'Weekly hours', '$weekly h'),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSkillsSection() {
     final profile = _profileData['profile'] ?? {};
     final List<dynamic> skills = profile['skills'] ?? [];
@@ -638,32 +805,11 @@ class _FreelancerProfilePreviewScreenState
 
     final displaySkills = topSkills.isNotEmpty ? topSkills : skills;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Skills & expertise',
         children: [
-          const Text(
-            'Skills & Expertise',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: _dark,
-            ),
-          ),
-          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -679,7 +825,7 @@ class _FreelancerProfilePreviewScreenState
                 ),
                 child: Text(
                   skill.toString(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     color: _primary,
                     fontWeight: FontWeight.w500,
@@ -693,61 +839,398 @@ class _FreelancerProfilePreviewScreenState
     );
   }
 
-  Widget _buildAboutSection() {
+  Widget _buildLanguagesSection() {
     final profile = _profileData['profile'] ?? {};
-    final bio = profile['bio'] ?? '';
-    final location =
-        profile['location'] ?? _profileData['user']?['location'] ?? '';
+    final List<dynamic> langs = profile['languages'] ?? [];
+    if (langs.isEmpty) return const SizedBox.shrink();
 
-    if (bio.isEmpty && location.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Languages',
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: langs
+                .map(
+                  (e) => Chip(
+                    label: Text(e.toString()),
+                    backgroundColor: _lightGray,
+                    side: BorderSide.none,
+                    labelStyle: const TextStyle(fontSize: 13, color: _dark),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildCategoriesSection() {
+    final profile = _profileData['profile'] ?? {};
+    final List<dynamic> cats = profile['categories'] ?? [];
+    if (cats.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Categories',
         children: [
-          const Text(
-            'About',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: _dark,
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: cats
+                .map(
+                  (c) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _border),
+                    ),
+                    child: Text(
+                      c.toString(),
+                      style: const TextStyle(fontSize: 13, color: _dark),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
-          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutSection() {
+    final profile = _profileData['profile'] ?? {};
+    final user = _profileData['user'] ?? {};
+    final bio = (profile['display_bio'] ?? profile['bio'] ?? user['bio'] ?? '')
+        .toString()
+        .trim();
+    final location =
+        (profile['display_location'] ??
+                profile['location'] ??
+                user['location'] ??
+                '')
+            .toString()
+            .trim();
+    final memberSince = user['member_since'] != null
+        ? DateTime.tryParse(user['member_since'].toString())
+        : null;
+    final views = _getSafeInt(user['profile_views']);
+
+    if (bio.isEmpty && location.isEmpty && memberSince == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'About',
+        children: [
           if (location.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.location_on, size: 16, color: _gray),
+                  const Icon(Icons.location_on, size: 18, color: _gray),
                   const SizedBox(width: 6),
-                  Text(
-                    location,
-                    style: const TextStyle(fontSize: 13, color: _dark),
+                  Expanded(
+                    child: Text(
+                      location,
+                      style: const TextStyle(fontSize: 14, color: _dark),
+                    ),
                   ),
                 ],
               ),
             ),
+          if (memberSince != null || views > 0) ...[
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                if (memberSince != null)
+                  _buildInfoRow(
+                    Icons.calendar_today_outlined,
+                    'Member since',
+                    '${memberSince.year}',
+                  ),
+                if (views > 0)
+                  _buildInfoRow(
+                    Icons.visibility_outlined,
+                    'Profile views',
+                    '$views',
+                  ),
+              ],
+            ),
+            if (bio.isNotEmpty) const SizedBox(height: 12),
+          ],
           if (bio.isNotEmpty)
             Text(
               bio,
-              style: const TextStyle(fontSize: 13, height: 1.5, color: _dark),
+              style: const TextStyle(fontSize: 14, height: 1.55, color: _dark),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkExperienceSection() {
+    final profile = _profileData['profile'] ?? {};
+    final List<dynamic> raw = profile['work_experience'] ?? [];
+    if (raw.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Work experience',
+        children: raw.map((item) {
+          final m = item is Map ? Map<String, dynamic>.from(item) : {};
+          final role = m['title'] ?? m['role'] ?? m['position'] ?? '';
+          final company = m['company'] ?? m['employer'] ?? '';
+          final start = m['start'] ?? m['start_date'] ?? m['from'] ?? '';
+          final end = m['end'] ?? m['end_date'] ?? m['to'] ?? '';
+          final desc = m['description'] ?? m['summary'] ?? '';
+          final period = [
+            start,
+            end,
+          ].where((e) => e.toString().isNotEmpty).join(' — ');
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 4,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (role.toString().isNotEmpty)
+                        Text(
+                          role.toString(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: _dark,
+                          ),
+                        ),
+                      if (company.toString().isNotEmpty)
+                        Text(
+                          company.toString(),
+                          style: const TextStyle(fontSize: 13, color: _gray),
+                        ),
+                      if (period.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            period,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _gray.withOpacity(0.9),
+                            ),
+                          ),
+                        ),
+                      if (desc.toString().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            desc.toString(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.45,
+                              color: _dark,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildEducationSection() {
+    final profile = _profileData['profile'] ?? {};
+    final List<dynamic> edu = profile['education'] ?? [];
+    if (edu.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Education',
+        children: edu.map((item) {
+          final m = item is Map ? Map<String, dynamic>.from(item) : {};
+          final degree = m['degree'] ?? m['field'] ?? '';
+          final inst = m['institution'] ?? m['school'] ?? '';
+          final year = m['year'] ?? m['end_year'] ?? '';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.school_outlined, size: 20, color: _primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (degree.toString().isNotEmpty)
+                        Text(
+                          degree.toString(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      if (inst.toString().isNotEmpty)
+                        Text(
+                          inst.toString(),
+                          style: const TextStyle(fontSize: 13, color: _gray),
+                        ),
+                      if (year.toString().isNotEmpty)
+                        Text(
+                          year.toString(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _gray.withOpacity(0.85),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCertificationsSection() {
+    final profile = _profileData['profile'] ?? {};
+    final List<dynamic> certs = profile['certifications'] ?? [];
+    if (certs.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Certifications',
+        children: certs.map((item) {
+          final m = item is Map ? Map<String, dynamic>.from(item) : {};
+          final name = m['name'] ?? m['title'] ?? item.toString();
+          final issuer = m['issuer'] ?? m['organization'] ?? '';
+          final year = m['year'] ?? '';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.verified_outlined, size: 20, color: _success),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name.toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (issuer.toString().isNotEmpty)
+                        Text(
+                          issuer.toString(),
+                          style: const TextStyle(fontSize: 13, color: _gray),
+                        ),
+                      if (year.toString().isNotEmpty)
+                        Text(
+                          year.toString(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _gray.withOpacity(0.85),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildContactLinksSection() {
+    final links = _profileData['contact_links'] as Map<String, dynamic>?;
+    if (links == null || links.isEmpty) return const SizedBox.shrink();
+
+    final entries = <MapEntry<String, String>>[];
+    void add(String key, String? v) {
+      if (v != null && v.toString().trim().isNotEmpty) {
+        entries.add(MapEntry(key, v.toString()));
+      }
+    }
+
+    add('Website', links['website']?.toString());
+    add('GitHub', links['github']?.toString());
+    add('LinkedIn', links['linkedin']?.toString());
+    add('Behance', links['behance']?.toString());
+    add('Dribbble', links['dribbble']?.toString());
+    add('Twitter', links['twitter']?.toString());
+
+    if (entries.isEmpty) return const SizedBox.shrink();
+
+    IconData iconFor(String k) {
+      switch (k) {
+        case 'GitHub':
+          return Icons.code;
+        case 'LinkedIn':
+          return Icons.business_center_outlined;
+        case 'Twitter':
+          return Icons.chat_bubble_outline;
+        default:
+          return Icons.link;
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Links',
+        children: [
+          ...entries.map(
+            (e) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(iconFor(e.key), color: _primary, size: 22),
+              title: Text(e.key),
+              subtitle: Text(
+                e.value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: const Icon(Icons.open_in_new, size: 18, color: _gray),
+              onTap: () => _openExternal(e.value),
+            ),
+          ),
         ],
       ),
     );
@@ -757,75 +1240,147 @@ class _FreelancerProfilePreviewScreenState
     final portfolio = _profileData['portfolio'] ?? [];
     if (portfolio.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Portfolio',
         children: [
-          const Text(
-            'Portfolio',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: _dark,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: portfolio.length > 3 ? 3 : portfolio.length,
-              itemBuilder: (context, index) {
-                final item = portfolio[index];
-                final images = item['images'] ?? [];
-                final imageUrl = images.isNotEmpty ? images[0] : null;
-
-                return Container(
-                  width: 120,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _border),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: imageUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: _getAvatarUrl(imageUrl),
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              color: _lightGray,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
+          ...portfolio.map<Widget>((item) {
+            final images = item['images'] as List<dynamic>? ?? [];
+            final imageUrl = images.isNotEmpty
+                ? _mediaUrl(images[0].toString())
+                : '';
+            final technologies = (item['technologies'] as List<dynamic>? ?? [])
+                .map((e) => e.toString())
+                .toList();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Material(
+                color: _lightGray,
+                borderRadius: BorderRadius.circular(14),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    final url = item['project_url'] ?? item['github_url'];
+                    _openExternal(url?.toString());
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (imageUrl.isNotEmpty)
+                        CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          height: 160,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            height: 160,
+                            color: _border,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                            errorWidget: (_, __, ___) => Container(
-                              color: _lightGray,
-                              child: const Icon(Icons.image, size: 30),
-                            ),
-                          )
-                        : Container(
-                            color: _lightGray,
-                            child: const Icon(Icons.image, size: 30),
                           ),
+                          errorWidget: (_, __, ___) => Container(
+                            height: 120,
+                            color: _border,
+                            child: const Icon(Icons.image_not_supported),
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item['title']?.toString() ?? 'Project',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                                if (item['featured'] == true)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _warning.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Featured',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFFB45309),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if ((item['description'] ?? '')
+                                .toString()
+                                .isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  item['description'].toString(),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.4,
+                                    color: _gray,
+                                  ),
+                                ),
+                              ),
+                            if (technologies.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: technologies
+                                      .take(8)
+                                      .map(
+                                        (t) => Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            border: Border.all(color: _border),
+                                          ),
+                                          child: Text(
+                                            t,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: _dark,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -835,69 +1390,50 @@ class _FreelancerProfilePreviewScreenState
     final reviews = _profileData['reviews'] ?? [];
     if (reviews.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: _sectionCard(
+        title: 'Client reviews',
         children: [
-          const Text(
-            'Client Reviews',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: _dark,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...reviews.take(3).map((review) {
+          ...reviews.take(6).map((review) {
             final rating = _getSafeDouble(review['rating']);
             final createdAt = review['createdAt'] != null
-                ? DateTime.tryParse(review['createdAt'])
+                ? DateTime.tryParse(review['createdAt'].toString())
                 : null;
+            final from = review['from_user'] ?? {};
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CircleAvatar(
-                        radius: 16,
-                        backgroundImage: review['from_user']?['avatar'] != null
-                            ? NetworkImage(
-                                _getAvatarUrl(review['from_user']['avatar']),
+                        radius: 18,
+                        backgroundImage: from['avatar'] != null
+                            ? CachedNetworkImageProvider(
+                                _mediaUrl(from['avatar'].toString()),
                               )
                             : null,
-                        child: review['from_user']?['avatar'] == null
+                        child: from['avatar'] == null
                             ? Text(
-                                _initials(review['from_user']?['name'] ?? 'U'),
+                                _initials(from['name']?.toString() ?? 'C'),
                                 style: const TextStyle(fontSize: 12),
                               )
                             : null,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              review['from_user']?['name'] ?? 'Client',
+                              from['name']?.toString() ?? 'Client',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 14,
                               ),
                             ),
                             _buildRatingStar(rating),
@@ -912,16 +1448,18 @@ class _FreelancerProfilePreviewScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    review['comment'] ?? '',
-                    style: const TextStyle(fontSize: 13, color: _dark),
+                    (review['comment'] ?? '').toString(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: _dark,
+                    ),
                   ),
-                  const Divider(height: 16),
+                  const Divider(height: 20),
                 ],
               ),
             );
           }),
-          if (reviews.length > 3)
-            TextButton(onPressed: () {}, child: const Text('View all reviews')),
         ],
       ),
     );
@@ -933,29 +1471,52 @@ class _FreelancerProfilePreviewScreenState
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    if (_profileData.isEmpty || _profileData['user'] == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Could not load this profile.'),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _loadFreelancerProfile,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _lightGray,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 8),
-                _buildStatsSection(),
-                const SizedBox(height: 12),
-                _buildSkillsSection(),
-                const SizedBox(height: 12),
-                _buildAboutSection(),
-                const SizedBox(height: 12),
-                _buildPortfolioSection(),
-                const SizedBox(height: 12),
-                _buildReviewsSection(),
-                const SizedBox(height: 100),
-              ],
-            ),
+      body: RefreshIndicator(
+        onRefresh: _loadFreelancerProfile,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 8),
+              _buildStatsSection(),
+              _buildAvailabilitySection(),
+              _buildSkillsSection(),
+              _buildLanguagesSection(),
+              _buildCategoriesSection(),
+              _buildAboutSection(),
+              _buildWorkExperienceSection(),
+              _buildEducationSection(),
+              _buildCertificationsSection(),
+              _buildContactLinksSection(),
+              _buildPortfolioSection(),
+              _buildReviewsSection(),
+              const SizedBox(height: 32),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -153,6 +153,16 @@ app.get("/api/user/usage", protect, async (req, res) => {
       req.user.id,
     );
 
+    let interviewBlock = {};
+    if (req.user.role === "client") {
+      const iu = await SubscriptionService.getClientInterviewUsage(req.user.id);
+      interviewBlock = {
+        interviews_used: iu.interviews_used,
+        interviews_limit: iu.interviews_limit,
+        interviews_remaining: iu.remaining,
+      };
+    }
+
     res.json({
       success: true,
       usage: {
@@ -160,6 +170,9 @@ app.get("/api/user/usage", protect, async (req, res) => {
         proposals_limit: subscription.plan.proposal_limit,
         active_projects_used: user.active_projects_count || 0,
         active_projects_limit: subscription.plan.active_project_limit,
+        plan_slug: subscription.plan?.slug,
+        plan_name: subscription.plan?.name,
+        ...interviewBlock,
       },
     });
   } catch (error) {

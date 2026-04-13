@@ -16,6 +16,7 @@ import {
   sendInterviewConfirmationEmail,
 } from "../services/emailService.js";
 import SmartReminderService from "../services/smartReminderService.js";
+import SubscriptionService from "../services/subscriptionService.js";
 
 const generateMeetingLink = () => {
   const meetingId = Math.random().toString(36).substring(2, 12);
@@ -88,6 +89,17 @@ export const createInterviewInvitation = async (req, res) => {
 
     if (proposal.Project.UserId !== clientId) {
       return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const interviewUsage =
+      await SubscriptionService.getClientInterviewUsage(clientId);
+    if (!interviewUsage.can_create) {
+      return res.status(403).json({
+        success: false,
+        error: "interview_limit",
+        message: `Monthly interview invitation limit reached (${interviewUsage.interviews_used}/${interviewUsage.interviews_limit}). Upgrade your plan for more.`,
+        usage: interviewUsage,
+      });
     }
 
     if (proposal.status !== "pending" && proposal.status !== "negotiating") {
@@ -689,6 +701,17 @@ export const createSmartInterviewInvitation = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
+    const smartInterviewUsage =
+      await SubscriptionService.getClientInterviewUsage(clientId);
+    if (!smartInterviewUsage.can_create) {
+      return res.status(403).json({
+        success: false,
+        error: "interview_limit",
+        message: `Monthly interview invitation limit reached (${smartInterviewUsage.interviews_used}/${smartInterviewUsage.interviews_limit}). Upgrade your plan for more.`,
+        usage: smartInterviewUsage,
+      });
+    }
+
     if (proposal.status !== "pending" && proposal.status !== "negotiating") {
       return res.status(400).json({
         success: false,
@@ -865,6 +888,22 @@ export const createGroupInterviewInvitation = async (req, res) => {
 
     if (!proposal || proposal.Project.UserId !== clientId) {
       return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const interviewUsage =
+      await SubscriptionService.getClientInterviewUsage(clientId);
+    const need = Array.isArray(freelancer_ids) ? freelancer_ids.length : 0;
+    if (
+      need > 0 &&
+      (!interviewUsage.can_create ||
+        (interviewUsage.remaining != null && interviewUsage.remaining < need))
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "interview_limit",
+        message: `Not enough interview invitations left this month for ${need} freelancer(s). Used ${interviewUsage.interviews_used}/${interviewUsage.interviews_limit ?? "∞"}.`,
+        usage: interviewUsage,
+      });
     }
 
     const invitations = [];

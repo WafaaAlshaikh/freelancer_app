@@ -10,6 +10,8 @@ class Coupon {
   final List<String>? applicablePlans;
   final bool isActive;
   final DateTime createdAt;
+  /// `subscription` | `contract` | `both`
+  final String applicationScope;
 
   Coupon({
     required this.id,
@@ -23,6 +25,7 @@ class Coupon {
     this.applicablePlans,
     this.isActive = true,
     required this.createdAt,
+    this.applicationScope = 'subscription',
   });
 
   factory Coupon.fromJson(Map<String, dynamic> json) {
@@ -71,6 +74,9 @@ class Coupon {
           : null,
       isActive: parseBool(json['is_active']),
       createdAt: parseDate(json['createdAt']),
+      applicationScope:
+          (json['application_scope'] ?? json['scope'] ?? 'subscription')
+              .toString(),
     );
   }
   Map<String, dynamic> toJson() {
@@ -83,6 +89,7 @@ class Coupon {
       'max_uses': maxUses,
       'applicable_plans': applicablePlans,
       'is_active': isActive,
+      'application_scope': applicationScope,
     };
   }
 
