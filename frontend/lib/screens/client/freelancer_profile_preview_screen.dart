@@ -1,4 +1,5 @@
 // screens/client/freelancer_profile_preview_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,6 +39,42 @@ class _FreelancerProfilePreviewScreenState
   static const Color _gray = Color(0xFF6B7280);
   static const Color _lightGray = Color(0xFFF3F4F6);
   static const Color _border = Color(0xFFE5E7EB);
+
+  List<dynamic> _safeList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value;
+    if (value is String) {
+      if (value.isEmpty || value == '[]') return [];
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          final decoded = jsonDecode(value);
+          if (decoded is List) return decoded;
+        } catch (e) {
+          print('Error parsing list: $e');
+        }
+      }
+      return [];
+    }
+    return [];
+  }
+
+  Map<String, dynamic> _safeMap(dynamic value) {
+    if (value == null) return {};
+    if (value is Map) return Map<String, dynamic>.from(value);
+    if (value is String) {
+      if (value.isEmpty || value == '{}') return {};
+      if (value.startsWith('{') && value.endsWith('}')) {
+        try {
+          final decoded = jsonDecode(value);
+          if (decoded is Map) return Map<String, dynamic>.from(decoded);
+        } catch (e) {
+          print('Error parsing map: $e');
+        }
+      }
+      return {};
+    }
+    return {};
+  }
 
   @override
   void initState() {
@@ -796,8 +833,9 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildSkillsSection() {
     final profile = _profileData['profile'] ?? {};
-    final List<dynamic> skills = profile['skills'] ?? [];
-    final List<dynamic> topSkills = profile['top_skills'] ?? [];
+
+    final skills = _safeList(profile['skills']);
+    final topSkills = _safeList(profile['top_skills']);
 
     if (skills.isEmpty && topSkills.isEmpty) {
       return const SizedBox.shrink();
@@ -841,7 +879,7 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildLanguagesSection() {
     final profile = _profileData['profile'] ?? {};
-    final List<dynamic> langs = profile['languages'] ?? [];
+    final langs = _safeList(profile['languages']);
     if (langs.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -870,7 +908,7 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildCategoriesSection() {
     final profile = _profileData['profile'] ?? {};
-    final List<dynamic> cats = profile['categories'] ?? [];
+    final cats = _safeList(profile['categories']);
     if (cats.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -982,7 +1020,7 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildWorkExperienceSection() {
     final profile = _profileData['profile'] ?? {};
-    final List<dynamic> raw = profile['work_experience'] ?? [];
+    final raw = _safeList(profile['work_experience']);
     if (raw.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -990,7 +1028,7 @@ class _FreelancerProfilePreviewScreenState
       child: _sectionCard(
         title: 'Work experience',
         children: raw.map((item) {
-          final m = item is Map ? Map<String, dynamic>.from(item) : {};
+          final m = _safeMap(item);
           final role = m['title'] ?? m['role'] ?? m['position'] ?? '';
           final company = m['company'] ?? m['employer'] ?? '';
           final start = m['start'] ?? m['start_date'] ?? m['from'] ?? '';
@@ -1068,7 +1106,7 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildEducationSection() {
     final profile = _profileData['profile'] ?? {};
-    final List<dynamic> edu = profile['education'] ?? [];
+    final edu = _safeList(profile['education']);
     if (edu.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -1076,7 +1114,7 @@ class _FreelancerProfilePreviewScreenState
       child: _sectionCard(
         title: 'Education',
         children: edu.map((item) {
-          final m = item is Map ? Map<String, dynamic>.from(item) : {};
+          final m = _safeMap(item);
           final degree = m['degree'] ?? m['field'] ?? '';
           final inst = m['institution'] ?? m['school'] ?? '';
           final year = m['year'] ?? m['end_year'] ?? '';
@@ -1125,7 +1163,7 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildCertificationsSection() {
     final profile = _profileData['profile'] ?? {};
-    final List<dynamic> certs = profile['certifications'] ?? [];
+    final certs = _safeList(profile['certifications']);
     if (certs.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -1133,7 +1171,7 @@ class _FreelancerProfilePreviewScreenState
       child: _sectionCard(
         title: 'Certifications',
         children: certs.map((item) {
-          final m = item is Map ? Map<String, dynamic>.from(item) : {};
+          final m = _safeMap(item);
           final name = m['name'] ?? m['title'] ?? item.toString();
           final issuer = m['issuer'] ?? m['organization'] ?? '';
           final year = m['year'] ?? '';
@@ -1180,8 +1218,8 @@ class _FreelancerProfilePreviewScreenState
   }
 
   Widget _buildContactLinksSection() {
-    final links = _profileData['contact_links'] as Map<String, dynamic>?;
-    if (links == null || links.isEmpty) return const SizedBox.shrink();
+    final links = _safeMap(_profileData['contact_links']);
+    if (links.isEmpty) return const SizedBox.shrink();
 
     final entries = <MapEntry<String, String>>[];
     void add(String key, String? v) {
@@ -1237,7 +1275,7 @@ class _FreelancerProfilePreviewScreenState
   }
 
   Widget _buildPortfolioSection() {
-    final portfolio = _profileData['portfolio'] ?? [];
+    final portfolio = _safeList(_profileData['portfolio']);
     if (portfolio.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -1246,13 +1284,14 @@ class _FreelancerProfilePreviewScreenState
         title: 'Portfolio',
         children: [
           ...portfolio.map<Widget>((item) {
-            final images = item['images'] as List<dynamic>? ?? [];
+            final itemMap = _safeMap(item);
+            final images = _safeList(itemMap['images']);
             final imageUrl = images.isNotEmpty
                 ? _mediaUrl(images[0].toString())
                 : '';
-            final technologies = (item['technologies'] as List<dynamic>? ?? [])
-                .map((e) => e.toString())
-                .toList();
+            final technologies = _safeList(
+              itemMap['technologies'],
+            ).map((e) => e.toString()).toList();
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Material(
@@ -1261,7 +1300,7 @@ class _FreelancerProfilePreviewScreenState
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () {
-                    final url = item['project_url'] ?? item['github_url'];
+                    final url = itemMap['project_url'] ?? itemMap['github_url'];
                     _openExternal(url?.toString());
                   },
                   child: Column(
@@ -1295,14 +1334,14 @@ class _FreelancerProfilePreviewScreenState
                               children: [
                                 Expanded(
                                   child: Text(
-                                    item['title']?.toString() ?? 'Project',
+                                    itemMap['title']?.toString() ?? 'Project',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
                                   ),
                                 ),
-                                if (item['featured'] == true)
+                                if (itemMap['featured'] == true)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -1323,13 +1362,13 @@ class _FreelancerProfilePreviewScreenState
                                   ),
                               ],
                             ),
-                            if ((item['description'] ?? '')
+                            if ((itemMap['description'] ?? '')
                                 .toString()
                                 .isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(top: 6),
                                 child: Text(
-                                  item['description'].toString(),
+                                  itemMap['description'].toString(),
                                   maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -1386,8 +1425,47 @@ class _FreelancerProfilePreviewScreenState
     );
   }
 
+  Widget _buildDeliveredProjectsSection() {
+    final projects = _safeList(_profileData['recent_completed_projects']);
+    if (projects.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _sectionCard(
+        title: 'Recently delivered projects',
+        children: [
+          ...projects.take(6).map((item) {
+            final data = _safeMap(item);
+            final title = data['title']?.toString() ?? 'Delivered project';
+            final category = data['category']?.toString() ?? '';
+            final budget = _getSafeDouble(data['budget']);
+            final deliveredAt = data['delivered_at'] != null
+                ? DateTime.tryParse(data['delivered_at'].toString())
+                : null;
+            final subtitleParts = <String>[];
+            if (category.isNotEmpty) subtitleParts.add(category);
+            if (budget > 0) subtitleParts.add('\$${budget.toStringAsFixed(0)}');
+            final subtitle = subtitleParts.join(' · ');
+
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.task_alt, color: _success),
+              title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                subtitle.isNotEmpty
+                    ? '$subtitle\nDelivered ${_formatDate(deliveredAt)}'
+                    : 'Delivered ${_formatDate(deliveredAt)}',
+                style: const TextStyle(height: 1.4),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildReviewsSection() {
-    final reviews = _profileData['reviews'] ?? [];
+    final reviews = _safeList(_profileData['reviews']);
     if (reviews.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -1396,11 +1474,12 @@ class _FreelancerProfilePreviewScreenState
         title: 'Client reviews',
         children: [
           ...reviews.take(6).map((review) {
-            final rating = _getSafeDouble(review['rating']);
-            final createdAt = review['createdAt'] != null
-                ? DateTime.tryParse(review['createdAt'].toString())
+            final reviewMap = _safeMap(review);
+            final rating = _getSafeDouble(reviewMap['rating']);
+            final createdAt = reviewMap['createdAt'] != null
+                ? DateTime.tryParse(reviewMap['createdAt'].toString())
                 : null;
-            final from = review['from_user'] ?? {};
+            final from = _safeMap(reviewMap['from_user']);
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
@@ -1448,7 +1527,7 @@ class _FreelancerProfilePreviewScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    (review['comment'] ?? '').toString(),
+                    (reviewMap['comment'] ?? '').toString(),
                     style: const TextStyle(
                       fontSize: 13,
                       height: 1.45,
@@ -1511,6 +1590,7 @@ class _FreelancerProfilePreviewScreenState
               _buildEducationSection(),
               _buildCertificationsSection(),
               _buildContactLinksSection(),
+              _buildDeliveredProjectsSection(),
               _buildPortfolioSection(),
               _buildReviewsSection(),
               const SizedBox(height: 32),

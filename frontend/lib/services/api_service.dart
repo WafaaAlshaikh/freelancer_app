@@ -506,6 +506,42 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> createPortfolioFromSubmission(
+    int submissionId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/freelancer/portfolio/from-submission'),
+        headers: headers,
+        body: jsonEncode({'submissionId': submissionId}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating portfolio from submission: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createPortfolioFromContractMilestone({
+    required int contractId,
+    int? milestoneIndex,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/freelancer/portfolio/from-contract-milestone'),
+        headers: headers,
+        body: jsonEncode({
+          'contractId': contractId,
+          if (milestoneIndex != null) 'milestoneIndex': milestoneIndex,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating portfolio from milestone: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
   static Future<Map<String, dynamic>> updatePortfolio({
     required int portfolioId,
     String? title,
@@ -773,6 +809,30 @@ class ApiService {
     } catch (e) {
       print('Error submitting proposal: $e');
       return {'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> analyzeProposalDraft({
+    required int projectId,
+    required double price,
+    required int deliveryTime,
+    required String proposalText,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/proposals/analyze-draft'),
+        headers: headers,
+        body: jsonEncode({
+          'projectId': projectId,
+          'price': price,
+          'delivery_time': deliveryTime,
+          'proposal_text': proposalText,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error analyzing proposal draft: $e');
+      return {'success': false, 'message': 'Connection error: $e'};
     }
   }
 
@@ -1691,6 +1751,88 @@ class ApiService {
         'recentUsers': [],
         'recentProjects': [],
       };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminProjects({
+    String status = 'all',
+    String category = 'all',
+    String search = '',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/admin/projects?status=$status&category=$category&search=$search&page=$page&limit=$limit',
+        ),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false, 'projects': [], 'total': 0, 'totalPages': 1};
+    } catch (e) {
+      print('Error getting admin projects: $e');
+      return {'success': false, 'projects': [], 'total': 0, 'totalPages': 1};
+    }
+  }
+
+  static Future<Map<String, dynamic>> deleteAdminProject(int projectId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$BASE_URL/admin/projects/$projectId'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error deleting admin project: $e');
+      return {'success': false, 'message': 'Request failed'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminContracts({
+    String status = 'all',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/admin/contracts?status=$status&page=$page&limit=$limit',
+        ),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false, 'contracts': [], 'total': 0, 'totalPages': 1};
+    } catch (e) {
+      print('Error getting admin contracts: $e');
+      return {'success': false, 'contracts': [], 'total': 0, 'totalPages': 1};
+    }
+  }
+
+  static Future<Map<String, dynamic>> resolveAdminDispute({
+    required int contractId,
+    required String resolution,
+    String? refundTo,
+    double? amount,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/contracts/$contractId/resolve'),
+        headers: headers,
+        body: jsonEncode({
+          'resolution': resolution,
+          if (refundTo != null) 'refundTo': refundTo,
+          if (amount != null) 'amount': amount,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error resolving dispute: $e');
+      return {'success': false, 'message': 'Request failed'};
     }
   }
 

@@ -1076,6 +1076,134 @@ Calculate optimal pricing for this freelancer on this project:
     return recommendations;
   }
 
+  static async analyzeProposalDraft(proposalData, projectData) {
+    const fallback = this.getProposalDraftFallback(proposalData, projectData);
+
+    try {
+      if (!process.env.GROQ_API_KEY) {
+        return fallback;
+      }
+
+      const prompt = `
+Evaluate this freelancer proposal quality.
+
+Project:
+- Title: ${projectData.title}
+- Budget: ${projectData.budget}
+- Duration: ${projectData.duration}
+- Skills: ${(projectData.skills || []).join(", ")}
+- Description: ${projectData.description}
+
+Proposal:
+- Price: ${proposalData.price}
+- Delivery time: ${proposalData.delivery_time}
+- Cover letter: ${proposalData.proposal_text}
+
+Return ONLY valid JSON:
+{
+  "score": 0-100,
+  "strengths": ["..."],
+  "improvements": ["..."],
+  "risk_level": "low|medium|high",
+  "summary": "short paragraph"
+}
+`;
+
+      const completion = await groqClient.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+      });
+
+      const parsed = this.extractJSONFromResponse(
+        completion.choices[0].message.content,
+      );
+
+      if (!parsed || typeof parsed !== "object") {
+        return fallback;
+      }
+
+      return {
+        score: Math.max(
+          0,
+          Math.min(100, Number(parsed.score || fallback.score)),
+        ),
+        strengths: Array.isArray(parsed.strengths)
+          ? parsed.strengths.slice(0, 4)
+          : fallback.strengths,
+        improvements: Array.isArray(parsed.improvements)
+          ? parsed.improvements.slice(0, 5)
+          : fallback.improvements,
+        risk_level: ["low", "medium", "high"].includes(parsed.risk_level)
+          ? parsed.risk_level
+          : fallback.risk_level,
+        summary: parsed.summary?.toString().trim() || fallback.summary,
+      };
+    } catch (error) {
+      console.error("❌ Proposal draft AI analysis failed:", error.message);
+      return fallback;
+    }
+  }
+
+  static getProposalDraftFallback(proposalData, projectData) {
+    const text = (proposalData.proposal_text || "").trim();
+    const textLen = text.length;
+    const price = Number(proposalData.price || 0);
+    const delivery = Number(proposalData.delivery_time || 0);
+    const budget = Number(projectData.budget || 0);
+    const duration = Number(projectData.duration || 0);
+
+    let score = 50;
+    const strengths = [];
+    const improvements = [];
+
+    if (textLen >= 120) {
+      score += 18;
+      strengths.push("Cover letter has enough detail.");
+    } else {
+      improvements.push("Add more project-specific details in cover letter.");
+    }
+
+    if (budget > 0 && price > 0 && price <= budget * 1.1) {
+      score += 14;
+      strengths.push("Proposed price is aligned with project budget.");
+    } else {
+      improvements.push("Adjust pricing or justify why it exceeds budget.");
+    }
+
+    if (duration > 0 && delivery > 0 && delivery <= duration * 1.2) {
+      score += 12;
+      strengths.push("Delivery timeline is realistic for the project.");
+    } else {
+      improvements.push("Revisit delivery estimate to match project scope.");
+    }
+
+    if (/experience|deliver|similar|portfolio|solution|approach/i.test(text)) {
+      score += 10;
+      strengths.push("Proposal mentions relevant expertise/approach.");
+    } else {
+      improvements.push(
+        "Mention related past work and implementation approach.",
+      );
+    }
+
+    score = Math.max(20, Math.min(95, score));
+    const risk_level = score >= 75 ? "low" : score >= 55 ? "medium" : "high";
+
+    return {
+      score,
+      strengths: strengths.length
+        ? strengths
+        : ["Basic proposal information provided."],
+      improvements: improvements.length
+        ? improvements
+        : ["Add a short implementation plan to increase trust."],
+      risk_level,
+      summary:
+        "Quality score is generated using pricing, timeline, and cover-letter relevance checks.",
+    };
+  }
+
   static async generateProfessionalSOW(
     projectData,
     freelancerData,

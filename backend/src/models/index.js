@@ -126,6 +126,36 @@ InterviewInvitation.belongsTo(User, {
 });
 InterviewInvitation.belongsTo(Project, { foreignKey: "project_id" });
 
+WorkSubmission.belongsTo(Contract, {
+  foreignKey: "contract_id",
+  as: "Contract",
+});
+
+Contract.hasMany(WorkSubmission, {
+  foreignKey: "contract_id",
+  as: "workSubmissions",
+});
+
+WorkSubmission.belongsTo(User, {
+  foreignKey: "freelancer_id",
+  as: "freelancer",
+});
+
+WorkSubmission.belongsTo(User, {
+  foreignKey: "client_id",
+  as: "client",
+});
+
+User.hasMany(WorkSubmission, {
+  foreignKey: "freelancer_id",
+  as: "freelancerWorkSubmissions",
+});
+
+User.hasMany(WorkSubmission, {
+  foreignKey: "client_id",
+  as: "clientWorkSubmissions",
+});
+
 export {
   sequelize,
   User,

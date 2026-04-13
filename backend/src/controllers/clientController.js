@@ -553,8 +553,6 @@ export const completeProject = async (req, res) => {
         end_date: new Date(),
       });
     }
-    await SubscriptionService.decrementActiveProjectsCount(req.user.id);
-
     res.json({
       message: "✅ Project completed successfully",
       project,
@@ -907,47 +905,82 @@ export const manualConfirmPayment = async (req, res) => {
 
     console.log("💰 Manual payment confirmation for contract:", contractId);
 
+    if (!contractId) {
+      return res.status(400).json({ message: "Contract ID is required" });
+    }
+
     const contract = await Contract.findByPk(contractId);
 
     if (!contract) {
       return res.status(404).json({ message: "Contract not found" });
     }
 
+    console.log("📊 Contract found:", contract.id);
+    console.log("📊 Agreed amount:", contract.agreed_amount);
+
+    let agreedAmount = contract.agreed_amount;
+
+    if (typeof agreedAmount === "string") {
+      if (agreedAmount.includes(".") && agreedAmount.split(".").length > 2) {
+        const parts = agreedAmount.split(".");
+        agreedAmount = parts[0] + "." + parts[1];
+      }
+      agreedAmount = parseFloat(agreedAmount);
+    }
+
+    if (
+      !isNaN(agreedAmount) &&
+      agreedAmount < 1 &&
+      agreedAmount > 0 &&
+      agreedAmount.toString().includes("0012")
+    ) {
+      agreedAmount = agreedAmount * 10000;
+    }
+
+    if (isNaN(agreedAmount) || agreedAmount <= 0) {
+      console.error("❌ Invalid agreed_amount:", contract.agreed_amount);
+      return res.status(400).json({
+        message: "Invalid contract amount",
+        originalAmount: contract.agreed_amount,
+      });
+    }
+
+    agreedAmount = Math.round(agreedAmount * 100) / 100;
+
+    console.log("✅ Cleaned agreed_amount:", agreedAmount);
+
     await contract.update({
       escrow_status: "funded",
       payment_status: "escrow",
     });
 
-    console.log(
-      "✅ Contract updated:",
-      contract.id,
-      "escrow_status:",
-      contract.escrow_status,
-    );
+    console.log("✅ Contract updated");
 
     let clientWallet = await Wallet.findOne({
       where: { UserId: contract.ClientId },
     });
+
     if (!clientWallet) {
       clientWallet = await Wallet.create({
         UserId: contract.ClientId,
         balance: 0,
+        pending_balance: 0,
       });
     }
 
-    const newPendingBalance =
-      (clientWallet.pending_balance || 0) + contract.agreed_amount;
+    const currentPending = parseFloat(clientWallet.pending_balance || 0);
+    const newPendingBalance = currentPending + agreedAmount;
+    const roundedBalance = Math.round(newPendingBalance * 100) / 100;
+
     await clientWallet.update({
-      pending_balance: newPendingBalance,
+      pending_balance: roundedBalance,
     });
-    console.log(
-      "✅ Client wallet updated, pending_balance:",
-      newPendingBalance,
-    );
+
+    console.log("✅ Wallet updated, pending_balance:", roundedBalance);
 
     const transaction = await Transaction.create({
       wallet_id: clientWallet.id,
-      amount: contract.agreed_amount,
+      amount: agreedAmount,
       type: "deposit",
       status: "completed",
       description: `Escrow deposit for contract #${contract.id}`,
@@ -955,13 +988,14 @@ export const manualConfirmPayment = async (req, res) => {
       reference_type: "contract",
       completed_at: new Date(),
     });
+
     console.log("✅ Transaction created:", transaction.id);
 
     await NotificationService.createNotification({
       userId: contract.ClientId,
       type: "payment_received",
       title: "Payment Confirmed ✅",
-      body: `$${contract.agreed_amount} has been deposited into escrow.`,
+      body: `$${agreedAmount.toFixed(2)} has been deposited into escrow.`,
       data: { contractId: contract.id, screen: "contract" },
     });
 
@@ -969,18 +1003,25 @@ export const manualConfirmPayment = async (req, res) => {
       userId: contract.FreelancerId,
       type: "payment_received",
       title: "Payment Secured 💰",
-      body: `The client has funded $${contract.agreed_amount} into escrow.`,
+      body: `The client has funded $${agreedAmount.toFixed(2)} into escrow.`,
       data: { contractId: contract.id, screen: "contract" },
     });
 
     res.json({
       success: true,
       message: "Payment confirmed successfully",
-      contract,
+      contract: {
+        id: contract.id,
+        escrow_status: contract.escrow_status,
+        payment_status: contract.payment_status,
+      },
     });
   } catch (err) {
     console.error("Error in manualConfirmPayment:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 

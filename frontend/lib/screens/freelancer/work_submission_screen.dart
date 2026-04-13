@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../models/contract_model.dart';
 import '../../services/api_service.dart';
 
@@ -259,13 +258,17 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                 const SizedBox(height: 8),
               ],
 
-              ElevatedButton.icon(
-                onPressed: _pickFiles,
-                icon: const Icon(Icons.attach_file),
-                label: const Text('Add Files'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade200,
-                  foregroundColor: Colors.black87,
+              Container(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _pickFiles,
+                  icon: const Icon(Icons.attach_file),
+                  label: const Text('Add Files'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey.shade200,
+                    foregroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -289,14 +292,23 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _addLink,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff14A800),
-                      shape: const CircleBorder(),
-                      padding: const EdgeInsets.all(12),
+                  Container(
+                    width: 48,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _addLink,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff14A800),
+                        shape: const CircleBorder(),
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 0),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
-                    child: const Icon(Icons.add, color: Colors.white),
                   ),
                 ],
               ),
@@ -336,7 +348,7 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
 
               const SizedBox(height: 32),
 
-              SizedBox(
+              Container(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(

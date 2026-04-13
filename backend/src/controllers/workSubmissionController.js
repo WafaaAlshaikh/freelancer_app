@@ -5,9 +5,71 @@ import {
   Project,
   User,
   Notification,
+  FreelancerProfile,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import NotificationService from "../services/notificationService.js";
+
+const parseJSONArray = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+const updateFreelancerCompletionStats = async ({
+  contract,
+  completionDate,
+}) => {
+  const freelancerId = contract?.FreelancerId;
+  if (!freelancerId) return;
+
+  let profile = await FreelancerProfile.findOne({
+    where: { UserId: freelancerId },
+  });
+
+  if (!profile) {
+    profile = await FreelancerProfile.create({ UserId: freelancerId });
+  }
+
+  const existingExperience = parseJSONArray(profile.work_experience);
+  const alreadyRecorded = existingExperience.some(
+    (item) =>
+      item?.source === "system_contract_completion" &&
+      Number(item?.contract_id) === Number(contract.id),
+  );
+
+  const completedProjectsCount =
+    Number(profile.completed_projects_count || 0) + 1;
+  const nextExperience = alreadyRecorded
+    ? existingExperience
+    : [
+        {
+          title: `Delivered project: ${contract.Project?.title || `Project #${contract.ProjectId}`}`,
+          company: "Freelance",
+          start_date: contract.start_date || null,
+          end_date: completionDate,
+          description: "Completed and delivered successfully to client.",
+          source: "system_contract_completion",
+          contract_id: contract.id,
+          project_id: contract.ProjectId,
+        },
+        ...existingExperience,
+      ];
+
+  await profile.update({
+    completed_projects_count: completedProjectsCount,
+    experience_years: Math.max(Number(profile.experience_years || 0), 1),
+    work_experience: JSON.stringify(nextExperience),
+  });
+};
 
 export const submitWork = async (req, res) => {
   try {
@@ -75,7 +137,9 @@ export const approveWork = async (req, res) => {
 
     const submission = await WorkSubmission.findOne({
       where: { id: submissionId, client_id: clientId },
-      include: [{ model: Contract }],
+      include: [
+        { model: Contract, as: "Contract", include: [{ model: Project }] },
+      ],
     });
 
     if (!submission) {
@@ -89,11 +153,12 @@ export const approveWork = async (req, res) => {
       approved_at: new Date(),
     });
 
+    const contract = submission.Contract;
+
     if (
       submission.milestone_index !== null &&
       submission.milestone_index !== undefined
     ) {
-      const contract = submission.Contract;
       let milestones = contract.milestones;
       if (typeof milestones === "string") {
         milestones = JSON.parse(milestones);
@@ -104,6 +169,27 @@ export const approveWork = async (req, res) => {
         milestones[submission.milestone_index].completed_at = new Date();
         await contract.update({ milestones: JSON.stringify(milestones) });
       }
+    }
+
+    const milestones = parseJSONArray(contract.milestones);
+    const allMilestonesDone =
+      milestones.length > 0 &&
+      milestones.every((m) => ["completed", "approved"].includes(m?.status));
+    const shouldCompleteContract = milestones.length === 0 || allMilestonesDone;
+
+    if (shouldCompleteContract && contract.status !== "completed") {
+      const completionDate = new Date();
+
+      await contract.update({
+        status: "completed",
+        end_date: completionDate,
+      });
+
+      if (contract.Project && contract.Project.status !== "completed") {
+        await contract.Project.update({ status: "completed" });
+      }
+
+      await updateFreelancerCompletionStats({ contract, completionDate });
     }
 
     await NotificationService.createNotification({

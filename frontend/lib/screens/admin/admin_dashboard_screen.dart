@@ -5,6 +5,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:freelancer_platform/screens/admin/subscription_management_screen.dart';
 import '../../models/admin_stats.dart';
 import '../../services/api_service.dart';
+import 'contracts_management_screen.dart';
+import 'projects_management_screen.dart';
 import 'users_management_screen.dart';
 import 'settings_screen.dart';
 
@@ -250,6 +252,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool loading = true;
   List<Map<String, dynamic>> monthlyStats = [];
   int _selectedIndex = 0;
+  int _dashboardTab = 0;
   String? errorMessage;
 
   @override
@@ -581,6 +584,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildDashboardContent() {
+    final totalUsers = (stats?.totalUsers ?? 0).toDouble();
+    final freelancers = (stats?.totalFreelancers ?? 0).toDouble();
+    final clients = (stats?.totalClients ?? 0).toDouble();
+    final completedContracts = (stats?.completedContracts ?? 0).toDouble();
+    final activeContracts = (stats?.activeContracts ?? 0).toDouble();
+    final pendingProjects = (stats?.pendingProjects ?? 0).toDouble();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -751,6 +761,31 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 Colors.red,
               ),
             ],
+          ),
+
+          const SizedBox(height: 28),
+
+          Row(
+            children: [
+              _insightTabChip('Overview', 0),
+              const SizedBox(width: 10),
+              _insightTabChip('Performance', 1),
+              const SizedBox(width: 10),
+              _insightTabChip('Trends', 2),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: _buildDashboardTabPanel(
+              totalUsers: totalUsers,
+              freelancers: freelancers,
+              clients: clients,
+              completedContracts: completedContracts,
+              activeContracts: activeContracts,
+              pendingProjects: pendingProjects,
+            ),
           ),
 
           const SizedBox(height: 28),
@@ -956,6 +991,375 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  Widget _insightTabChip(String label, int index) {
+    final selected = _dashboardTab == index;
+    return InkWell(
+      onTap: () => setState(() => _dashboardTab = index),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accent.withOpacity(0.14) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppColors.accent : Colors.grey.shade200,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? AppColors.accent : Colors.grey.shade700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardTabPanel({
+    required double totalUsers,
+    required double freelancers,
+    required double clients,
+    required double completedContracts,
+    required double activeContracts,
+    required double pendingProjects,
+  }) {
+    if (_dashboardTab == 1) {
+      return _buildPerformancePanel(
+        completedContracts: completedContracts,
+        activeContracts: activeContracts,
+        pendingProjects: pendingProjects,
+      );
+    }
+
+    if (_dashboardTab == 2) {
+      return _buildTrendPanel();
+    }
+
+    return _buildOverviewPanel(
+      totalUsers: totalUsers,
+      freelancers: freelancers,
+      clients: clients,
+    );
+  }
+
+  Widget _buildOverviewPanel({
+    required double totalUsers,
+    required double freelancers,
+    required double clients,
+  }) {
+    final freelancerPct = totalUsers > 0 ? (freelancers / totalUsers) * 100 : 0;
+    final clientPct = totalUsers > 0 ? (clients / totalUsers) * 100 : 0;
+
+    return Container(
+      key: const ValueKey('overview'),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 180,
+            height: 180,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 38,
+                sections: [
+                  PieChartSectionData(
+                    value: freelancers <= 0 ? 0.01 : freelancers,
+                    color: AppColors.green,
+                    title: '${freelancerPct.toStringAsFixed(0)}%',
+                    radius: 50,
+                    titleStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                  PieChartSectionData(
+                    value: clients <= 0 ? 0.01 : clients,
+                    color: AppColors.accent,
+                    title: '${clientPct.toStringAsFixed(0)}%',
+                    radius: 50,
+                    titleStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'User Distribution',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                _legendRow('Freelancers', AppColors.green, freelancers.toInt()),
+                const SizedBox(height: 8),
+                _legendRow('Clients', AppColors.accent, clients.toInt()),
+                const SizedBox(height: 12),
+                Text(
+                  'Balanced marketplace with ${totalUsers.toInt()} total accounts.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformancePanel({
+    required double completedContracts,
+    required double activeContracts,
+    required double pendingProjects,
+  }) {
+    final maxY =
+        [
+          completedContracts,
+          activeContracts,
+          pendingProjects,
+        ].reduce((a, b) => a > b ? a : b) +
+        2;
+
+    return Container(
+      key: const ValueKey('performance'),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Operational Performance',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 210,
+            child: BarChart(
+              BarChartData(
+                maxY: maxY,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) =>
+                      FlLine(color: Colors.grey.shade100, strokeWidth: 1),
+                ),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        const labels = ['Completed', 'Active', 'Pending'];
+                        final i = value.toInt();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            i >= 0 && i < labels.length ? labels[i] : '',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups: [
+                  BarChartGroupData(
+                    x: 0,
+                    barRods: [
+                      BarChartRodData(
+                        toY: completedContracts,
+                        color: AppColors.green,
+                        width: 24,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ],
+                  ),
+                  BarChartGroupData(
+                    x: 1,
+                    barRods: [
+                      BarChartRodData(
+                        toY: activeContracts,
+                        color: AppColors.accent,
+                        width: 24,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ],
+                  ),
+                  BarChartGroupData(
+                    x: 2,
+                    barRods: [
+                      BarChartRodData(
+                        toY: pendingProjects,
+                        color: Colors.orange,
+                        width: 24,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendPanel() {
+    final lastMonth = monthlyStats.isNotEmpty ? monthlyStats.last : {};
+    final monthUsers = (lastMonth['users'] ?? lastMonth['freelancers'] ?? 0)
+        .toInt();
+    final monthRevenue = (lastMonth['earnings'] ?? 0).toDouble();
+
+    return Container(
+      key: const ValueKey('trend'),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _microInsightCard(
+              title: 'Last Month Users',
+              value: monthUsers.toString(),
+              icon: Icons.person_add_alt_1,
+              color: AppColors.accent,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _microInsightCard(
+              title: 'Last Month Revenue',
+              value: '\$${monthRevenue.toStringAsFixed(0)}',
+              icon: Icons.payments_outlined,
+              color: AppColors.green,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _microInsightCard(
+              title: 'Health Score',
+              value: _platformHealthScore(),
+              icon: Icons.favorite_outline,
+              color: Colors.orange,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _microInsightCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendRow(String label, Color color, int value) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+          ),
+        ),
+        Text(
+          '$value',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  String _platformHealthScore() {
+    final total = (stats?.totalContracts ?? 0);
+    final completed = (stats?.completedContracts ?? 0);
+    if (total <= 0) return 'N/A';
+    final pct = ((completed / total) * 100).round();
+    return '$pct%';
+  }
+
   Widget _bannerChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1012,9 +1416,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 1:
         return const UsersManagementScreen();
       case 2:
-        return _buildComingSoon('Projects Management');
+        return const ProjectsManagementScreen();
       case 3:
-        return _buildComingSoon('Contracts Management');
+        return const ContractsManagementScreen();
       case 4:
         return const SubscriptionManagementScreen();
       case 5:

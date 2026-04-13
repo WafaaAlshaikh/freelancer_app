@@ -40,6 +40,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
   Map<String, dynamic>? projectAnalysis;
   bool showAIMilestones = false;
   bool _checkingLimits = false;
+  bool _analyzingProposal = false;
+  Map<String, dynamic>? _proposalQuality;
 
   Timer? _proposalDraftTimer;
   DateTime? _proposalDraftSavedAt;
@@ -551,6 +553,45 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       );
     } finally {
       setState(() => loading = false);
+    }
+  }
+
+  Future<void> _analyzeProposalQuality() async {
+    final price = double.tryParse(priceController.text);
+    final delivery = int.tryParse(deliveryController.text);
+    final message = messageController.text.trim();
+
+    if (price == null || delivery == null || message.length < 20) {
+      Fluttertoast.showToast(
+        msg: 'Fill price, delivery time, and a meaningful cover letter first',
+      );
+      return;
+    }
+
+    setState(() => _analyzingProposal = true);
+    try {
+      final response = await ApiService.analyzeProposalDraft(
+        projectId: widget.project.id!,
+        price: price,
+        deliveryTime: delivery,
+        proposalText: message,
+      );
+      if (!mounted) return;
+      if (response['success'] == true && response['analysis'] != null) {
+        setState(() {
+          _proposalQuality = Map<String, dynamic>.from(
+            response['analysis'] as Map,
+          );
+        });
+      } else {
+        Fluttertoast.showToast(
+          msg: response['message']?.toString() ?? 'Could not analyze proposal',
+        );
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Analysis failed: $e');
+    } finally {
+      if (mounted) setState(() => _analyzingProposal = false);
     }
   }
 
@@ -1253,6 +1294,93 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   ),
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _analyzingProposal
+                      ? null
+                      : _analyzeProposalQuality,
+                  icon: _analyzingProposal
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_awesome, size: 16),
+                  label: Text(
+                    _analyzingProposal
+                        ? 'Analyzing proposal...'
+                        : 'Analyze Proposal Quality (AI)',
+                  ),
+                ),
+              ),
+
+              if (_proposalQuality != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.deepPurple.shade100),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.analytics_outlined,
+                            color: Colors.deepPurple,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Proposal Score: ${_proposalQuality!['score'] ?? 0}/100',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _proposalQuality!['summary']?.toString() ?? '',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if ((_proposalQuality!['strengths'] as List?)
+                              ?.isNotEmpty ==
+                          true)
+                        Text(
+                          'Strengths: ${(List<dynamic>.from(_proposalQuality!['strengths'])).join(' • ')}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green.shade800,
+                          ),
+                        ),
+                      const SizedBox(height: 6),
+                      if ((_proposalQuality!['improvements'] as List?)
+                              ?.isNotEmpty ==
+                          true)
+                        Text(
+                          'Improve: ${(List<dynamic>.from(_proposalQuality!['improvements'])).join(' • ')}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 20),
 

@@ -1,9 +1,28 @@
 import Portfolio from "../models/Portfolio.js";
-import { User } from "../models/index.js";
+import { User, WorkSubmission, Contract, Project } from "../models/index.js";
 import FreelancerProfile from "../models/FreelancerProfile.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+
+const parseMilestonesValue = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+      if (typeof parsed === "string") {
+        const reparsed = JSON.parse(parsed);
+        return Array.isArray(reparsed) ? reparsed : [];
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -80,14 +99,18 @@ export const createPortfolio = async (req, res) => {
     });
 
     await FreelancerProfile.increment("portfolio_items_count", {
-      where: { user_id: req.user.id },
+      where: { UserId: req.user.id },
     });
 
-    const ProfileCompletionService =
-      require("../services/profileCompletionService.js").default;
-    await ProfileCompletionService.calculateFreelancerProfileCompletion(
-      req.user.id,
-    );
+    try {
+      const { default: ProfileCompletionService } =
+        await import("../services/profileCompletionService.js");
+      await ProfileCompletionService.calculateFreelancerProfileCompletion(
+        req.user.id,
+      );
+    } catch (e) {
+      console.warn("Profile completion update skipped:", e.message);
+    }
 
     res.status(201).json({
       message: "✅ Portfolio item created successfully",
@@ -174,19 +197,221 @@ export const deletePortfolio = async (req, res) => {
     await portfolio.destroy();
 
     await FreelancerProfile.decrement("portfolio_items_count", {
-      where: { user_id: req.user.id },
+      where: { UserId: req.user.id },
     });
 
-    const ProfileCompletionService =
-      require("../services/profileCompletionService.js").default;
-    await ProfileCompletionService.calculateFreelancerProfileCompletion(
-      req.user.id,
-    );
+    try {
+      const { default: ProfileCompletionService } =
+        await import("../services/profileCompletionService.js");
+      await ProfileCompletionService.calculateFreelancerProfileCompletion(
+        req.user.id,
+      );
+    } catch (e) {
+      console.warn("Profile completion update skipped:", e.message);
+    }
 
     res.json({ message: "✅ Portfolio item deleted successfully" });
   } catch (err) {
     console.error("Error deleting portfolio:", err);
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const createPortfolioFromSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.body;
+    const freelancerId = req.user.id;
+
+    const submission = await WorkSubmission.findOne({
+      where: { id: submissionId, freelancer_id: freelancerId },
+      include: [{ model: Contract, include: [{ model: Project }] }],
+    });
+
+    if (!submission) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Submission not found" });
+    }
+
+    const milestones = Array.isArray(submission.Contract?.milestones)
+      ? submission.Contract.milestones
+      : parseMilestonesValue(submission.Contract?.milestones);
+    const milestoneIndex = submission.milestone_index;
+    const milestoneStatus =
+      milestoneIndex !== null &&
+      milestoneIndex !== undefined &&
+      milestones[milestoneIndex]
+        ? milestones[milestoneIndex]?.status
+        : null;
+    const canAdd =
+      submission.status === "approved" ||
+      submission.Contract?.status === "completed" ||
+      milestoneStatus === "approved" ||
+      milestoneStatus === "completed";
+
+    if (!canAdd) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Submission is not approved yet. Approve the deliverable/milestone first.",
+      });
+    }
+
+    const markerUrl = `submission://${submission.id}`;
+    const existing = await Portfolio.findOne({
+      where: { UserId: freelancerId, project_url: markerUrl },
+    });
+    if (existing) {
+      return res.json({
+        success: true,
+        message: "Already added to portfolio",
+        portfolio: existing,
+      });
+    }
+
+    const files = Array.isArray(submission.files) ? submission.files : [];
+    const imageFiles = files.filter((url) =>
+      /\.(png|jpg|jpeg|webp|gif)$/i.test(url || ""),
+    );
+    const projectSkills = submission.Contract?.Project?.skills || [];
+
+    const portfolio = await Portfolio.create({
+      UserId: freelancerId,
+      title:
+        submission.title ||
+        submission.Contract?.Project?.title ||
+        "Delivered Project",
+      description:
+        submission.description ||
+        `Delivered for project "${submission.Contract?.Project?.title || submission.Contract?.ProjectId}".`,
+      images: JSON.stringify(imageFiles),
+      project_url: markerUrl,
+      github_url: (submission.links || [])[0] || null,
+      technologies: JSON.stringify(projectSkills),
+      completion_date: submission.approved_at || new Date(),
+      category: submission.Contract?.Project?.category || "other",
+      client_name: submission.Contract?.client?.name || null,
+      project_type: "client_work",
+      role: "freelancer",
+      featured: false,
+      views: 0,
+      likes: 0,
+    });
+
+    await FreelancerProfile.increment("portfolio_items_count", {
+      where: { UserId: freelancerId },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Added to portfolio",
+      portfolio,
+    });
+  } catch (err) {
+    console.error("Error creating portfolio from submission:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+export const createPortfolioFromContractMilestone = async (req, res) => {
+  try {
+    const { contractId, milestoneIndex } = req.body;
+    const freelancerId = req.user.id;
+
+    const contract = await Contract.findOne({
+      where: { id: contractId, FreelancerId: freelancerId },
+      include: [{ model: Project }],
+    });
+
+    if (!contract) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Contract not found" });
+    }
+
+    const milestones = parseMilestonesValue(contract.milestones);
+    const index =
+      milestoneIndex === null || milestoneIndex === undefined
+        ? null
+        : Number(milestoneIndex);
+
+    let canAdd = contract.status === "completed";
+    let milestoneTitle = "Delivered milestone";
+    let milestoneAmount = null;
+
+    if (index !== null && !Number.isNaN(index) && milestones[index]) {
+      const m = milestones[index];
+      milestoneTitle = m.title || `Milestone #${index + 1}`;
+      milestoneAmount = m.amount || null;
+      canAdd = canAdd || m.status === "approved" || m.status === "completed";
+    }
+
+    if (!canAdd) {
+      return res.status(400).json({
+        success: false,
+        message: "Milestone/contract is not approved yet",
+      });
+    }
+
+    const markerUrl =
+      index !== null
+        ? `contract://${contract.id}/milestone://${index}`
+        : `contract://${contract.id}`;
+    const existing = await Portfolio.findOne({
+      where: { UserId: freelancerId, project_url: markerUrl },
+    });
+
+    if (existing) {
+      return res.json({
+        success: true,
+        message: "Already added to portfolio",
+        portfolio: existing,
+      });
+    }
+
+    const projectSkills = contract.Project?.skills || [];
+    const portfolio = await Portfolio.create({
+      UserId: freelancerId,
+      title:
+        index !== null
+          ? `${milestoneTitle} (${contract.Project?.title || "Project"})`
+          : contract.Project?.title || "Delivered Project",
+      description:
+        index !== null
+          ? `Approved milestone delivered for "${contract.Project?.title || "project"}".`
+          : `Completed contract delivery for "${contract.Project?.title || "project"}".`,
+      images: JSON.stringify([]),
+      project_url: markerUrl,
+      github_url: null,
+      technologies: JSON.stringify(projectSkills),
+      completion_date: contract.end_date || new Date(),
+      category: contract.Project?.category || "other",
+      client_name: null,
+      project_type: "client_work",
+      role: "freelancer",
+      featured: false,
+      views: 0,
+      likes: 0,
+    });
+
+    await FreelancerProfile.increment("portfolio_items_count", {
+      where: { UserId: freelancerId },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Added to portfolio",
+      portfolio,
+    });
+  } catch (err) {
+    console.error("Error creating portfolio from contract milestone:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 

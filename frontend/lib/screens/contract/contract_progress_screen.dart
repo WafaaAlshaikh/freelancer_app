@@ -137,6 +137,35 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     }
   }
 
+  Future<void> _addSubmissionToPortfolio(int submissionId) async {
+    final r = await ApiService.createPortfolioFromSubmission(submissionId);
+    if (!mounted) return;
+    if (r['success'] == true || r['portfolio'] != null) {
+      Fluttertoast.showToast(
+        msg: r['message']?.toString() ?? 'Added to portfolio',
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: r['message']?.toString() ?? 'Could not add to portfolio',
+      );
+    }
+  }
+
+  Future<void> _addMilestoneToPortfolio(int milestoneIndex) async {
+    final r = await ApiService.createPortfolioFromContractMilestone(
+      contractId: widget.contractId,
+      milestoneIndex: milestoneIndex,
+    );
+    if (!mounted) return;
+    Fluttertoast.showToast(
+      msg:
+          r['message']?.toString() ??
+          ((r['success'] == true)
+              ? 'Added to portfolio'
+              : 'Could not add to portfolio'),
+    );
+  }
+
   void _openSubmitDeliverable(Map<String, dynamic> milestone) {
     if (_contract == null) return;
     final idx = milestone['index'] as int? ?? 0;
@@ -468,7 +497,16 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
 
   Widget _buildSubmissionsSection() {
     final subs = _progress?['submissions'] as List<dynamic>? ?? [];
-    if (subs.isEmpty) {
+    final milestones = _progress?['milestones'] as List<dynamic>? ?? [];
+    final contract = _progress?['contract'] as Map<String, dynamic>?;
+    final contractStatus = contract?['status']?.toString() ?? '';
+    final approvedMilestoneOnly = milestones.asMap().entries.where((e) {
+      final m = Map<String, dynamic>.from(e.value as Map);
+      final st = m['status']?.toString() ?? '';
+      return st == 'approved' || st == 'completed';
+    }).toList();
+
+    if (subs.isEmpty && approvedMilestoneOnly.isEmpty) {
       return const SizedBox.shrink();
     }
     return Column(
@@ -482,14 +520,66 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
         ...subs.map((raw) {
           final s = Map<String, dynamic>.from(raw as Map);
           final st = s['status']?.toString() ?? '';
+          final milestoneIndexRaw = s['milestone_index'];
+          final milestoneIndex = milestoneIndexRaw is int
+              ? milestoneIndexRaw
+              : int.tryParse(milestoneIndexRaw?.toString() ?? '');
+          String milestoneStatus = '';
+          if (milestoneIndex != null &&
+              milestoneIndex >= 0 &&
+              milestoneIndex < milestones.length) {
+            final m = Map<String, dynamic>.from(
+              milestones[milestoneIndex] as Map,
+            );
+            milestoneStatus = m['status']?.toString() ?? '';
+          }
+          final canAddToPortfolio =
+              widget.userRole == 'freelancer' &&
+              (st == 'approved' ||
+                  contractStatus == 'completed' ||
+                  milestoneStatus == 'approved' ||
+                  milestoneStatus == 'completed');
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
               title: Text(s['title']?.toString() ?? 'Submission'),
               subtitle: Text('$st · Milestone ${s['milestone_index'] ?? '—'}'),
+              trailing: canAddToPortfolio
+                  ? TextButton.icon(
+                      onPressed: () {
+                        final sid = s['id'];
+                        final id = sid is int
+                            ? sid
+                            : int.tryParse(sid.toString()) ?? 0;
+                        if (id > 0) _addSubmissionToPortfolio(id);
+                      },
+                      icon: const Icon(Icons.add_box_outlined, size: 16),
+                      label: const Text('Add to Portfolio'),
+                    )
+                  : null,
             ),
           );
         }),
+        if (subs.isEmpty && widget.userRole == 'freelancer') ...[
+          ...approvedMilestoneOnly.map((entry) {
+            final idx = entry.key;
+            final m = Map<String, dynamic>.from(entry.value as Map);
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                title: Text(m['title']?.toString() ?? 'Milestone ${idx + 1}'),
+                subtitle: Text(
+                  '${(m['status'] ?? 'approved').toString()} · Milestone $idx',
+                ),
+                trailing: TextButton.icon(
+                  onPressed: () => _addMilestoneToPortfolio(idx),
+                  icon: const Icon(Icons.add_box_outlined, size: 16),
+                  label: const Text('Add to Portfolio'),
+                ),
+              ),
+            );
+          }),
+        ],
       ],
     );
   }

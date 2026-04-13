@@ -112,6 +112,22 @@ export const getMyFreelancerProfile = async (req, res) => {
     const totalEarned = await Contract.sum("released_amount", {
       where: { FreelancerId: userId, status: "completed" },
     });
+    const recentCompletedContracts = await Contract.findAll({
+      where: { FreelancerId: userId, status: "completed" },
+      include: [
+        {
+          model: Project,
+          attributes: ["id", "title", "category", "budget"],
+          required: false,
+        },
+      ],
+      attributes: ["id", "ProjectId", "agreed_amount", "end_date", "updatedAt"],
+      order: [
+        ["end_date", "DESC"],
+        ["updatedAt", "DESC"],
+      ],
+      limit: 8,
+    });
 
     res.json({
       user: {
@@ -166,6 +182,14 @@ export const getMyFreelancerProfile = async (req, res) => {
         job_success_score: profile.job_success_score || 0,
         response_time: profile.response_time || 0,
       },
+      recent_completed_projects: recentCompletedContracts.map((c) => ({
+        contract_id: c.id,
+        project_id: c.ProjectId,
+        title: c.Project?.title || `Project #${c.ProjectId}`,
+        category: c.Project?.category || null,
+        budget: c.Project?.budget || c.agreed_amount || null,
+        delivered_at: c.end_date || c.updatedAt,
+      })),
     });
   } catch (err) {
     console.error("getMyFreelancerProfile:", err);
@@ -748,6 +772,23 @@ export const getFreelancerPublicProfile = async (req, res) => {
       where: { FreelancerId: userId, status: "active" },
     });
 
+    const recentCompletedContracts = await Contract.findAll({
+      where: { FreelancerId: userId, status: "completed" },
+      include: [
+        {
+          model: Project,
+          attributes: ["id", "title", "category", "budget"],
+          required: false,
+        },
+      ],
+      attributes: ["id", "ProjectId", "agreed_amount", "end_date", "updatedAt"],
+      order: [
+        ["end_date", "DESC"],
+        ["updatedAt", "DESC"],
+      ],
+      limit: 8,
+    });
+
     const skills = parseJSON(profile?.skills);
     const topSkills =
       parseJSON(profile?.top_skills).length > 0
@@ -757,10 +798,15 @@ export const getFreelancerPublicProfile = async (req, res) => {
     const socialFromProfile = parseJSON(profile?.social_links, {});
 
     const contact_links = {
-      website: user.website || profile?.website || socialFromProfile.website || null,
-      github: user.github || profile?.github || socialFromProfile.github || null,
+      website:
+        user.website || profile?.website || socialFromProfile.website || null,
+      github:
+        user.github || profile?.github || socialFromProfile.github || null,
       linkedin:
-        user.linkedin || profile?.linkedin || socialFromProfile.linkedin || null,
+        user.linkedin ||
+        profile?.linkedin ||
+        socialFromProfile.linkedin ||
+        null,
       behance: profile?.behance || socialFromProfile.behance || null,
       dribbble: profile?.dribbble || socialFromProfile.dribbble || null,
       twitter: user.twitter || socialFromProfile.twitter || null,
@@ -868,6 +914,14 @@ export const getFreelancerPublicProfile = async (req, res) => {
         role: r.role,
         createdAt: r.createdAt,
         from_user: r.fromUser,
+      })),
+      recent_completed_projects: recentCompletedContracts.map((c) => ({
+        contract_id: c.id,
+        project_id: c.ProjectId,
+        title: c.Project?.title || `Project #${c.ProjectId}`,
+        category: c.Project?.category || null,
+        budget: c.Project?.budget || c.agreed_amount || null,
+        delivered_at: c.end_date || c.updatedAt,
       })),
     });
   } catch (err) {

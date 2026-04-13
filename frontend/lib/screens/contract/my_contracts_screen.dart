@@ -150,28 +150,31 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
     if (!hasMilestones) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => WorkSubmissionScreen(contract: contract),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WorkSubmissionScreen(contract: contract),
+                    ),
+                  ).then((_) => fetchContracts());
+                },
+                icon: const Icon(Icons.upload_file, size: 18),
+                label: const Text('Submit Final Work'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff14A800),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-              ).then((_) => fetchContracts());
-            },
-            icon: const Icon(Icons.upload_file, size: 18),
-            label: const Text('Submit Final Work'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff14A800),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ),
+          ],
         ),
       );
     }
@@ -203,29 +206,35 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
             final milestone = entry.value;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => WorkSubmissionScreen(
-                        contract: contract,
-                        milestoneIndex: index,
-                        milestone: milestone,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => WorkSubmissionScreen(
+                              contract: contract,
+                              milestoneIndex: index,
+                              milestone: milestone,
+                            ),
+                          ),
+                        ).then((_) => fetchContracts());
+                      },
+                      icon: const Icon(Icons.work, size: 18),
+                      label: Text('Submit: ${milestone['title']}'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade50,
+                        foregroundColor: Colors.blue.shade700,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
-                  ).then((_) => fetchContracts());
-                },
-                icon: const Icon(Icons.work, size: 18),
-                label: Text('Submit: ${milestone['title']}'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade50,
-                  foregroundColor: Colors.blue.shade700,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
+                ],
               ),
             );
           }),

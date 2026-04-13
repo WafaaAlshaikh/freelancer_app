@@ -25,6 +25,7 @@ import '../../models/usage_limits_model.dart';
 import '../../services/api_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/profile_api_service.dart';
 import 'project_details_screen.dart';
 import 'my_proposals_screen.dart';
 import 'my_projects_screen.dart';
@@ -1025,6 +1026,7 @@ class FreelancerHomeScreen extends StatefulWidget {
 
 class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   FreelancerProfile? profile;
+  List<Map<String, dynamic>> recentCompletedProjects = [];
   List<Project> recommendedProjects = [];
   List<Project> aiSuggestedProjects = [];
   List<Contract> activeContracts = [];
@@ -1279,9 +1281,20 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   Future<void> fetchProfile() async {
     setState(() => loadingProfile = true);
     try {
-      final res = await ApiService.getProfile();
+      final results = await Future.wait([
+        ApiService.getProfile(),
+        ProfileApiService.getMyFreelancerProfile(),
+      ]);
+      final res = Map<String, dynamic>.from(results[0] as Map);
+      final detailedProfile = Map<String, dynamic>.from(results[1] as Map);
+      final recentProjectsRaw =
+          detailedProfile['recent_completed_projects'] as List<dynamic>? ?? [];
+
       setState(() {
         profile = FreelancerProfile.fromJson(res);
+        recentCompletedProjects = recentProjectsRaw
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
         loadingProfile = false;
       });
     } catch (e) {
@@ -2190,6 +2203,67 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     );
   }
 
+  Widget _buildDeliveredProjectsSection() {
+    if (recentCompletedProjects.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recently Delivered Projects',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          ...recentCompletedProjects.take(5).map((item) {
+            final title = item['title']?.toString() ?? 'Delivered project';
+            final category = item['category']?.toString() ?? '';
+            final budget =
+                double.tryParse((item['budget'] ?? '').toString()) ?? 0;
+            final deliveredAt = DateTime.tryParse(
+              (item['delivered_at'] ?? '').toString(),
+            );
+
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              leading: const Icon(Icons.task_alt, color: AppColors.green),
+              title: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                [
+                  if (category.isNotEmpty) category,
+                  if (budget > 0) '\$${budget.toStringAsFixed(0)}',
+                  if (deliveredAt != null) _formatDate(deliveredAt),
+                ].join(' · '),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHomeContent() {
     if (loadingProfile) {
       return const Center(child: CircularProgressIndicator());
@@ -2216,6 +2290,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               ),
             const SizedBox(height: 16),
             _buildActiveProjectsList(),
+            const SizedBox(height: 16),
+            _buildDeliveredProjectsSection(),
             const SizedBox(height: 16),
             _buildTrendingSkills(),
             const SizedBox(height: 16),
