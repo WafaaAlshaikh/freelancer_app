@@ -579,9 +579,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       if (!mounted) return;
       if (response['success'] == true && response['analysis'] != null) {
         setState(() {
-          _proposalQuality = Map<String, dynamic>.from(
-            response['analysis'] as Map,
-          );
+          _proposalQuality = Map<String, dynamic>.from(response['analysis'] as Map);
         });
       } else {
         Fluttertoast.showToast(
@@ -1300,9 +1298,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _analyzingProposal
-                      ? null
-                      : _analyzeProposalQuality,
+                  onPressed: _analyzingProposal ? null : _analyzeProposalQuality,
                   icon: _analyzingProposal
                       ? const SizedBox(
                           width: 14,
@@ -1333,10 +1329,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(
-                            Icons.analytics_outlined,
-                            color: Colors.deepPurple,
-                          ),
+                          const Icon(Icons.analytics_outlined, color: Colors.deepPurple),
                           const SizedBox(width: 8),
                           Text(
                             'Proposal Score: ${_proposalQuality!['score'] ?? 0}/100',
@@ -1350,32 +1343,19 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                       const SizedBox(height: 8),
                       Text(
                         _proposalQuality!['summary']?.toString() ?? '',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade800,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade800),
                       ),
                       const SizedBox(height: 8),
-                      if ((_proposalQuality!['strengths'] as List?)
-                              ?.isNotEmpty ==
-                          true)
+                      if ((_proposalQuality!['strengths'] as List?)?.isNotEmpty == true)
                         Text(
                           'Strengths: ${(List<dynamic>.from(_proposalQuality!['strengths'])).join(' • ')}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green.shade800,
-                          ),
+                          style: TextStyle(fontSize: 12, color: Colors.green.shade800),
                         ),
                       const SizedBox(height: 6),
-                      if ((_proposalQuality!['improvements'] as List?)
-                              ?.isNotEmpty ==
-                          true)
+                      if ((_proposalQuality!['improvements'] as List?)?.isNotEmpty == true)
                         Text(
                           'Improve: ${(List<dynamic>.from(_proposalQuality!['improvements'])).join(' • ')}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.orange.shade800,
-                          ),
+                          style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
                         ),
                     ],
                   ),

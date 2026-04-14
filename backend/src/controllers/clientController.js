@@ -988,6 +988,7 @@ export const manualConfirmPayment = async (req, res) => {
       reference_type: "contract",
       completed_at: new Date(),
     });
+    
 
     console.log("✅ Transaction created:", transaction.id);
 

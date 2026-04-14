@@ -78,9 +78,7 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
       Fluttertoast.showToast(msg: 'Dispute resolved');
       _loadContracts();
     } else {
-      Fluttertoast.showToast(
-        msg: res['message']?.toString() ?? 'Action failed',
-      );
+      Fluttertoast.showToast(msg: res['message']?.toString() ?? 'Action failed');
     }
   }
 
@@ -112,14 +110,8 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
                     child: Text('Pending Freelancer'),
                   ),
                   DropdownMenuItem(value: 'active', child: Text('Active')),
-                  DropdownMenuItem(
-                    value: 'completed',
-                    child: Text('Completed'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'cancelled',
-                    child: Text('Cancelled'),
-                  ),
+                  DropdownMenuItem(value: 'completed', child: Text('Completed')),
+                  DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
                   DropdownMenuItem(value: 'disputed', child: Text('Disputed')),
                 ],
                 onChanged: (v) {
@@ -144,9 +136,7 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
                   itemCount: _contracts.length,
                   itemBuilder: (context, index) {
                     final c = _contracts[index];
-                    final project = Map<String, dynamic>.from(
-                      c['Project'] ?? {},
-                    );
+                    final project = Map<String, dynamic>.from(c['Project'] ?? {});
                     final client = Map<String, dynamic>.from(c['client'] ?? {});
                     final freelancer = Map<String, dynamic>.from(
                       c['freelancer'] ?? {},
@@ -157,8 +147,7 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
                     return Card(
                       child: ListTile(
                         title: Text(
-                          project['title']?.toString() ??
-                              'Contract #${c['id']}',
+                          project['title']?.toString() ?? 'Contract #${c['id']}',
                         ),
                         subtitle: Text(
                           'Client: ${client['name'] ?? 'N/A'} · Freelancer: ${freelancer['name'] ?? 'N/A'}\nStatus: $status · Amount: \$${c['agreed_amount'] ?? 0}',

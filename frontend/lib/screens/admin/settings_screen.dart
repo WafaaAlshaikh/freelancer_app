@@ -47,10 +47,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen>
           tabs: const [
             Tab(text: 'General', icon: Icon(Icons.tune)),
             Tab(text: 'Security', icon: Icon(Icons.shield_outlined)),
-            Tab(
-              text: 'Notifications',
-              icon: Icon(Icons.notifications_outlined),
-            ),
+            Tab(text: 'Notifications', icon: Icon(Icons.notifications_outlined)),
           ],
         ),
       ),
@@ -214,10 +211,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen>
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ],
           ),

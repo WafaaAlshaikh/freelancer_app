@@ -103,8 +103,9 @@ export const createPortfolio = async (req, res) => {
     });
 
     try {
-      const { default: ProfileCompletionService } =
-        await import("../services/profileCompletionService.js");
+      const { default: ProfileCompletionService } = await import(
+        "../services/profileCompletionService.js"
+      );
       await ProfileCompletionService.calculateFreelancerProfileCompletion(
         req.user.id,
       );
@@ -201,8 +202,9 @@ export const deletePortfolio = async (req, res) => {
     });
 
     try {
-      const { default: ProfileCompletionService } =
-        await import("../services/profileCompletionService.js");
+      const { default: ProfileCompletionService } = await import(
+        "../services/profileCompletionService.js"
+      );
       await ProfileCompletionService.calculateFreelancerProfileCompletion(
         req.user.id,
       );
@@ -228,9 +230,7 @@ export const createPortfolioFromSubmission = async (req, res) => {
     });
 
     if (!submission) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Submission not found" });
+      return res.status(404).json({ success: false, message: "Submission not found" });
     }
 
     const milestones = Array.isArray(submission.Contract?.milestones)
@@ -250,11 +250,13 @@ export const createPortfolioFromSubmission = async (req, res) => {
       milestoneStatus === "completed";
 
     if (!canAdd) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Submission is not approved yet. Approve the deliverable/milestone first.",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Submission is not approved yet. Approve the deliverable/milestone first.",
+        });
     }
 
     const markerUrl = `submission://${submission.id}`;
@@ -277,10 +279,7 @@ export const createPortfolioFromSubmission = async (req, res) => {
 
     const portfolio = await Portfolio.create({
       UserId: freelancerId,
-      title:
-        submission.title ||
-        submission.Contract?.Project?.title ||
-        "Delivered Project",
+      title: submission.title || submission.Contract?.Project?.title || "Delivered Project",
       description:
         submission.description ||
         `Delivered for project "${submission.Contract?.Project?.title || submission.Contract?.ProjectId}".`,
@@ -309,9 +308,7 @@ export const createPortfolioFromSubmission = async (req, res) => {
     });
   } catch (err) {
     console.error("Error creating portfolio from submission:", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: err.message });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -326,9 +323,7 @@ export const createPortfolioFromContractMilestone = async (req, res) => {
     });
 
     if (!contract) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Contract not found" });
+      return res.status(404).json({ success: false, message: "Contract not found" });
     }
 
     const milestones = parseMilestonesValue(contract.milestones);
@@ -345,7 +340,10 @@ export const createPortfolioFromContractMilestone = async (req, res) => {
       const m = milestones[index];
       milestoneTitle = m.title || `Milestone #${index + 1}`;
       milestoneAmount = m.amount || null;
-      canAdd = canAdd || m.status === "approved" || m.status === "completed";
+      canAdd =
+        canAdd ||
+        m.status === "approved" ||
+        m.status === "completed";
     }
 
     if (!canAdd) {
@@ -356,9 +354,7 @@ export const createPortfolioFromContractMilestone = async (req, res) => {
     }
 
     const markerUrl =
-      index !== null
-        ? `contract://${contract.id}/milestone://${index}`
-        : `contract://${contract.id}`;
+      index !== null ? `contract://${contract.id}/milestone://${index}` : `contract://${contract.id}`;
     const existing = await Portfolio.findOne({
       where: { UserId: freelancerId, project_url: markerUrl },
     });

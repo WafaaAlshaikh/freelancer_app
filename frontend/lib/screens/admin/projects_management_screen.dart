@@ -70,9 +70,7 @@ class _ProjectsManagementScreenState extends State<ProjectsManagementScreen> {
       Fluttertoast.showToast(msg: 'Project deleted');
       _loadProjects();
     } else {
-      Fluttertoast.showToast(
-        msg: res['message']?.toString() ?? 'Delete failed',
-      );
+      Fluttertoast.showToast(msg: res['message']?.toString() ?? 'Delete failed');
     }
   }
 
@@ -114,14 +112,8 @@ class _ProjectsManagementScreenState extends State<ProjectsManagementScreen> {
                     value: 'in_progress',
                     child: Text('In Progress'),
                   ),
-                  DropdownMenuItem(
-                    value: 'completed',
-                    child: Text('Completed'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'cancelled',
-                    child: Text('Cancelled'),
-                  ),
+                  DropdownMenuItem(value: 'completed', child: Text('Completed')),
+                  DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
                 ],
                 onChanged: (v) {
                   if (v == null) return;

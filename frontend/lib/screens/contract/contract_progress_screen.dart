@@ -141,9 +141,7 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     final r = await ApiService.createPortfolioFromSubmission(submissionId);
     if (!mounted) return;
     if (r['success'] == true || r['portfolio'] != null) {
-      Fluttertoast.showToast(
-        msg: r['message']?.toString() ?? 'Added to portfolio',
-      );
+      Fluttertoast.showToast(msg: r['message']?.toString() ?? 'Added to portfolio');
     } else {
       Fluttertoast.showToast(
         msg: r['message']?.toString() ?? 'Could not add to portfolio',
@@ -158,11 +156,8 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     );
     if (!mounted) return;
     Fluttertoast.showToast(
-      msg:
-          r['message']?.toString() ??
-          ((r['success'] == true)
-              ? 'Added to portfolio'
-              : 'Could not add to portfolio'),
+      msg: r['message']?.toString() ??
+          ((r['success'] == true) ? 'Added to portfolio' : 'Could not add to portfolio'),
     );
   }
 
@@ -500,11 +495,15 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     final milestones = _progress?['milestones'] as List<dynamic>? ?? [];
     final contract = _progress?['contract'] as Map<String, dynamic>?;
     final contractStatus = contract?['status']?.toString() ?? '';
-    final approvedMilestoneOnly = milestones.asMap().entries.where((e) {
-      final m = Map<String, dynamic>.from(e.value as Map);
-      final st = m['status']?.toString() ?? '';
-      return st == 'approved' || st == 'completed';
-    }).toList();
+    final approvedMilestoneOnly = milestones
+        .asMap()
+        .entries
+        .where((e) {
+          final m = Map<String, dynamic>.from(e.value as Map);
+          final st = m['status']?.toString() ?? '';
+          return st == 'approved' || st == 'completed';
+        })
+        .toList();
 
     if (subs.isEmpty && approvedMilestoneOnly.isEmpty) {
       return const SizedBox.shrink();
@@ -528,9 +527,7 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
           if (milestoneIndex != null &&
               milestoneIndex >= 0 &&
               milestoneIndex < milestones.length) {
-            final m = Map<String, dynamic>.from(
-              milestones[milestoneIndex] as Map,
-            );
+            final m = Map<String, dynamic>.from(milestones[milestoneIndex] as Map);
             milestoneStatus = m['status']?.toString() ?? '';
           }
           final canAddToPortfolio =

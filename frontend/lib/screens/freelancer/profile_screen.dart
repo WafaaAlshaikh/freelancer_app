@@ -2244,10 +2244,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
                 [

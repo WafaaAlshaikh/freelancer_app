@@ -105,7 +105,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       if (!mounted) return;
 
       setState(() {
-        final rawProject = data['project'] is Map<String, dynamic>
+        final rawProject =
+            data['project'] is Map<String, dynamic>
             ? Map<String, dynamic>.from(data['project'] as Map)
             : Map<String, dynamic>.from(data);
         project = Project.fromJson(rawProject);

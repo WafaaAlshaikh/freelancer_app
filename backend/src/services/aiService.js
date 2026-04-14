@@ -1,4 +1,4 @@
-// services/aiService.js
+// services/aiService.js 
 import { Project, Proposal, FreelancerProfile, User } from "../models/index.js";
 import { Op } from "sequelize";
 import fs from "fs";

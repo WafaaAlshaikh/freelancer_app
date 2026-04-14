@@ -833,7 +833,7 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildSkillsSection() {
     final profile = _profileData['profile'] ?? {};
-
+    
     final skills = _safeList(profile['skills']);
     final topSkills = _safeList(profile['top_skills']);
 
@@ -1289,9 +1289,9 @@ class _FreelancerProfilePreviewScreenState
             final imageUrl = images.isNotEmpty
                 ? _mediaUrl(images[0].toString())
                 : '';
-            final technologies = _safeList(
-              itemMap['technologies'],
-            ).map((e) => e.toString()).toList();
+            final technologies = _safeList(itemMap['technologies'])
+                .map((e) => e.toString())
+                .toList();
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Material(
