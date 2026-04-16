@@ -17,6 +17,7 @@ import NotificationService from "../services/notificationService.js";
 import PaymentService from "../services/paymentService.js";
 import SubscriptionService from "../services/subscriptionService.js";
 import CommissionService from "../services/commissionService.js";
+import AIService from "../services/aiService.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
@@ -739,16 +740,16 @@ export const acceptProposalWithNegotiation = async (req, res) => {
 
     const sowResult = await AIService.generateProfessionalSOW(
       {
-        title: project.title,
-        description: project.description,
-        category: project.category,
-        skills: project.skills ? JSON.parse(project.skills) : [],
+        title: Project.title,
+        description: Project.description,
+        category: Project.category,
+        skills: Project.skills ? JSON.parse(Project.skills) : [],
         budget: agreedPrice,
-        duration: project.duration,
+        duration: Project.duration,
         clientName: req.user.name,
         clientEmail: req.user.email,
       },
-      freelancer,
+      FreelancerProfile,
       finalMilestones,
       "",
     );

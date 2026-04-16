@@ -1128,8 +1128,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     required double activeContracts,
     required double pendingProjects,
   }) {
-    final maxY = [completedContracts, activeContracts, pendingProjects]
-            .reduce((a, b) => a > b ? a : b) +
+    final maxY =
+        [
+          completedContracts,
+          activeContracts,
+          pendingProjects,
+        ].reduce((a, b) => a > b ? a : b) +
         2;
 
     return Container(
@@ -1245,8 +1249,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildTrendPanel() {
     final lastMonth = monthlyStats.isNotEmpty ? monthlyStats.last : {};
-    final monthUsers =
-        (lastMonth['users'] ?? lastMonth['freelancers'] ?? 0).toInt();
+    final monthUsers = (lastMonth['users'] ?? lastMonth['freelancers'] ?? 0)
+        .toInt();
     final monthRevenue = (lastMonth['earnings'] ?? 0).toDouble();
 
     return Container(

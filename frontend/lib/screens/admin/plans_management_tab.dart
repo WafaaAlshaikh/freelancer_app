@@ -1,10 +1,14 @@
+// screens/admin/plans_management_tab.dart
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/subscription_plan_model.dart';
 
+const _kAccent = Color(0xFF5B58E2);
+const _kGreen = Color(0xFF14A800);
+const _kPageBg = Color(0xFFF0F2F8);
+
 class PlansManagementTab extends StatefulWidget {
   const PlansManagementTab({super.key});
-
   @override
   State<PlansManagementTab> createState() => _PlansManagementTabState();
 }
@@ -42,29 +46,44 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
   Future<void> _deletePlan(SubscriptionPlan plan) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Plan'),
-        content: Text('Are you sure you want to delete "${plan.name}"?'),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Delete Plan',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${plan.name}"? This cannot be undone.',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
     if (confirm != true) return;
-
     final success = await ApiService.deletePlan(plan.id);
     if (success) {
       _loadPlans();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Plan deleted successfully')),
+        const SnackBar(
+          content: Text('Plan deleted successfully'),
+          backgroundColor: Colors.black87,
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,29 +98,47 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
   void _showPlanDialog({SubscriptionPlan? plan}) {
     showDialog(
       context: context,
-      builder: (context) =>
-          PlanFormDialog(plan: plan, onSaved: () => _loadPlans()),
+      builder: (ctx) => PlanFormDialog(plan: plan, onSaved: _loadPlans),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (_loading)
+      return const Center(child: CircularProgressIndicator(color: _kAccent));
     if (_error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 40,
+                color: Colors.red.shade400,
+              ),
+            ),
             const SizedBox(height: 16),
-            Text(_error!),
+            Text(_error!, style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _loadPlans,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
             ),
           ],
         ),
@@ -111,143 +148,352 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed: () => _showPlanDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text('New Plan'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff14A800),
-                foregroundColor: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                '${_plans.length} plans configured',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF888888),
+                ),
               ),
-            ),
+              const Spacer(),
+              _buildAddButton('New Plan', () => _showPlanDialog()),
+            ],
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _plans.length,
-            itemBuilder: (context, index) {
-              final plan = _plans[index];
-              return _buildPlanCard(plan);
-            },
-          ),
+          child: _plans.isEmpty
+              ? _buildEmpty()
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  itemCount: _plans.length,
+                  itemBuilder: (_, i) => _buildPlanCard(_plans[i]),
+                ),
         ),
       ],
     );
   }
 
+  Widget _buildAddButton(String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_kGreen, Color(0xFF0A6E00)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: _kGreen.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPlanCard(SubscriptionPlan plan) {
+    final isRecommended = plan.isRecommended;
+    final isFree = plan.price == 0;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: isRecommended
+            ? Border.all(color: _kGreen, width: 2)
+            : Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: isRecommended
+                ? _kGreen.withOpacity(0.12)
+                : Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
-        border: plan.isRecommended
-            ? Border.all(color: const Color(0xff14A800), width: 2)
-            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  plan.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: isRecommended
+                  ? _kGreen.withOpacity(0.05)
+                  : Colors.grey.shade50,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
               ),
-              if (plan.isRecommended)
+              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+            ),
+            child: Row(
+              children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xff14A800),
+                    gradient: isFree
+                        ? const LinearGradient(
+                            colors: [Color(0xFF888888), Color(0xFF555555)],
+                          )
+                        : isRecommended
+                        ? const LinearGradient(
+                            colors: [Color(0xFF14A800), Color(0xFF0A6E00)],
+                          )
+                        : const LinearGradient(
+                            colors: [Color(0xFF5B58E2), Color(0xFF3D35CC)],
+                          ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    'Recommended',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                  child: Icon(
+                    isFree
+                        ? Icons.card_giftcard_rounded
+                        : isRecommended
+                        ? Icons.stars_rounded
+                        : Icons.subscriptions_rounded,
+                    color: Colors.white,
+                    size: 22,
                   ),
                 ),
-              IconButton(
-                icon: const Icon(Icons.edit, size: 20),
-                onPressed: () => _showPlanDialog(plan: plan),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                onPressed: () => _deletePlan(plan),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            plan.formattedPrice,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: plan.price == 0 ? Colors.grey : const Color(0xff14A800),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            plan.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1B3E),
+                            ),
+                          ),
+                          if (isRecommended) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF14A800),
+                                    Color(0xFF0A6E00),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'Recommended',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isFree
+                            ? 'Free'
+                            : '\$${plan.price.toStringAsFixed(2)} / ${plan.billingPeriod}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isFree ? Colors.grey.shade500 : _kGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    _iconBtn(
+                      Icons.edit_outlined,
+                      _kAccent,
+                      () => _showPlanDialog(plan: plan),
+                    ),
+                    const SizedBox(width: 6),
+                    _iconBtn(
+                      Icons.delete_outline,
+                      Colors.red.shade400,
+                      () => _deletePlan(plan),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          if (plan.description != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              plan.description!,
-              style: TextStyle(color: Colors.grey.shade600),
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (plan.description != null &&
+                    plan.description!.isNotEmpty) ...[
+                  Text(
+                    plan.description!,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _featureChip(
+                      '${plan.proposalLimit == null ? '∞' : plan.proposalLimit} Proposals',
+                    ),
+                    _featureChip(
+                      '${plan.activeProjectLimit == null ? '∞' : plan.activeProjectLimit} Projects',
+                    ),
+                    _featureChip('${plan.trialDays}d Trial'),
+                    if (plan.aiInsights)
+                      _featureChip('AI Insights', highlight: true),
+                    if (plan.prioritySupport)
+                      _featureChip('Priority Support', highlight: true),
+                    if (plan.apiAccess)
+                      _featureChip('API Access', highlight: true),
+                    if (plan.customBranding)
+                      _featureChip('Custom Brand', highlight: true),
+                  ],
+                ),
+                if (plan.features.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: plan.features
+                        .map(
+                          (f) => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_rounded,
+                                size: 12,
+                                color: _kGreen,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                f,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ],
             ),
-          ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              _buildFeatureChip(
-                'Proposals: ${plan.proposalLimit == null ? 'Unlimited' : plan.proposalLimit}',
-              ),
-              _buildFeatureChip(
-                'Active Projects: ${plan.activeProjectLimit == null ? 'Unlimited' : plan.activeProjectLimit}',
-              ),
-              if (plan.aiInsights) _buildFeatureChip('AI Insights'),
-              if (plan.prioritySupport) _buildFeatureChip('Priority Support'),
-              if (plan.apiAccess) _buildFeatureChip('API Access'),
-              if (plan.customBranding) _buildFeatureChip('Custom Branding'),
-              _buildFeatureChip('Trial: ${plan.trialDays} days'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Features: ${plan.features.join(', ')}',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
+  Widget _iconBtn(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Icon(icon, size: 16, color: color),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 11)),
+    );
+  }
+
+  Widget _featureChip(String label, {bool highlight = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: highlight ? _kAccent.withOpacity(0.08) : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: highlight ? Border.all(color: _kAccent.withOpacity(0.2)) : null,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          color: highlight ? _kAccent : Colors.grey.shade700,
+          fontWeight: highlight ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(color: _kPageBg, shape: BoxShape.circle),
+            child: Icon(
+              Icons.subscriptions_outlined,
+              size: 40,
+              color: Colors.grey.shade300,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No plans configured',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildAddButton('Add First Plan', () => _showPlanDialog()),
+        ],
+      ),
     );
   }
 }
@@ -255,58 +501,54 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
 class PlanFormDialog extends StatefulWidget {
   final SubscriptionPlan? plan;
   final VoidCallback onSaved;
-
   const PlanFormDialog({super.key, this.plan, required this.onSaved});
-
   @override
   State<PlanFormDialog> createState() => _PlanFormDialogState();
 }
 
 class _PlanFormDialogState extends State<PlanFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _slugController;
-  late TextEditingController _descriptionController;
-  late TextEditingController _priceController;
+  late TextEditingController _nameCtrl,
+      _slugCtrl,
+      _descCtrl,
+      _priceCtrl,
+      _proposalLimitCtrl,
+      _activeProjectLimitCtrl,
+      _trialCtrl,
+      _sortCtrl;
   late String _billingPeriod;
-  late TextEditingController _proposalLimitController;
-  late TextEditingController _activeProjectLimitController;
-  late bool _aiInsights;
-  late bool _prioritySupport;
-  late bool _apiAccess;
-  late bool _customBranding;
-  late TextEditingController _trialDaysController;
-  late TextEditingController _sortOrderController;
-  late bool _isRecommended;
+  late bool _aiInsights,
+      _prioritySupport,
+      _apiAccess,
+      _customBranding,
+      _isRecommended;
   late List<String> _features;
-  final TextEditingController _featureInputController = TextEditingController();
+  final _featureInputCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.plan?.name ?? '');
-    _slugController = TextEditingController(text: widget.plan?.slug ?? '');
-    _descriptionController = TextEditingController(
-      text: widget.plan?.description ?? '',
-    );
-    _priceController = TextEditingController(
+    _nameCtrl = TextEditingController(text: widget.plan?.name ?? '');
+    _slugCtrl = TextEditingController(text: widget.plan?.slug ?? '');
+    _descCtrl = TextEditingController(text: widget.plan?.description ?? '');
+    _priceCtrl = TextEditingController(
       text: widget.plan?.price.toString() ?? '0',
     );
     _billingPeriod = widget.plan?.billingPeriod ?? 'monthly';
-    _proposalLimitController = TextEditingController(
+    _proposalLimitCtrl = TextEditingController(
       text: widget.plan?.proposalLimit?.toString() ?? '',
     );
-    _activeProjectLimitController = TextEditingController(
+    _activeProjectLimitCtrl = TextEditingController(
       text: widget.plan?.activeProjectLimit?.toString() ?? '',
     );
     _aiInsights = widget.plan?.aiInsights ?? false;
     _prioritySupport = widget.plan?.prioritySupport ?? false;
     _apiAccess = widget.plan?.apiAccess ?? false;
     _customBranding = widget.plan?.customBranding ?? false;
-    _trialDaysController = TextEditingController(
+    _trialCtrl = TextEditingController(
       text: widget.plan?.trialDays.toString() ?? '14',
     );
-    _sortOrderController = TextEditingController(
+    _sortCtrl = TextEditingController(
       text: widget.plan?.sortOrder.toString() ?? '0',
     );
     _isRecommended = widget.plan?.isRecommended ?? false;
@@ -315,58 +557,44 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _slugController.dispose();
-    _descriptionController.dispose();
-    _priceController.dispose();
-    _proposalLimitController.dispose();
-    _activeProjectLimitController.dispose();
-    _trialDaysController.dispose();
-    _sortOrderController.dispose();
-    _featureInputController.dispose();
+    for (final c in [
+      _nameCtrl,
+      _slugCtrl,
+      _descCtrl,
+      _priceCtrl,
+      _proposalLimitCtrl,
+      _activeProjectLimitCtrl,
+      _trialCtrl,
+      _sortCtrl,
+      _featureInputCtrl,
+    ])
+      c.dispose();
     super.dispose();
-  }
-
-  void _addFeature() {
-    final feature = _featureInputController.text.trim();
-    if (feature.isNotEmpty) {
-      setState(() {
-        _features.add(feature);
-        _featureInputController.clear();
-      });
-    }
-  }
-
-  void _removeFeature(int index) {
-    setState(() {
-      _features.removeAt(index);
-    });
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
     final data = {
-      'name': _nameController.text.trim(),
-      'slug': _slugController.text.trim(),
-      'description': _descriptionController.text.trim().isEmpty
+      'name': _nameCtrl.text.trim(),
+      'slug': _slugCtrl.text.trim(),
+      'description': _descCtrl.text.trim().isEmpty
           ? null
-          : _descriptionController.text.trim(),
-      'price': double.parse(_priceController.text),
+          : _descCtrl.text.trim(),
+      'price': double.parse(_priceCtrl.text),
       'billing_period': _billingPeriod,
       'features': _features,
-      'proposal_limit': _proposalLimitController.text.trim().isEmpty
+      'proposal_limit': _proposalLimitCtrl.text.trim().isEmpty
           ? null
-          : int.parse(_proposalLimitController.text),
-      'active_project_limit': _activeProjectLimitController.text.trim().isEmpty
+          : int.parse(_proposalLimitCtrl.text),
+      'active_project_limit': _activeProjectLimitCtrl.text.trim().isEmpty
           ? null
-          : int.parse(_activeProjectLimitController.text),
+          : int.parse(_activeProjectLimitCtrl.text),
       'ai_insights': _aiInsights,
       'priority_support': _prioritySupport,
       'api_access': _apiAccess,
       'custom_branding': _customBranding,
-      'trial_days': int.parse(_trialDaysController.text),
-      'sort_order': int.parse(_sortOrderController.text),
+      'trial_days': int.parse(_trialCtrl.text),
+      'sort_order': int.parse(_sortCtrl.text),
       'is_recommended': _isRecommended,
       'is_active': true,
     };
@@ -405,6 +633,7 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
           content: Text(
             'Plan ${widget.plan != null ? 'updated' : 'created'} successfully',
           ),
+          backgroundColor: Colors.black87,
         ),
       );
     } else {
@@ -420,140 +649,372 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.plan != null ? 'Edit Plan' : 'New Plan'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name *'),
-                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B88FF), _kAccent],
               ),
-              TextFormField(
-                controller: _slugController,
-                decoration: const InputDecoration(
-                  labelText: 'Slug * (e.g., pro, business)',
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.subscriptions_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            widget.plan != null ? 'Edit Plan' : 'New Plan',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 500,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _row([
+                  _field(_nameCtrl, 'Plan Name *', required: true),
+                  _field(_slugCtrl, 'Slug * (e.g. pro)', required: true),
+                ]),
+                _field(_descCtrl, 'Description', maxLines: 2),
+                _row([
+                  _field(
+                    _priceCtrl,
+                    'Price *',
+                    keyboardType: TextInputType.number,
+                    required: true,
+                    validator: (v) => double.tryParse(v ?? '') == null
+                        ? 'Invalid number'
+                        : null,
+                  ),
+                  _dropdown(
+                    'Billing Period',
+                    _billingPeriod,
+                    ['monthly', 'yearly'],
+                    (v) => setState(() => _billingPeriod = v!),
+                  ),
+                ]),
+                _row([
+                  _field(
+                    _proposalLimitCtrl,
+                    'Proposal Limit (empty=∞)',
+                    keyboardType: TextInputType.number,
+                  ),
+                  _field(
+                    _activeProjectLimitCtrl,
+                    'Project Limit (empty=∞)',
+                    keyboardType: TextInputType.number,
+                  ),
+                ]),
+                _row([
+                  _field(
+                    _trialCtrl,
+                    'Trial Days',
+                    keyboardType: TextInputType.number,
+                  ),
+                  _field(
+                    _sortCtrl,
+                    'Sort Order',
+                    keyboardType: TextInputType.number,
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                const Text(
+                  'Features',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF555555),
+                  ),
                 ),
-                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-              ),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 2,
-              ),
-              TextFormField(
-                controller: _priceController,
-                decoration: const InputDecoration(labelText: 'Price *'),
-                keyboardType: TextInputType.number,
-                validator: (v) => v == null || double.tryParse(v) == null
-                    ? 'Invalid number'
-                    : null,
-              ),
-              DropdownButtonFormField<String>(
-                value: _billingPeriod,
-                decoration: const InputDecoration(labelText: 'Billing Period'),
-                items: const [
-                  DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                  DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
-                ],
-                onChanged: (v) => setState(() => _billingPeriod = v!),
-              ),
-              TextFormField(
-                controller: _proposalLimitController,
-                decoration: const InputDecoration(
-                  labelText: 'Proposal Limit (leave empty for unlimited)',
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    ..._switches(),
+                    _switchChip(
+                      'Recommended',
+                      _isRecommended,
+                      (v) => setState(() => _isRecommended = v),
+                    ),
+                  ],
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              TextFormField(
-                controller: _activeProjectLimitController,
-                decoration: const InputDecoration(
-                  labelText: 'Active Project Limit (empty = unlimited)',
+                const SizedBox(height: 12),
+                const Text(
+                  'Custom Features',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF555555),
+                  ),
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              SwitchListTile(
-                title: const Text('AI Insights'),
-                value: _aiInsights,
-                onChanged: (v) => setState(() => _aiInsights = v),
-              ),
-              SwitchListTile(
-                title: const Text('Priority Support'),
-                value: _prioritySupport,
-                onChanged: (v) => setState(() => _prioritySupport = v),
-              ),
-              SwitchListTile(
-                title: const Text('API Access'),
-                value: _apiAccess,
-                onChanged: (v) => setState(() => _apiAccess = v),
-              ),
-              SwitchListTile(
-                title: const Text('Custom Branding'),
-                value: _customBranding,
-                onChanged: (v) => setState(() => _customBranding = v),
-              ),
-              TextFormField(
-                controller: _trialDaysController,
-                decoration: const InputDecoration(labelText: 'Trial Days'),
-                keyboardType: TextInputType.number,
-              ),
-              TextFormField(
-                controller: _sortOrderController,
-                decoration: const InputDecoration(labelText: 'Sort Order'),
-                keyboardType: TextInputType.number,
-              ),
-              SwitchListTile(
-                title: const Text('Recommended'),
-                value: _isRecommended,
-                onChanged: (v) => setState(() => _isRecommended = v),
-              ),
-              const Divider(),
-              const Text(
-                'Features',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _featureInputController,
-                      decoration: const InputDecoration(
-                        hintText: 'Add feature',
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _field(_featureInputCtrl, 'Add feature...'),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        final f = _featureInputCtrl.text.trim();
+                        if (f.isNotEmpty)
+                          setState(() {
+                            _features.add(f);
+                            _featureInputCtrl.clear();
+                          });
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: _kAccent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+                if (_features.isNotEmpty)
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: _features
+                        .asMap()
+                        .entries
+                        .map(
+                          (e) => Chip(
+                            label: Text(
+                              e.value,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            onDeleted: () =>
+                                setState(() => _features.removeAt(e.key)),
+                            deleteIconColor: Colors.grey.shade500,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        )
+                        .toList(),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: _addFeature,
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 8,
-                children: _features.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final feature = entry.value;
-                  return Chip(
-                    label: Text(feature),
-                    onDeleted: () => _removeFeature(idx),
-                  );
-                }).toList(),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
         ),
-        ElevatedButton(onPressed: _save, child: const Text('Save')),
+        ElevatedButton(
+          onPressed: _save,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _kAccent,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          child: const Text(
+            'Save Plan',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
       ],
+    );
+  }
+
+  List<Widget> _switches() => [
+    _switchChip(
+      'AI Insights',
+      _aiInsights,
+      (v) => setState(() => _aiInsights = v),
+    ),
+    _switchChip(
+      'Priority Support',
+      _prioritySupport,
+      (v) => setState(() => _prioritySupport = v),
+    ),
+    _switchChip(
+      'API Access',
+      _apiAccess,
+      (v) => setState(() => _apiAccess = v),
+    ),
+    _switchChip(
+      'Custom Branding',
+      _customBranding,
+      (v) => setState(() => _customBranding = v),
+    ),
+  ];
+
+  Widget _switchChip(String label, bool value, ValueChanged<bool> onChange) {
+    return GestureDetector(
+      onTap: () => onChange(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: value ? _kAccent.withOpacity(0.1) : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: value ? _kAccent.withOpacity(0.3) : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              value
+                  ? Icons.check_box_rounded
+                  : Icons.check_box_outline_blank_rounded,
+              size: 14,
+              color: value ? _kAccent : Colors.grey.shade400,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: value ? _kAccent : Colors.grey.shade600,
+                fontWeight: value ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _row(List<Widget> children) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: children
+            .map(
+              (w) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: w,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _field(
+    TextEditingController ctrl,
+    String label, {
+    int? maxLines,
+    TextInputType? keyboardType,
+    bool required = false,
+    FormFieldValidator<String>? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TextFormField(
+        controller: ctrl,
+        maxLines: maxLines ?? 1,
+        keyboardType: keyboardType,
+        validator:
+            validator ??
+            (required
+                ? (v) => v == null || v.isEmpty ? 'Required' : null
+                : null),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(fontSize: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _kAccent),
+          ),
+          filled: true,
+          fillColor: const Color(0xFFF8F8F8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          isDense: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _dropdown(
+    String label,
+    String value,
+    List<String> options,
+    ValueChanged<String?> onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(fontSize: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _kAccent),
+          ),
+          filled: true,
+          fillColor: const Color(0xFFF8F8F8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          isDense: true,
+        ),
+        items: options
+            .map(
+              (o) => DropdownMenuItem(
+                value: o,
+                child: Text(
+                  o[0].toUpperCase() + o.substring(1),
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: onChanged,
+      ),
     );
   }
 }

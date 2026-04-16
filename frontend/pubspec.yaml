@@ -103,6 +103,7 @@ flutter:
   - assets/images/login.jpg
   - assets/images/user.png
   - assets/.env
+  - assets/images/forgot_password.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

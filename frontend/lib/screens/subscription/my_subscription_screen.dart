@@ -203,90 +203,270 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
-      appBar: AppBar(
-        title: const Text('My Subscription'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: const Color(0xff14A800),
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.grey,
-          tabs: const [
-            Tab(text: 'Overview', icon: Icon(Icons.dashboard)),
-            Tab(text: 'Analytics', icon: Icon(Icons.analytics)),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.receipt),
-            onPressed: () {
-              Navigator.pushNamed(context, '/subscription/invoices');
-            },
-            tooltip: 'Invoices',
-          ),
-          IconButton(
-            icon: const Icon(Icons.compare_arrows),
-            onPressed: () {
-              Navigator.pushNamed(context, '/subscription/comparison');
-            },
-            tooltip: 'Compare Plans',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: 'Refresh',
-          ),
-          if (_subscription != null &&
-              !_subscription!.isFree &&
-              _subscription!.isActive)
-            TextButton(
-              onPressed: _canceling ? null : _cancelSubscription,
-              child: _canceling
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Cancel', style: TextStyle(color: Colors.red)),
-            ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF5F6FA),
       body: _loading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(Colors.purple),
+                  ),
                   SizedBox(height: 16),
-                  Text('Loading subscription data...'),
-                ],
-              ),
-            )
-          : _errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(_errorMessage!),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('Retry'),
+                  Text(
+                    'Loading your subscription...',
+                    style: TextStyle(color: Colors.purple),
                   ),
                 ],
               ),
             )
+          : _errorMessage != null
+          ? _buildErrorState()
           : _subscription == null
           ? _buildNoSubscriptionState()
-          : TabBarView(
-              controller: _tabController,
-              children: [_buildOverviewTab(), _buildAnalyticsTab()],
+          : CustomScrollView(
+              slivers: [
+                _buildHeroSliver(),
+                SliverToBoxAdapter(child: _buildTabBar()),
+                SliverFillRemaining(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [_buildOverviewTab(), _buildAnalyticsTab()],
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade400,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            _errorMessage!,
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _loadData,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            ),
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSliver() {
+    final plan = _subscription!.plan;
+    final isFree = plan.price == 0;
+
+    return SliverAppBar(
+      expandedHeight: 280,
+      floating: false,
+      pinned: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(
+                    'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c',
+                  ),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: isFree
+                      ? [
+                          Colors.grey.withOpacity(0.85),
+                          Colors.grey.shade800.withOpacity(0.95),
+                        ]
+                      : [
+                          Colors.purple.withOpacity(0.85),
+                          Colors.deepPurple.withOpacity(0.95),
+                        ],
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(60),
+                    ),
+                    child: Icon(
+                      isFree ? Icons.free_breakfast : Icons.star,
+                      size: 48,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    plan.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      shadows: [Shadow(blurRadius: 10, color: Colors.black26)],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    plan.formattedPrice,
+                    style: const TextStyle(color: Colors.white70, fontSize: 18),
+                  ),
+                  const SizedBox(height: 16),
+                  if (!isFree && _subscription!.isActive)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        _subscription!.remainingDaysText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+          ],
+        ),
+        collapseMode: CollapseMode.parallax,
+      ),
+      actions: [
+        PopupMenuButton<String>(
+          icon: Container(
+            margin: const EdgeInsets.only(right: 16, top: 8),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: const Icon(Icons.more_vert, color: Colors.purple),
+          ),
+          onSelected: (value) {
+            switch (value) {
+              case 'invoices':
+                Navigator.pushNamed(context, '/subscription/invoices');
+                break;
+              case 'compare':
+                Navigator.pushNamed(context, '/subscription/comparison');
+                break;
+              case 'refresh':
+                _loadData();
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'invoices',
+              child: Row(
+                children: [
+                  Icon(Icons.receipt, size: 20),
+                  SizedBox(width: 12),
+                  Text('Invoices'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'compare',
+              child: Row(
+                children: [
+                  Icon(Icons.compare_arrows, size: 20),
+                  SizedBox(width: 12),
+                  Text('Compare Plans'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'refresh',
+              child: Row(
+                children: [
+                  Icon(Icons.refresh, size: 20),
+                  SizedBox(width: 12),
+                  Text('Refresh'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          color: Colors.purple,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.grey.shade600,
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        tabs: const [
+          Tab(text: 'Overview', icon: Icon(Icons.dashboard)),
+          Tab(text: 'Analytics', icon: Icon(Icons.analytics)),
+        ],
+      ),
     );
   }
 
@@ -295,14 +475,27 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.star_border, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.purple.shade100, Colors.pink.shade100],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.star_border,
+              size: 80,
+              color: Colors.purple.shade300,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
             'No Active Subscription',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: Colors.purple,
             ),
           ),
           const SizedBox(height: 8),
@@ -310,7 +503,7 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
             'You are currently on the Free plan',
             style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: () {
               Navigator.pushReplacementNamed(context, '/subscription/plans');
@@ -318,8 +511,8 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
             icon: const Icon(Icons.star),
             label: const Text('View Plans'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff14A800),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              backgroundColor: Colors.purple,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
               ),
@@ -338,326 +531,254 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isFree
-                    ? [Colors.grey.shade400, Colors.grey.shade600]
-                    : [const Color(0xff14A800), const Color(0xff0F7A00)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        plan.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (_subscription!.isTrialing)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'TRIAL',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  plan.formattedPrice,
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-                if (!isFree && _subscription!.isActive) ...[
-                  const SizedBox(height: 16),
-                  LinearProgressIndicator(
-                    value: (_subscription!.daysRemaining / 30).clamp(0.0, 1.0),
-                    backgroundColor: Colors.white30,
-                    valueColor: const AlwaysStoppedAnimation(Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _subscription!.remainingDaysText,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          if (_usage != null) ...[
-            _buildUsageCard(
-              title: 'Proposals This Month',
-              used: _usage!.proposalsUsed,
-              limit: _usage!.proposalsLimit,
-              icon: Icons.send,
-              color: Colors.blue,
-            ),
-            const SizedBox(height: 12),
-            _buildUsageCard(
-              title: 'Active Projects',
-              used: _usage!.activeProjectsUsed,
-              limit: _usage!.activeProjectsLimit,
-              icon: Icons.work,
-              color: Colors.green,
-            ),
+          if (!isFree && _subscription!.isActive) ...[
+            _buildProgressCard(),
+            const SizedBox(height: 16),
           ],
 
-          const SizedBox(height: 20),
+          if (_usage != null) ...[
+            _buildUsageStats(),
+            const SizedBox(height: 16),
+          ],
 
           _buildFeaturesCard(plan),
-
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           if (!isFree && _subscription!.isActive) _buildBillingInfoCard(),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          if (isFree)
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/subscription/plans');
-                },
-                icon: const Icon(Icons.star),
-                label: const Text(
-                  'Upgrade Now',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff14A800),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+          if (isFree) _buildUpgradeCard(),
+
+          if (!isFree && _subscription!.isActive && !_canceling)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildCancelButton(),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildAnalyticsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildUsageChart(),
-          const SizedBox(height: 20),
-
-          if (_usage != null) _buildStatsGrid(),
-          const SizedBox(height: 20),
-
-          if (_subscription!.plan.price == 0) _buildUpgradeTips(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUsageCard({
-    required String title,
-    required int used,
-    int? limit,
-    required IconData icon,
-    required Color color,
-  }) {
-    if (limit == null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'Unlimited',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final percentage = used / limit;
-    final remaining = limit - used;
-
+  Widget _buildProgressCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Colors.purple.shade400, Colors.deepPurple.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.purple.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              Icon(Icons.timer, color: Colors.white, size: 20),
+              SizedBox(width: 8),
               Text(
-                '$used / $limit',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: remaining <= 0 ? Colors.red : Colors.grey.shade600,
-                ),
+                'Billing Cycle',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: percentage.clamp(0.0, 1.0),
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation(
-                remaining <= 0 ? Colors.red : color,
-              ),
-              minHeight: 8,
-            ),
+          LinearProgressIndicator(
+            value: (_subscription!.daysRemaining / 30).clamp(0.0, 1.0),
+            backgroundColor: Colors.white30,
+            valueColor: const AlwaysStoppedAnimation(Colors.white),
+            borderRadius: BorderRadius.circular(10),
+            minHeight: 8,
           ),
-          if (remaining <= 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.warning, size: 14, color: Colors.red),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'You have reached your limit. Upgrade to continue.',
-                      style: TextStyle(fontSize: 11, color: Colors.red),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/subscription/plans');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                    ),
-                    child: const Text(
-                      'Upgrade',
-                      style: TextStyle(fontSize: 11),
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_subscription!.daysRemaining} days remaining',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${(_subscription!.daysRemaining / 30 * 100).toInt()}%',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFeaturesCard(SubscriptionPlan plan) {
-    final features = plan.features;
-    if (features.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(child: Text('No features information available')),
-      );
-    }
-
+  Widget _buildUsageStats() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Included Features',
+            '📊 Usage Overview',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
-          ...features.map(
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildUsageStatItem(
+                  icon: Icons.send,
+                  label: 'Proposals',
+                  used: _usage!.proposalsUsed,
+                  limit: _usage!.proposalsLimit,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildUsageStatItem(
+                  icon: Icons.work,
+                  label: 'Active Projects',
+                  used: _usage!.activeProjectsUsed,
+                  limit: _usage!.activeProjectsLimit,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsageStatItem({
+    required IconData icon,
+    required String label,
+    required int used,
+    int? limit,
+    required Color color,
+  }) {
+    final percentage = limit != null ? (used / limit).clamp(0.0, 1.0) : 0.0;
+    final isUnlimited = limit == null;
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          isUnlimited ? '∞' : '$used / $limit',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: percentage >= 0.9 && !isUnlimited ? Colors.red : color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+        if (!isUnlimited) ...[
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation(
+                percentage >= 0.9 ? Colors.red : color,
+              ),
+              minHeight: 4,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFeaturesCard(SubscriptionPlan plan) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.purple, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Included Features',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...plan.features.map(
             (feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 12),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.check_circle,
-                    size: 18,
-                    color: Color(0xff14A800),
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      size: 14,
+                      color: Colors.purple,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(child: Text(feature)),
                 ],
               ),
@@ -670,40 +791,56 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
 
   Widget _buildBillingInfoCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Billing Information',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const Row(
+            children: [
+              Icon(Icons.receipt, color: Colors.purple, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Billing Information',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Next Billing Date'),
+              const Text(
+                'Next Billing Date',
+                style: TextStyle(color: Colors.grey),
+              ),
               Text(
                 '${_subscription!.currentPeriodEnd.day}/${_subscription!.currentPeriodEnd.month}/${_subscription!.currentPeriodEnd.year}',
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
           ),
           if (_subscription!.cancelAtPeriodEnd) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info, size: 14, color: Colors.orange),
+                  Icon(Icons.info, size: 16, color: Colors.orange),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -720,34 +857,140 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
     );
   }
 
-  Widget _buildUsageChart() {
-    if (_monthlyUsage.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(child: Text('No usage data available')),
-      );
-    }
-
+  Widget _buildCancelButton() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextButton(
+        onPressed: _canceling ? null : _cancelSubscription,
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.red,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _canceling
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text('Cancel Subscription', style: TextStyle(fontSize: 16)),
+      ),
+    );
+  }
+
+  Widget _buildUpgradeCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.purple.shade50, Colors.pink.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.purple.shade200),
+      ),
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.rocket, color: Colors.purple, size: 24),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Ready for more?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Upgrade to unlock unlimited proposals, AI insights, and priority support!',
+            style: TextStyle(fontSize: 14, color: Colors.purple),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/subscription/plans');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Upgrade Now',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildUsageChart(),
+          const SizedBox(height: 16),
+          _buildStatsGrid(),
+          const SizedBox(height: 16),
+          if (_subscription!.plan.price == 0) _buildProTipsCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsageChart() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Monthly Usage',
+            '📈 Monthly Activity',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 220,
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -772,7 +1015,7 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 30,
+                      reservedSize: 35,
                       getTitlesWidget: (value, meta) {
                         return Text(
                           value.toInt().toString(),
@@ -789,7 +1032,11 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                gridData: FlGridData(show: true),
+                gridData: FlGridData(
+                  show: true,
+                  drawHorizontalLine: true,
+                  drawVerticalLine: false,
+                ),
                 barGroups: List.generate(_monthlyUsage.length, (index) {
                   final usage = _monthlyUsage[index];
                   return BarChartGroupData(
@@ -798,27 +1045,27 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
                       BarChartRodData(
                         toY: usage.proposals.toDouble(),
                         color: Colors.blue,
-                        width: 12,
+                        width: 14,
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(4),
+                          top: Radius.circular(6),
                         ),
                       ),
                       BarChartRodData(
                         toY: usage.projects.toDouble(),
                         color: Colors.green,
-                        width: 12,
+                        width: 14,
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(4),
+                          top: Radius.circular(6),
                         ),
                       ),
                     ],
-                    barsSpace: 4,
+                    barsSpace: 8,
                   );
                 }),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -840,55 +1087,77 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
           height: 12,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11)),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 12)),
       ],
     );
   }
 
   Widget _buildStatsGrid() {
-    if (_usage == null) return const SizedBox.shrink();
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
-      children: [
-        _buildStatCard(
-          'Total Proposals',
-          '${_usage!.proposalsUsed}',
-          Icons.send,
-          Colors.blue,
-        ),
-        _buildStatCard(
-          'Active Projects',
-          '${_usage!.activeProjectsUsed}',
-          Icons.work,
-          Colors.green,
-        ),
-        _buildStatCard(
-          'Remaining Proposals',
-          _usage!.proposalsLimit == null
-              ? '∞'
-              : '${_usage!.remainingProposals}',
-          Icons.assignment,
-          Colors.orange,
-        ),
-        _buildStatCard(
-          'Remaining Projects',
-          _usage!.activeProjectsLimit == null
-              ? '∞'
-              : '${_usage!.remainingActiveProjects}',
-          Icons.folder,
-          Colors.purple,
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '📊 Quick Stats',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.4,
+            children: [
+              _buildStatCard(
+                'Total Proposals',
+                '${_usage!.proposalsUsed}',
+                Icons.send,
+                Colors.blue,
+              ),
+              _buildStatCard(
+                'Active Projects',
+                '${_usage!.activeProjectsUsed}',
+                Icons.work,
+                Colors.green,
+              ),
+              _buildStatCard(
+                'Remaining Proposals',
+                _usage!.proposalsLimit == null
+                    ? '∞'
+                    : '${_usage!.remainingProposals}',
+                Icons.assignment,
+                Colors.orange,
+              ),
+              _buildStatCard(
+                'Remaining Projects',
+                _usage!.activeProjectsLimit == null
+                    ? '∞'
+                    : '${_usage!.remainingActiveProjects}',
+                Icons.folder,
+                Colors.purple,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -901,18 +1170,19 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 24),
+          Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -927,76 +1197,107 @@ class _MySubscriptionScreenState extends State<MySubscriptionScreen>
     );
   }
 
-  Widget _buildUpgradeTips() {
+  Widget _buildProTipsCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [Colors.purple.shade50, Colors.blue.shade50],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.purple.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.purple, Colors.blue],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.lightbulb,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
+              Icon(Icons.lightbulb, color: Colors.purple, size: 24),
+              SizedBox(width: 12),
+              Text(
                 'Pro Tips',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.purple,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Text(
-            '• Upgrade to Pro to get 50 proposals/month\n'
-            '• Business plan gives you unlimited proposals\n'
-            '• Save 20% with yearly billing\n'
-            '• Contact sales for custom enterprise plans',
-            style: TextStyle(fontSize: 13, height: 1.5),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Column(
+              children: [
+                TipItem(
+                  icon: Icons.trending_up,
+                  text: 'Upgrade to Pro to get 50 proposals/month',
+                ),
+                SizedBox(height: 12),
+                TipItem(
+                  icon: Icons.stars,
+                  text: 'Business plan gives you unlimited proposals',
+                ),
+                SizedBox(height: 12),
+                TipItem(
+                  icon: Icons.savings,
+                  text: 'Save 20% with yearly billing',
+                ),
+                SizedBox(height: 12),
+                TipItem(
+                  icon: Icons.business,
+                  text: 'Contact sales for custom enterprise plans',
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
                 Navigator.pushNamed(context, '/subscription/plans');
               },
-              icon: const Icon(Icons.arrow_forward, size: 16),
+              icon: const Icon(Icons.arrow_forward, size: 18),
               label: const Text('View Upgrade Options'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.purple,
                 side: const BorderSide(color: Colors.purple),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class TipItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const TipItem({super.key, required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.purple),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text, style: const TextStyle(fontSize: 13, height: 1.4)),
+        ),
+      ],
     );
   }
 }
