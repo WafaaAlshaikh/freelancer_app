@@ -58,10 +58,10 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
       Fluttertoast.showToast(msg: '✅ Proposal accepted!');
       Navigator.pushReplacementNamed(
         context,
-        '/payment',
+        '/contract',
         arguments: {
           'contractId': result['contract']['id'],
-          'paymentIntent': result['paymentIntent'],
+          'userRole': 'client',
         },
       );
     } else {
@@ -99,7 +99,10 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
             ),
             const SizedBox(height: 16),
 
-            const Text('Agreed Price', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Agreed Price',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             TextFormField(
               initialValue: agreedPrice?.toStringAsFixed(0),
@@ -114,7 +117,10 @@ class _NegotiationScreenState extends State<NegotiationScreen> {
             ),
             const SizedBox(height: 16),
 
-            const Text('Milestones', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Milestones',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             MilestoneEditor(
               milestones: milestones,

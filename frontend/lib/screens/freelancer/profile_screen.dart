@@ -1,5 +1,7 @@
 // screens/freelancer/freelancer_home_screen.dart
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:freelancer_platform/screens/affiliate/affiliate_screen.dart';
@@ -95,10 +97,40 @@ class PortfolioCard extends StatelessWidget {
 
   const PortfolioCard({super.key, required this.item, this.onTap});
 
+  List<String> _parseTechnologies(dynamic techs) {
+    if (techs == null) return [];
+    if (techs is List) return List<String>.from(techs);
+    if (techs is String) {
+      try {
+        final decoded = jsonDecode(techs);
+        if (decoded is List) return List<String>.from(decoded);
+        return [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  List<String> _parseImages(dynamic images) {
+    if (images == null) return [];
+    if (images is List) return List<String>.from(images);
+    if (images is String) {
+      try {
+        final decoded = jsonDecode(images);
+        if (decoded is List) return List<String>.from(decoded);
+        return [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final images = List<String>.from(item['images'] ?? []);
-    final technologies = List<String>.from(item['technologies'] ?? []);
+    final images = _parseImages(item['images']);
+    final technologies = _parseTechnologies(item['technologies']);
 
     return GestureDetector(
       onTap: onTap,
@@ -157,6 +189,32 @@ class PortfolioCard extends StatelessWidget {
                           ),
                         ),
                       ),
+              )
+            else
+              Container(
+                height: 120,
+                width: double.infinity,
+                color: AppColors.accent.withOpacity(0.1),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_outlined,
+                        size: 40,
+                        color: AppColors.accent.withOpacity(0.5),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No image',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.accent.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             Padding(
               padding: const EdgeInsets.all(14),
@@ -1379,11 +1437,20 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     setState(() => loadingPortfolio = true);
     try {
       final response = await ApiService.getPortfolio(profile?.id);
+      print('📦 Portfolio API Response: $response');
+      print('📦 Response type: ${response.runtimeType}');
+      print('📦 Response length: ${response.length}');
+
+      if (response is List && response.isNotEmpty) {
+        print('📦 First item: ${response[0]}');
+      }
+
       setState(() {
         portfolioItems = List<Map<String, dynamic>>.from(response);
         loadingPortfolio = false;
       });
     } catch (e) {
+      print('❌ Error fetching portfolio: $e');
       setState(() => loadingPortfolio = false);
     }
   }
@@ -1460,7 +1527,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   String _getAvatarUrl(String? avatar) {
     if (avatar == null || avatar.isEmpty) return '';
     if (avatar.startsWith('http')) return avatar;
-    return 'http://localhost:5000$avatar';
+    return 'http://localhost:5001$avatar';
   }
 
   String _formatDate(DateTime? date) {
@@ -2244,7 +2311,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               subtitle: Text(
                 [

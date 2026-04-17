@@ -19,11 +19,19 @@ export const initSocket = (server) => {
 
   io.use(async (socket, next) => {
     try {
-      const userId = socket.handshake.auth.userId;
+      let userId = socket.handshake.auth.userId;
       const token = socket.handshake.auth.token;
 
       if (!userId) {
         return next(new Error("Authentication error: No user ID"));
+      }
+
+      if (typeof userId === "string") {
+        userId = parseInt(userId, 10);
+      }
+
+      if (isNaN(userId)) {
+        return next(new Error("Authentication error: Invalid user ID"));
       }
 
       const user = await User.findByPk(userId);
@@ -46,8 +54,6 @@ export const initSocket = (server) => {
     socket.join(`user_${socket.userId}`);
 
     sendUserChats(socket);
-
-    // ========== Events ==========
 
     socket.on("join_chat", (chatId) => {
       if (chatId) {
@@ -87,6 +93,7 @@ export const initSocket = (server) => {
         content,
         type,
         replyToMessageId,
+        senderId: socket.userId,
       });
 
       if (!chatId || !content) {

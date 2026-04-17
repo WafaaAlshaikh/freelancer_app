@@ -107,6 +107,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    print('🔴🔴🔴 CHAT SCREEN INIT - START 🔴🔴🔴');
+    print('📱 Chat ID: ${widget.chatId}');
+    print('📱 Other User ID: ${widget.otherUserId}');
+    print('📱 Other User Name: ${widget.otherUserName}');
+    print('🔴🔴🔴 ======================== 🔴🔴🔴');
+
     _initAnimations();
     _initAndLoad();
     _messageController.addListener(_onMessageChanged);
@@ -126,19 +132,25 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _initAndLoad() async {
+    print('🔵 _initAndLoad - Getting current user ID...');
     final userIdStr = await TokenStorage.getUserId();
+    print('🔵 User ID from storage: $userIdStr');
+
     if (mounted) {
       setState(
         () =>
             currentUserId = userIdStr != null ? int.tryParse(userIdStr) : null,
       );
     }
+    print('🔵 Current user ID set to: $currentUserId');
+
     await _loadMessages();
     _setupSocketListeners();
   }
 
   @override
   void dispose() {
+    print('🔴 CHAT SCREEN DISPOSE');
     _newMessageSubscription?.cancel();
     _typingSubscription?.cancel();
     _readReceiptSubscription?.cancel();
@@ -159,6 +171,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Future<void> _loadMessages() async {
     if (!mounted) return;
+    print('🟢 _loadMessages - Loading messages for chat ${widget.chatId}');
     setState(() => loading = true);
     try {
       final result = await ChatService.getMessages(
@@ -166,10 +179,27 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         limit: pageSize,
         offset: currentPage * pageSize,
       );
+
+      print('🟢 API Response - Messages count: ${result['messages'].length}');
+      print('🟢 Has more: ${result['hasMore']}');
+
+      for (var msgJson in result['messages']) {
+        print(
+          '🟢 RAW API: id=${msgJson['id']}, sender_id=${msgJson['sender_id']}, content=${msgJson['content']}',
+        );
+      }
+
       if (!mounted) return;
       final newMessages = (result['messages'] as List)
           .map((j) => Message.fromJson(j))
           .toList();
+
+      for (var msg in newMessages) {
+        print(
+          '🟢 PARSED: id=${msg.id}, sender_id=${msg.senderId}, content=${msg.content}, sender_name=${msg.senderName}',
+        );
+      }
+
       for (var msg in newMessages) _receivedMessageIds.add(msg.id);
       setState(() {
         messages.insertAll(0, newMessages);
@@ -177,14 +207,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         if (newMessages.isNotEmpty) currentPage++;
         loading = false;
       });
+
+      print('🟢 Total messages in state: ${messages.length}');
       _scrollToBottom();
       _socket.markAsRead(widget.chatId);
     } catch (e) {
+      print('❌ Error loading messages: $e');
       if (mounted) setState(() => loading = false);
     }
   }
 
   void _setupSocketListeners() {
+    print('🟡 Setting up socket listeners...');
     _newMessageSubscription?.cancel();
     _typingSubscription?.cancel();
     _readReceiptSubscription?.cancel();
@@ -194,17 +228,34 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _reactionSubscription?.cancel();
     _messageErrorSubscription?.cancel();
 
-    if (_socket.isConnected) _socket.joinChat(widget.chatId);
+    if (_socket.isConnected) {
+      print('🟡 Socket is connected, joining chat ${widget.chatId}');
+      _socket.joinChat(widget.chatId);
+    } else {
+      print('🟡 Socket not connected yet');
+    }
 
     _connectionSubscription = _socket.onConnectionChange.listen((connected) {
+      print('🟡 Connection changed: $connected');
       if (connected && mounted) _socket.joinChat(widget.chatId);
     });
 
     _newMessageSubscription = _socket.onNewMessage.listen((message) {
+      print('🟣 NEW MESSAGE RECEIVED via socket');
+      print('🟣 Message ID: ${message.id}');
+      print('🟣 Sender ID: ${message.senderId}');
+      print('🟣 Content: ${message.content}');
+      print('🟣 Current user ID: $currentUserId');
+      print('🟣 Is this my message? ${message.senderId == currentUserId}');
+
       if (!mounted) return;
-      if (_receivedMessageIds.contains(message.id)) return;
+      if (_receivedMessageIds.contains(message.id)) {
+        print('🟣 Message already received, ignoring');
+        return;
+      }
       _receivedMessageIds.add(message.id);
       if (message.chatId == widget.chatId) {
+        print('🟣 Adding message to list');
         setState(() => messages.add(message));
         _scrollToBottom();
         _socket.markAsRead(widget.chatId);
@@ -304,6 +355,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     if (content.isEmpty && _replyingTo == null) return;
     if (_isSending) return;
     _isSending = true;
+
+    print('📤 SENDING MESSAGE - Content: $content');
+    print('📤 Current user ID: $currentUserId');
+
     try {
       if (!_socket.isConnected) {
         final connected = await _socket.ensureConnection();
@@ -772,6 +827,28 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final currentUserIdFromSocket = SocketService.instance.getCurrentUserId();
+    print('🔴🔴🔴 DIAGNOSTIC - START 🔴🔴🔴');
+    print('Current user from SocketService: $currentUserIdFromSocket');
+    print('Current user from state variable: $currentUserId');
+    print('Total messages: ${messages.length}');
+
+    for (var i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      final isMe = msg.senderId == currentUserIdFromSocket;
+      print(
+        'Message $i: id=${msg.id}, sender_id=${msg.senderId}, sender_name=${msg.senderName}, isMe=$isMe, color=${isMe ? "BLUE" : "GREY"}',
+      );
+    }
+    print('🔴🔴🔴 DIAGNOSTIC - END 🔴🔴🔴');
+    print('🏗️ BUILDING CHAT SCREEN - Messages count: ${messages.length}');
+    for (var msg in messages) {
+      final isMe = msg.senderId == currentUserId;
+      print(
+        '🏗️ Message in state: id=${msg.id}, sender=${msg.senderId}, currentUser=$currentUserId, isMe=$isMe, content=${msg.content}',
+      );
+    }
+
     return Scaffold(
       backgroundColor: _C.pageBg,
       appBar: _buildAppBar(),
@@ -801,7 +878,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       itemCount: messages.length,
                       itemBuilder: (ctx, i) {
                         final msg = messages[messages.length - 1 - i];
-                        final isMe = msg.senderId == currentUserId;
+                        final currentUserIdFromSocket = SocketService.instance
+                            .getCurrentUserId();
+                        final isMe = msg.senderId == currentUserIdFromSocket;
+
+                        print('🎨 Building message at index $i');
+                        print('🎨 Message ID: ${msg.id}');
+                        print('🎨 Message sender_id: ${msg.senderId}');
+                        print(
+                          '🎨 Current user from socket: $currentUserIdFromSocket',
+                        );
+                        print('🎨 Current user from state: $currentUserId');
+                        print('🎨 isMe: $isMe');
+                        print('🎨 Content: ${msg.content}');
+                        print('🎨 ========================');
+
                         return GestureDetector(
                           onLongPress: () => _showMessageOptions(msg, isMe),
                           child: _buildMessageBubble(msg, isMe),
@@ -1129,6 +1220,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMessageBubble(Message message, bool isMe) {
+    print(
+      '💬 BUILDING BUBBLE: sender=${message.senderName}(${message.senderId}), isMe=$isMe, color=${isMe ? "BLUE (right)" : "GREY (left)"}',
+    );
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
       child: Row(

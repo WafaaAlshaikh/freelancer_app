@@ -495,55 +495,6 @@ Use professional legal language but make it clear and readable.
     return [];
   }
 
-  static async generateAIContract(
-    projectId,
-    freelancerId,
-    clientId,
-    agreedAmount,
-    milestones,
-  ) {
-    try {
-      console.log("🤖 Generating AI contract for project:", projectId);
-
-      const project = await Project.findByPk(projectId, {
-        include: [
-          { model: User, as: "client", attributes: ["id", "name", "email"] },
-        ],
-      });
-
-      const freelancer = await User.findByPk(freelancerId, {
-        attributes: ["id", "name", "email"],
-      });
-
-      const client = await User.findByPk(clientId, {
-        attributes: ["id", "name", "email"],
-      });
-
-      if (!project) throw new Error("Project not found");
-
-      const projectType = this.detectProjectType(project);
-      const contractHtml = this.generateContractHtml({
-        project,
-        freelancer,
-        client,
-        agreedAmount,
-        milestones,
-        projectType,
-      });
-
-      return contractHtml;
-    } catch (error) {
-      console.error("❌ Error generating AI contract:", error);
-      return this.generateFallbackContract(
-        projectId,
-        freelancerId,
-        clientId,
-        agreedAmount,
-        milestones,
-      );
-    }
-  }
-
   static detectProjectType(project) {
     const title = project.title?.toLowerCase() || "";
     const description = project.description?.toLowerCase() || "";
@@ -988,6 +939,7 @@ Use professional legal language but make it clear and readable.
     freelancerId,
     clientId,
     agreed_amount,
+    milestones = null,
   ) {
     try {
       console.log("📝 Creating contract draft for:", {
@@ -1039,11 +991,17 @@ Use professional legal language but make it clear and readable.
         },
       ];
 
+      const chosenMilestones =
+        Array.isArray(milestones) && milestones.length > 0
+          ? milestones
+          : defaultMilestones;
+
       const contractDocument = this.generateContractDocument({
         projectId,
         freelancerId,
         clientId,
         agreed_amount,
+        milestones: chosenMilestones,
       });
 
       const contract = await Contract.create({
@@ -1054,7 +1012,7 @@ Use professional legal language but make it clear and readable.
         contract_document: contractDocument,
         status: "draft",
         terms: "Standard terms and conditions apply.",
-        milestones: JSON.stringify(defaultMilestones),
+        milestones: JSON.stringify(chosenMilestones),
       });
 
       console.log("✅ Contract created with ID:", contract.id);

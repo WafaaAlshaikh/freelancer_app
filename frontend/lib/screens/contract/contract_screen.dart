@@ -1578,7 +1578,7 @@ class _ContractScreenState extends State<ContractScreen> {
         Fluttertoast.showToast(
           msg: result['message'] ?? '✅ Milestone approved and payment released',
         );
-        fetchContract();
+        await fetchContract();
       } else {
         Fluttertoast.showToast(
           msg: result['message'] ?? 'Error approving milestone',

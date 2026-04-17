@@ -13,7 +13,6 @@ import {
 
 const router = express.Router();
 
-// جميع المسارات تتطلب توثيق ودور freelancer
 router.use(protect);
 router.use(authorizeRoles("freelancer"));
 
@@ -24,7 +23,6 @@ router.get("/:testId", getTest);
 router.post("/:testId/start", startTest);
 router.post("/submit/:userTestId", submitTest);
 
-// مسار للمشرفين فقط
 router.post("/create", authorizeRoles("admin"), createTest);
 
 export default router;

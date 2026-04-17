@@ -15,8 +15,6 @@ import path from "path";
 import fs from "fs";
 import AIService from "../services/aiService.js";
 
-// ==================== Helper Functions ====================
-
 const parseJSON = (field, defaultValue = []) => {
   try {
     if (!field) return defaultValue;
@@ -28,6 +26,11 @@ const parseJSON = (field, defaultValue = []) => {
     console.error("Error parsing JSON:", e);
     return defaultValue;
   }
+};
+
+const parseMilestones = (raw) => {
+  const out = parseJSON(raw, []);
+  return Array.isArray(out) ? out : [];
 };
 
 const stringifyJSON = (data) => {
@@ -88,8 +91,9 @@ export const updateMilestoneProgress = async (req, res) => {
       return res.status(404).json({ message: "Contract not found" });
     }
 
-    const milestones = contract.milestones;
-    const milestone = milestones[milestoneIndex];
+    const milestones = parseMilestones(contract.milestones);
+    const idx = Number(milestoneIndex);
+    const milestone = milestones[idx];
 
     if (!milestone) {
       return res.status(404).json({ message: "Milestone not found" });
@@ -118,7 +122,7 @@ export const updateMilestoneProgress = async (req, res) => {
       milestone.status = "in_progress";
     }
 
-    milestones[milestoneIndex] = milestone;
+    milestones[idx] = milestone;
 
     await contract.update({ milestones: JSON.stringify(milestones) });
 
@@ -172,8 +176,6 @@ export const requestWithdrawal = async (req, res) => {
   }
 };
 
-// ==================== Storage Configuration ====================
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let dir = "uploads/";
@@ -222,8 +224,6 @@ export const uploadAvatarMiddleware = multer({
   },
   limits: { fileSize: 2 * 1024 * 1024 },
 }).single("avatar");
-
-// ==================== Profile APIs ====================
 
 export const getProfile = async (req, res) => {
   try {
@@ -620,8 +620,6 @@ export const updateLocation = async (req, res) => {
   }
 };
 
-// ==================== Stats APIs ====================
-
 export const getFreelancerStats = async (req, res) => {
   try {
     console.log(
@@ -676,8 +674,6 @@ export const getFreelancerStats = async (req, res) => {
   }
 };
 
-// ==================== Contract APIs ====================
-
 export const getFreelancerContracts = async (req, res) => {
   try {
     console.log(
@@ -713,8 +709,6 @@ export const getFreelancerContracts = async (req, res) => {
   }
 };
 
-// ==================== Project APIs ====================
-
 export const getProjects = async (req, res) => {
   try {
     console.log(
@@ -725,7 +719,15 @@ export const getProjects = async (req, res) => {
     const contracts = await Contract.findAll({
       where: {
         FreelancerId: req.user.id,
-        status: "active",
+        status: {
+          [Op.in]: [
+            "draft",
+            "pending_client",
+            "pending_freelancer",
+            "active",
+            "completed",
+          ],
+        },
       },
       include: [
         {
@@ -742,8 +744,13 @@ export const getProjects = async (req, res) => {
     });
 
     const projects = contracts
-      .filter((contract) => contract.Project)
-      .map((contract) => contract.Project);
+      .filter((c) => c.Project)
+      .map((c) => ({
+        ...c.Project.toJSON(),
+        contractId: c.id,
+        contractStatus: c.status,
+        escrowStatus: c.escrow_status,
+      }));
 
     console.log(`✅ [getProjects] Found ${projects.length} active projects`);
 
@@ -754,7 +761,48 @@ export const getProjects = async (req, res) => {
   }
 };
 
-// ==================== Proposal APIs ====================
+export const getProjectContract = async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.projectId);
+    if (!projectId) {
+      return res.status(400).json({ message: "Invalid projectId" });
+    }
+
+    const contract = await Contract.findOne({
+      where: {
+        ProjectId: projectId,
+        FreelancerId: req.user.id,
+        status: {
+          [Op.in]: [
+            "draft",
+            "pending_client",
+            "pending_freelancer",
+            "active",
+            "completed",
+          ],
+        },
+      },
+      attributes: ["id", "status", "escrow_status", "ProjectId"],
+    });
+
+    if (!contract) {
+      return res.json({ success: true, contract: null });
+    }
+
+    return res.json({
+      success: true,
+      contract: {
+        id: contract.id,
+        status: contract.status,
+        escrow_status: contract.escrow_status,
+        projectId: contract.ProjectId,
+      },
+    });
+  } catch (err) {
+    console.error("❌ [getProjectContract] Error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
 
 export const getProposals = async (req, res) => {
   try {
@@ -788,8 +836,6 @@ export const getProposals = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
-// ==================== AI Suggestions APIs ====================
 
 export const getAISuggestedProjects = async (req, res) => {
   try {

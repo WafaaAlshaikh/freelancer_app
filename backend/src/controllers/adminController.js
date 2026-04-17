@@ -2,7 +2,6 @@
 import { User, Project, Contract, FreelancerProfile, ClientProfile, Rating, Transaction, sequelize } from "../models/index.js";
 import { Op } from "sequelize";
 
-// ==================== Dashboard Stats ====================
 export const getDashboardStats = async (req, res) => {
   try {
     console.log('📊 Fetching admin dashboard stats...');
@@ -118,7 +117,6 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
-// ==================== User Management ====================
 export const getAllUsers = async (req, res) => {
   try {
     const { role, status, search, page = 1, limit = 20 } = req.query;
@@ -290,7 +288,6 @@ export const verifyUser = async (req, res) => {
   }
 };
 
-// ==================== Project Management ====================
 export const getAllProjects = async (req, res) => {
   try {
     const { status, category, search, page = 1, limit = 20 } = req.query;
@@ -356,7 +353,6 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-// ==================== Contract Management ====================
 export const getAllContracts = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;

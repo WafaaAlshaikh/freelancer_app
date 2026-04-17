@@ -2,6 +2,7 @@
 import { Contract, Project } from "../models/index.js";
 import { Op } from "sequelize";
 import NotificationService from "../services/notificationService.js";
+import PaymentService from "../services/paymentService.js";
 
 export const updateMilestoneProgress = async (req, res) => {
   try {
@@ -121,6 +122,11 @@ export const approveMilestone = async (req, res) => {
     const alreadyReleased = parseFloat(contract.released_amount || 0);
     const milestoneAmt = parseFloat(milestone.amount || 0);
     if (alreadyReleased + milestoneAmt > pool + 0.01) {
+      await PaymentService.releaseMilestonePayment(
+        contractId,
+        milestoneIndex,
+        userId,
+      );
       return res.status(400).json({
         message:
           "Cannot approve: total milestone releases would exceed funded escrow",

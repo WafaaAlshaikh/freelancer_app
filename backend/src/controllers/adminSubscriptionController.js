@@ -240,20 +240,16 @@ async function calculateUpgradeRate() {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    // نحتاج إلى نموذج SubscriptionLog، إذا لم يكن موجوداً نستخدم طريقة بديلة
-    // بما أن SubscriptionLog قد لا يكون معرفاً، سنحسب نسبة الترقية بناءً على الاشتراكات الجديدة
     const newSubscriptions = await UserSubscription.count({
       where: {
         createdAt: { [Op.gte]: startOfMonth },
       },
     });
 
-    // حساب عدد المستخدمين الذين قاموا بالترقية من خطة مجانية إلى مدفوعة
-    // هذه طريقة تقريبية
     const upgradedSubscriptions = await UserSubscription.count({
       where: {
         createdAt: { [Op.gte]: startOfMonth },
-        plan_id: { [Op.ne]: 1 }, // افتراض أن الخطة المجانية لها id = 1
+        plan_id: { [Op.ne]: 1 },
       },
     });
 

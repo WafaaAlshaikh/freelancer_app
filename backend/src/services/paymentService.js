@@ -12,6 +12,19 @@ import CouponService from "./CouponService.js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 class PaymentService {
+  static _parseMilestones(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
   static async createEscrowPaymentIntent(contractId, userId) {
     try {
       const contract = await Contract.findByPk(contractId, {
@@ -305,7 +318,7 @@ class PaymentService {
         throw new Error("Escrow not funded");
       }
 
-      const milestones = contract.milestones;
+      const milestones = this._parseMilestones(contract.milestones);
       const milestone = milestones[milestoneIndex];
 
       if (!milestone) {
@@ -338,7 +351,8 @@ class PaymentService {
 
       await contract.update({
         milestones: JSON.stringify(milestones),
-        released_amount: contract.released_amount + milestone.amount,
+        released_amount:
+          parseFloat(contract.released_amount || 0) + milestoneAmt,
       });
 
       let freelancerWallet = await Wallet.findOne({
@@ -352,8 +366,9 @@ class PaymentService {
       }
 
       await freelancerWallet.update({
-        balance: freelancerWallet.balance + milestone.amount,
-        total_earned: freelancerWallet.total_earned + milestone.amount,
+        balance: parseFloat(freelancerWallet.balance || 0) + milestoneAmt,
+        total_earned:
+          parseFloat(freelancerWallet.total_earned || 0) + milestoneAmt,
       });
 
       let clientWallet = await Wallet.findOne({
@@ -361,13 +376,14 @@ class PaymentService {
       });
       if (clientWallet) {
         await clientWallet.update({
-          pending_balance: clientWallet.pending_balance - milestone.amount,
+          pending_balance:
+            parseFloat(clientWallet.pending_balance || 0) - milestoneAmt,
         });
       }
 
       await Transaction.create({
         wallet_id: freelancerWallet.id,
-        amount: milestone.amount,
+        amount: milestoneAmt,
         type: "payment",
         status: "completed",
         description: `Payment for milestone "${milestone.title}" - Contract #${contract.id}`,
@@ -380,7 +396,7 @@ class PaymentService {
         userId: contract.FreelancerId,
         type: "payment_received",
         title: "Milestone Payment Released! 💰",
-        body: `$${milestone.amount} has been added to your wallet for "${milestone.title}"`,
+        body: `$${milestoneAmt} has been added to your wallet for "${milestone.title}"`,
         data: { contractId: contract.id, screen: "contract" },
       });
 

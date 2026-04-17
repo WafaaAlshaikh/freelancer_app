@@ -1,7 +1,7 @@
 // screens/freelancer/my_projects_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:freelancer_platform/screens/client/project_details_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/project_details_screen.dart';
 import '../../models/project_model.dart';
 import '../../services/api_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -193,6 +193,7 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
     final progress = _calculateProgress(project);
     final statusColor = _getStatusColor(project.status);
     final statusText = _getStatusText(project.status);
+    final hasContract = project.contractId != null && project.contractId! > 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -211,6 +212,17 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
+            if (hasContract) {
+              Navigator.pushNamed(
+                context,
+                '/contract',
+                arguments: {
+                  'contractId': project.contractId,
+                  'userRole': 'freelancer',
+                },
+              );
+              return;
+            }
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -497,6 +509,22 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
+                          if (hasContract) {
+                            final route =
+                                (project.contractStatus == 'active' ||
+                                    project.status == 'in_progress')
+                                ? '/contract/progress'
+                                : '/contract';
+                            Navigator.pushNamed(
+                              context,
+                              route,
+                              arguments: {
+                                'contractId': project.contractId,
+                                'userRole': 'freelancer',
+                              },
+                            );
+                            return;
+                          }
                           if (project.status == 'completed') {
                             Navigator.push(
                               context,
@@ -511,20 +539,29 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                           }
                         },
                         icon: Icon(
-                          project.status == 'completed'
+                          hasContract
+                              ? Icons.open_in_new
+                              : project.status == 'completed'
                               ? Icons.visibility
                               : Icons.check_circle,
                           size: 18,
                           color: Colors.white,
                         ),
                         label: Text(
-                          project.status == 'completed'
+                          hasContract
+                              ? ((project.contractStatus == 'active' ||
+                                        project.status == 'in_progress')
+                                    ? 'Open Workspace'
+                                    : 'Open Contract')
+                              : project.status == 'completed'
                               ? "View Details"
                               : "Submit Work",
                           style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: project.status == 'completed'
+                          backgroundColor: hasContract
+                              ? AppColors.accent
+                              : project.status == 'completed'
                               ? AppColors.accent
                               : AppColors.green,
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -629,7 +666,7 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/freelancer/proposals');
+                      Navigator.pushNamed(context, '/freelancer/my-proposals');
                     },
                     icon: const Icon(Icons.send_outlined, size: 18),
                     label: const Text("View My Proposals"),

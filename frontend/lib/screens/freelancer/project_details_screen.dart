@@ -19,6 +19,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   Project? project;
   bool loading = true;
   bool hasSubmitted = false;
+  int? _contractId;
+  bool _loadingContract = false;
 
   bool loadingPricing = false;
   Map<String, dynamic>? smartPricing;
@@ -68,6 +70,25 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     _loadSmartPricing();
     _loadUsage();
     _checkIfFavorite();
+    _loadContractLink();
+  }
+
+  Future<void> _loadContractLink() async {
+    setState(() => _loadingContract = true);
+    try {
+      final r = await ApiService.getFreelancerProjectContract(widget.projectId);
+      if (!mounted) return;
+      final c = r['contract'];
+      final id = (c is Map) ? c['id'] : null;
+      final parsed = id is int ? id : int.tryParse(id?.toString() ?? '');
+      setState(() {
+        _contractId = (parsed != null && parsed > 0) ? parsed : null;
+        _loadingContract = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingContract = false);
+    }
   }
 
   Future<void> _loadSmartPricing() async {
@@ -105,8 +126,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       if (!mounted) return;
 
       setState(() {
-        final rawProject =
-            data['project'] is Map<String, dynamic>
+        final rawProject = data['project'] is Map<String, dynamic>
             ? Map<String, dynamic>.from(data['project'] as Map)
             : Map<String, dynamic>.from(data);
         project = Project.fromJson(rawProject);
@@ -159,6 +179,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasContract = _contractId != null && _contractId! > 0;
+    final isOpen = project?.status == 'open';
     return Scaffold(
       appBar: AppBar(
         title: const Text("Project Details"),
@@ -306,183 +328,190 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   const SizedBox(height: 20),
 
                   if (showSmartPricing && smartPricing != null)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.amber.shade50, Colors.orange.shade50],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    if (isOpen)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.amber.shade50,
+                              Colors.orange.shade50,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.amber.shade200),
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.amber.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Colors.amber, Colors.orange],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Colors.amber, Colors.orange],
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
+                                  child: const Icon(
+                                    Icons.auto_awesome,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.auto_awesome,
-                                  color: Colors.white,
-                                  size: 18,
+                                const SizedBox(width: 12),
+                                const Text(
+                                  "AI Smart Pricing Analysis",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                "AI Smart Pricing Analysis",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
 
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Recommended Price",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Recommended Price",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "\$${smartPricing!['recommended_price']?.toStringAsFixed(0) ?? '?'}",
-                                      style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "\$${smartPricing!['recommended_price']?.toStringAsFixed(0) ?? '?'}",
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.orange,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Hourly Rate",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Hourly Rate",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "\$${smartPricing!['recommended_hourly_rate']?.toStringAsFixed(0) ?? '?'}/hr",
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "\$${smartPricing!['recommended_hourly_rate']?.toStringAsFixed(0) ?? '?'}/hr",
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Est. Hours",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Est. Hours",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "${smartPricing!['estimated_hours'] ?? '?'} hrs",
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "${smartPricing!['estimated_hours'] ?? '?'} hrs",
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
 
-                          const SizedBox(height: 12),
+                            const SizedBox(height: 12),
 
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.analytics,
-                                size: 14,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                "Confidence: ${smartPricing!['confidence_score'] ?? 85}%",
-                                style: const TextStyle(
-                                  fontSize: 11,
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.analytics,
+                                  size: 14,
                                   color: Colors.grey,
                                 ),
-                              ),
-                              const Spacer(),
-                              if (smartPricing!['justification'] != null)
-                                Flexible(
-                                  child: Text(
-                                    smartPricing!['justification'],
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey,
-                                    ),
-                                    textAlign: TextAlign.right,
+                                const SizedBox(width: 4),
+                                Text(
+                                  "Confidence: ${smartPricing!['confidence_score'] ?? 85}%",
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
                                   ),
                                 ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          if (smartPricing!['pricing_breakdown'] != null)
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Column(
-                                children: [
-                                  _buildBreakdownRow(
-                                    "Base Rate",
-                                    "\$${smartPricing!['pricing_breakdown']['base_rate']?.toStringAsFixed(0) ?? '?'}/hr",
+                                const Spacer(),
+                                if (smartPricing!['justification'] != null)
+                                  Flexible(
+                                    child: Text(
+                                      smartPricing!['justification'],
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
                                   ),
-                                  _buildBreakdownRow(
-                                    "Complexity",
-                                    "+${((smartPricing!['pricing_breakdown']['complexity_multiplier'] ?? 1) - 1) * 100}%",
-                                  ),
-                                  _buildBreakdownRow(
-                                    "Experience",
-                                    "+${((smartPricing!['pricing_breakdown']['experience_multiplier'] ?? 1) - 1) * 100}%",
-                                  ),
-                                ],
-                              ),
+                              ],
                             ),
-                        ],
+
+                            const SizedBox(height: 12),
+
+                            if (smartPricing!['pricing_breakdown'] != null)
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  children: [
+                                    _buildBreakdownRow(
+                                      "Base Rate",
+                                      "\$${smartPricing!['pricing_breakdown']['base_rate']?.toStringAsFixed(0) ?? '?'}/hr",
+                                    ),
+                                    _buildBreakdownRow(
+                                      "Complexity",
+                                      "+${((smartPricing!['pricing_breakdown']['complexity_multiplier'] ?? 1) - 1) * 100}%",
+                                    ),
+                                    _buildBreakdownRow(
+                                      "Experience",
+                                      "+${((smartPricing!['pricing_breakdown']['experience_multiplier'] ?? 1) - 1) * 100}%",
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
 
                   Card(
                     elevation: 0,
@@ -632,7 +661,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  if (_usage != null && _usage!.proposalsLimit != null) ...[
+                  if (isOpen &&
+                      _usage != null &&
+                      _usage!.proposalsLimit != null) ...[
                     const SizedBox(height: 8),
                     Text(
                       'Proposals remaining this month: ${_usage!.remainingProposals}',
@@ -651,7 +682,47 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       ),
                   ],
 
-                  if (!hasSubmitted && project!.status == 'open')
+                  if (hasContract)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: _loadingContract
+                            ? null
+                            : () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/contract',
+                                  arguments: {
+                                    'contractId': _contractId,
+                                    'userRole': 'freelancer',
+                                  },
+                                );
+                              },
+                        icon: _loadingContract
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.description_outlined),
+                        label: const Text(
+                          'Open Contract',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (!hasSubmitted && isOpen)
                     SizedBox(
                       width: double.infinity,
                       height: 55,
@@ -673,7 +744,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ),
                       ),
                     )
-                  else if (hasSubmitted)
+                  else if (isOpen && hasSubmitted)
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -697,7 +768,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ],
                       ),
                     )
-                  else if (project!.status != 'open')
+                  else if (!isOpen)
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -711,7 +782,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'This project is ${project!.statusText}',
+                              hasContract
+                                  ? 'This project is ${project!.statusText}. Your workspace is in the contract.'
+                                  : 'This project is ${project!.statusText}',
                               style: const TextStyle(fontSize: 14),
                             ),
                           ),

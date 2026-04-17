@@ -1,4 +1,4 @@
-// ===== backend/src/controllers/workSubmissionController.js ===== 
+// ===== backend/src/controllers/workSubmissionController.js =====
 import {
   WorkSubmission,
   Contract,
@@ -9,6 +9,71 @@ import {
 } from "../models/index.js";
 import { Op } from "sequelize";
 import NotificationService from "../services/notificationService.js";
+
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = "uploads/work-submissions";
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `work-${req.user.id}-${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|doc|docx|zip|rar|jpg|jpeg|png|gif|mp4|mov|avi/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase(),
+    );
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Only images, documents, and videos are allowed"));
+  },
+}).single("file");
+
+export const uploadWorkFile = async (req, res) => {
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
+
+      if (!req.file) {
+        return res
+          .status(400)
+          .json({ success: false, message: "No file uploaded" });
+      }
+
+      const fileUrl = `/uploads/work-submissions/${req.file.filename}`;
+
+      res.json({
+        success: true,
+        url: fileUrl,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    });
+  } catch (err) {
+    console.error("Error uploading file:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
 
 const parseJSONArray = (value) => {
   if (!value) return [];
@@ -92,6 +157,31 @@ export const submitWork = async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: "Contract is not active" });
+    }
+
+    if (contract.escrow_status !== "funded") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Escrow is not funded yet. The client must deposit escrow first.",
+      });
+    }
+
+    if (milestoneIndex !== null && milestoneIndex !== undefined) {
+      let milestones = contract.milestones;
+      if (typeof milestones === "string") {
+        milestones = JSON.parse(milestones);
+      }
+
+      if (milestones[milestoneIndex]) {
+        milestones[milestoneIndex].status = "completed";
+        milestones[milestoneIndex].completed_at = new Date();
+        milestones[milestoneIndex].progress = 100;
+
+        await contract.update({
+          milestones: JSON.stringify(milestones),
+        });
+      }
     }
 
     const submission = await WorkSubmission.create({

@@ -11,7 +11,6 @@ dotenv.config();
 
 const router = express.Router();
 
-// ====================== Signup ======================
 router.post("/signup", async (req, res) => {
   const { name, email, password, role } = req.body;
 
@@ -82,7 +81,7 @@ router.post("/verify", async (req, res) => {
     }
 
     user.is_verified = true;
-    user.verification_code = null; 
+    user.verification_code = null;
     await user.save();
 
     res.json({ message: "✅ Email verified successfully" });
@@ -92,7 +91,6 @@ router.post("/verify", async (req, res) => {
   }
 });
 
-// ====================== Login ======================
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 

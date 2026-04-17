@@ -5,7 +5,6 @@ import PlatformStat from "../models/PlatformStat.js";
 import { User, Project, Contract } from "../models/index.js";
 import { Op } from "sequelize";
 
-// ==================== Helper Functions ====================
 const parseContent = (content) => {
   try {
     return content ? JSON.parse(content) : null;
@@ -14,7 +13,6 @@ const parseContent = (content) => {
   }
 };
 
-// ==================== Public Routes ====================
 export const getLandingPage = async (req, res) => {
   try {
     console.log("📱 Fetching landing page data...");
@@ -119,7 +117,6 @@ export const getStats = async (req, res) => {
   }
 };
 
-// ==================== Admin Routes ====================
 export const getAllSections = async (req, res) => {
   try {
     const sections = await PageContent.findAll({

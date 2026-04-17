@@ -327,6 +327,12 @@ export const respondToInterview = async (req, res) => {
 
     if (new Date() > new Date(invitation.expires_at)) {
       await invitation.update({ status: "expired" });
+      if (
+        invitation.Proposal &&
+        invitation.Proposal.status === "interviewing"
+      ) {
+        await invitation.Proposal.update({ status: "pending" });
+      }
       return res
         .status(400)
         .json({ success: false, message: "Invitation has expired" });
@@ -392,6 +398,15 @@ export const respondToInterview = async (req, res) => {
         screen: "interview",
       },
     });
+
+    if (status !== "accepted") {
+      if (
+        invitation.Proposal &&
+        invitation.Proposal.status === "interviewing"
+      ) {
+        await invitation.Proposal.update({ status: "pending" });
+      }
+    }
 
     if (status === "accepted" && updateData.selected_time) {
       await sendInterviewReminder(invitation);
@@ -549,6 +564,13 @@ export const addInterviewNotes = async (req, res) => {
       status: "completed",
     });
 
+    try {
+      const p = await Proposal.findByPk(invitation.proposal_id);
+      if (p && p.status === "interviewing") {
+        await p.update({ status: "pending" });
+      }
+    } catch (_) {}
+
     const otherPartyId =
       userId === invitation.client_id
         ? invitation.freelancer_id
@@ -604,6 +626,13 @@ export const cancelInterview = async (req, res) => {
       response_message: reason || "Interview cancelled",
       responded_at: new Date(),
     });
+
+    try {
+      const p = await Proposal.findByPk(invitation.proposal_id);
+      if (p && p.status === "interviewing") {
+        await p.update({ status: "pending" });
+      }
+    } catch (_) {}
 
     const otherPartyId =
       userId === invitation.client_id

@@ -396,6 +396,21 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> getFreelancerProjectContract(
+    int projectId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/freelancer/projects/$projectId/contract'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting freelancer project contract: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
   static Future<Map<String, dynamic>> getSuggestedFreelancers(
     int projectId,
   ) async {
@@ -1436,6 +1451,59 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> createWallet() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/client/wallet/create'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating wallet: $e');
+      return {'wallet': null, 'transactions': []};
+    }
+  }
+
+  static Future<String?> uploadWorkFile(
+    List<int> bytes,
+    String fileName,
+  ) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$BASE_URL/work-submissions/upload'),
+      );
+
+      headers:
+      headers;
+
+      request.files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+      );
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final result = jsonDecode(responseBody);
+
+      if (response.statusCode == 200 && result['url'] != null) {
+        return result['url'];
+      }
+
+      print('Error uploading file: ${result['message']}');
+      return null;
+    } catch (e) {
+      print('Error uploading file: $e');
+      return null;
+    }
+  }
+
+  static Future<String?> uploadWorkFileBytes(
+    List<int> bytes,
+    String fileName,
+  ) async {
+    return uploadWorkFile(bytes, fileName);
+  }
+
   static Future<Map<String, dynamic>> getFreelancerWallet() async {
     try {
       final response = await http.get(
@@ -1502,7 +1570,6 @@ class ApiService {
         print('❌ Server error: ${response.statusCode}');
         return null;
       }
-
 
       final data = jsonDecode(response.body);
       print('🔍 Parsed data: $data');
@@ -2671,37 +2738,6 @@ class ApiService {
     } catch (e) {
       print('Error getting submissions: $e');
       return [];
-    }
-  }
-
-  static Future<String?> uploadWorkFile(
-    Uint8List bytes,
-    String fileName,
-  ) async {
-    try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$BASE_URL/chats/upload'),
-      );
-      request.headers['Authorization'] = 'Bearer $token';
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: fileName,
-          contentType: MediaType('application', 'octet-stream'),
-        ),
-      );
-      final response = await request.send();
-      final responseData = await response.stream.bytesToString();
-      if (response.statusCode == 200) {
-        final data = jsonDecode(responseData);
-        return data['url'];
-      }
-      return null;
-    } catch (e) {
-      print('Error uploading work file: $e');
-      return null;
     }
   }
 

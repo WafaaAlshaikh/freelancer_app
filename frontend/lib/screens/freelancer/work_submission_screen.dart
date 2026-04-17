@@ -1,5 +1,5 @@
-// ===== frontend/lib/screens/freelancer/work_submission_screen.dart =====
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:file_picker/file_picker.dart';
@@ -29,6 +29,9 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
   final _linkController = TextEditingController();
 
   List<File> _selectedFiles = [];
+
+  List<Map<String, dynamic>> _selectedWebFiles = [];
+
   List<String> _links = [];
   bool _loading = false;
   bool _uploading = false;
@@ -69,15 +72,29 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
     );
 
     if (result != null) {
-      setState(() {
-        _selectedFiles.addAll(result.paths.map((path) => File(path!)).toList());
-      });
+      if (kIsWeb) {
+        setState(() {
+          for (final file in result.files) {
+            _selectedWebFiles.add({'name': file.name, 'bytes': file.bytes});
+          }
+        });
+      } else {
+        setState(() {
+          _selectedFiles.addAll(
+            result.paths.map((path) => File(path!)).toList(),
+          );
+        });
+      }
     }
   }
 
   void _removeFile(int index) {
     setState(() {
-      _selectedFiles.removeAt(index);
+      if (kIsWeb) {
+        _selectedWebFiles.removeAt(index);
+      } else {
+        _selectedFiles.removeAt(index);
+      }
     });
   }
 
@@ -97,25 +114,40 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
   }
 
   Future<List<String>> _uploadFiles() async {
-    if (_selectedFiles.isEmpty && _links.isEmpty) {
+    if (_selectedFiles.isEmpty && _selectedWebFiles.isEmpty && _links.isEmpty) {
       Fluttertoast.showToast(msg: 'Please add at least one file or link');
       return [];
     }
 
     setState(() => _uploading = true);
-
     final List<String> uploadedUrls = [];
 
-    for (final file in _selectedFiles) {
-      try {
-        final bytes = await file.readAsBytes();
-        final fileName = file.path.split('/').last;
-        final url = await ApiService.uploadWorkFile(bytes, fileName);
-        if (url != null) {
-          uploadedUrls.add(url);
+    if (kIsWeb) {
+      for (final fileData in _selectedWebFiles) {
+        try {
+          final url = await ApiService.uploadWorkFileBytes(
+            fileData['bytes'],
+            fileData['name'],
+          );
+          if (url != null) {
+            uploadedUrls.add(url);
+          }
+        } catch (e) {
+          print('Error uploading file: $e');
         }
-      } catch (e) {
-        print('Error uploading file: $e');
+      }
+    } else {
+      for (final file in _selectedFiles) {
+        try {
+          final bytes = await file.readAsBytes();
+          final fileName = file.path.split('/').last;
+          final url = await ApiService.uploadWorkFile(bytes, fileName);
+          if (url != null) {
+            uploadedUrls.add(url);
+          }
+        } catch (e) {
+          print('Error uploading file: $e');
+        }
       }
     }
 
@@ -225,7 +257,40 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
               ),
               const SizedBox(height: 8),
 
-              if (_selectedFiles.isNotEmpty) ...[
+              if (kIsWeb && _selectedWebFiles.isNotEmpty) ...[
+                ..._selectedWebFiles.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final fileData = entry.value;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.insert_drive_file),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            fileData['name'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () => _removeFile(index),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+              ],
+
+              if (!kIsWeb && _selectedFiles.isNotEmpty) ...[
                 ..._selectedFiles.asMap().entries.map((entry) {
                   final index = entry.key;
                   final file = entry.value;

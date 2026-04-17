@@ -386,16 +386,21 @@ export const updateProposalStatus = async (req, res) => {
           where: {
             ProjectId: proposal.ProjectId,
             id: { [Op.ne]: id },
-            status: "pending",
+            status: { [Op.in]: ["pending", "negotiating", "interviewing"] },
           },
         },
       );
+
+      const proposedMilestones = Array.isArray(proposal.milestones)
+        ? proposal.milestones
+        : [];
 
       const contract = await ContractService.createContractDraft(
         proposal.ProjectId,
         proposal.UserId,
         req.user.id,
         proposal.price,
+        proposedMilestones,
       );
 
       if (!contract || !contract.id) {
@@ -407,13 +412,12 @@ export const updateProposalStatus = async (req, res) => {
       }
 
       console.log("✅ Contract draft created:", contract.id);
-      console.log("✅ Contract data:", JSON.stringify(contract, null, 2));
 
       await NotificationService.createNotification({
         userId: proposal.UserId,
         type: "proposal_accepted",
         title: "Your Proposal Was Accepted! 🎉",
-        body: `Your proposal for "${proposal.Project.title}" has been accepted. Please review the contract.`,
+        body: `Your proposal for "${proposal.Project.title}" has been accepted. Please review and sign the contract.`,
         data: {
           projectId: proposal.ProjectId,
           contractId: contract.id,
@@ -425,7 +429,7 @@ export const updateProposalStatus = async (req, res) => {
       return res.json({
         success: true,
         message: "✅ Proposal accepted. Please review and sign the contract.",
-        proposal: proposal.toJSON(),
+        proposal: { ...proposal.toJSON(), status: "accepted" },
         contract: {
           id: contract.id,
           agreed_amount: contract.agreed_amount,
@@ -708,16 +712,12 @@ export const acceptProposalWithNegotiation = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const finalPrice = agreedPrice || proposal.price;
-    const finalMilestones = agreedMilestones || proposal.milestones || [];
-
-    const aiContract = await ContractService.generateAIContract(
-      proposal.ProjectId,
-      proposal.UserId,
-      req.user.id,
-      finalPrice,
-      finalMilestones,
-    );
+    const finalPrice = agreedPrice ?? proposal.price;
+    const finalMilestones = Array.isArray(agreedMilestones)
+      ? agreedMilestones
+      : Array.isArray(proposal.milestones)
+      ? proposal.milestones
+      : [];
 
     await Proposal.update(
       { status: "rejected" },
@@ -725,50 +725,63 @@ export const acceptProposalWithNegotiation = async (req, res) => {
     );
     await proposal.update({ status: "accepted" });
 
-    const contract = await Contract.create({
-      ProjectId: proposal.ProjectId,
-      FreelancerId: proposal.UserId,
-      ClientId: req.user.id,
-      agreed_amount: finalPrice,
-      contract_document: aiContract,
-      status: "draft",
-      terms: "AI-generated contract with industry-specific clauses",
-      milestones: JSON.stringify(finalMilestones),
-    });
-
-    await SubscriptionService.incrementActiveProjectsCount(req.user.id);
-
-    const sowResult = await AIService.generateProfessionalSOW(
+    await Proposal.update(
+      { status: "rejected" },
       {
-        title: Project.title,
-        description: Project.description,
-        category: Project.category,
-        skills: Project.skills ? JSON.parse(Project.skills) : [],
-        budget: agreedPrice,
-        duration: Project.duration,
-        clientName: req.user.name,
-        clientEmail: req.user.email,
+        where: {
+          ProjectId: proposal.ProjectId,
+          id: { [Op.ne]: proposalId },
+          status: { [Op.in]: ["pending", "negotiating", "interviewing"] },
+        },
       },
-      FreelancerProfile,
-      finalMilestones,
-      "",
     );
+    await proposal.update({ status: "accepted", price: finalPrice });
 
-    await contract.update({
-      contract_document: sowResult.html,
-      ai_analysis: sowResult.analysis,
-    });
-
-    const paymentIntent = await PaymentService.createEscrowPaymentIntent(
-      contract.id,
+    const contract = await ContractService.createContractDraft(
+      proposal.ProjectId,
+      proposal.UserId,
       req.user.id,
+      finalPrice,
+      finalMilestones,
     );
+
+    try {
+      const p = proposal.Project;
+      const skills = p?.skills
+        ? Array.isArray(p.skills)
+          ? p.skills
+          : JSON.parse(p.skills)
+        : [];
+      const sowResult = await AIService.generateProfessionalSOW(
+        {
+          title: p?.title,
+          description: p?.description,
+          category: p?.category,
+          skills,
+          budget: finalPrice,
+          duration: p?.duration,
+          clientName: req.user.name,
+          clientEmail: req.user.email,
+        },
+        FreelancerProfile,
+        finalMilestones,
+        "",
+      );
+      if (sowResult?.html) {
+        await contract.update({
+          contract_document: sowResult.html,
+          ai_analysis: sowResult.analysis,
+          terms: "AI-generated SOW document",
+        });
+      }
+    } catch (e) {
+      console.warn("SOW generation skipped:", e?.message || e);
+    }
 
     res.json({
-      message: "✅ Proposal accepted with AI-generated contract",
+      message: "✅ Proposal accepted. Contract draft created.",
       contract,
-      paymentIntent,
-      requiresPayment: true,
+      requiresSignature: true,
     });
   } catch (err) {
     console.error("Error in acceptProposalWithNegotiation:", err);
@@ -1063,12 +1076,16 @@ export const approveMilestone = async (req, res) => {
       return res.status(404).json({ message: "Contract not found" });
     }
 
-    const milestones = contract.milestones;
-    const milestone = milestones[milestoneIndex];
+    let milestones = contract.milestones;
+    if (typeof milestones === "string") {
+      milestones = JSON.parse(milestones);
+    }
 
-    if (!milestone) {
+    if (!milestones[milestoneIndex]) {
       return res.status(404).json({ message: "Milestone not found" });
     }
+
+    const milestone = milestones[milestoneIndex];
 
     if (milestone.status !== "completed") {
       return res.status(400).json({ message: "Milestone not completed yet" });
@@ -1078,33 +1095,87 @@ export const approveMilestone = async (req, res) => {
       return res.status(400).json({ message: "Milestone already approved" });
     }
 
-    await PaymentService.releaseMilestonePayment(
-      contractId,
-      milestoneIndex,
-      userId,
-    );
+    const pool = contract.funded_escrow_amount != null
+      ? parseFloat(contract.funded_escrow_amount)
+      : parseFloat(contract.agreed_amount);
+    const alreadyReleased = parseFloat(contract.released_amount || 0);
+    const milestoneAmt = parseFloat(milestone.amount || 0);
+    
+    if (alreadyReleased + milestoneAmt > pool + 0.01) {
+      return res.status(400).json({
+        message: "Cannot approve: total milestone releases would exceed funded escrow",
+      });
+    }
+
+    await PaymentService.releaseMilestonePayment(contractId, milestoneIndex, userId);
 
     milestone.status = "approved";
     milestone.approved_at = new Date();
     milestones[milestoneIndex] = milestone;
 
-    await contract.update({ milestones: JSON.stringify(milestones) });
+    await contract.update({
+      milestones: JSON.stringify(milestones),
+      released_amount: (contract.released_amount || 0) + milestoneAmt,
+    });
 
     await NotificationService.createNotification({
       userId: contract.FreelancerId,
       type: "payment_released",
       title: "Milestone Payment Released! 💰",
       body: `$${milestone.amount} has been released for "${milestone.title}"`,
-      data: { contractId: contract.id, screen: "contract" },
+      data: { contractId: contract.id, screen: "contract_progress" },
     });
 
-    res.json({
-      message: "✅ Milestone approved and payment released",
-      milestone,
-    });
+    res.json({ message: "✅ Milestone approved", milestone });
+    
   } catch (err) {
     console.error("Error approving milestone:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const getOrCreateWallet = async (req, res) => {
+  try {
+    let wallet = await Wallet.findOne({ where: { UserId: req.user.id } });
+    
+    if (!wallet) {
+      wallet = await Wallet.create({
+        UserId: req.user.id,
+        balance: 0,
+        pending_balance: 0,
+        total_earned: 0,
+        total_withdrawn: 0,
+      });
+    }
+    
+    const transactions = await Transaction.findAll({
+      where: { wallet_id: wallet.id },
+      order: [['createdAt', 'DESC']],
+      limit: 50,
+    });
+    
+    res.json({ wallet, transactions });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const createWallet = async (req, res) => {
+  try {
+    const existing = await Wallet.findOne({ where: { UserId: req.user.id } });
+    if (existing) {
+      return res.json({ success: true, wallet: existing });
+    }
+    
+    const wallet = await Wallet.create({
+      UserId: req.user.id,
+      balance: 0,
+      pending_balance: 0,
+    });
+    
+    res.json({ success: true, wallet });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

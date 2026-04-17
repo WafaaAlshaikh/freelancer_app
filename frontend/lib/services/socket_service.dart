@@ -1,4 +1,5 @@
-// lib/services/socket_service.dart
+// lib/services/socket_service.dart - قم بتعديل الكامل
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -36,7 +37,6 @@ class SocketService {
       _messageDeletedController.stream;
   Stream<Map<String, dynamic>> get onMessageEdited =>
       _messageEditedController.stream;
-
   Stream<List<ChatModel>> get onChatsUpdate => _chatsController.stream;
   Stream<Message> get onNewMessage => _newMessageController.stream;
   Stream<Map<String, dynamic>> get onTyping => _typingController.stream;
@@ -53,17 +53,30 @@ class SocketService {
 
   int? getCurrentUserId() {
     if (_currentUserId != null) {
-      return int.tryParse(_currentUserId!);
+      final userId = int.tryParse(_currentUserId!);
+      print('📱 getCurrentUserId() returning: $userId');
+      return userId;
     }
+    print('📱 getCurrentUserId() returning: null');
     return null;
   }
 
+  String? getCurrentUserIdString() {
+    print('📱 getCurrentUserIdString() returning: $_currentUserId');
+    return _currentUserId;
+  }
+
   Future<void> init() async {
+    print('🔌 ========== SOCKET INIT START ==========');
+
     final token = await TokenStorage.getToken();
     final userIdStr = await TokenStorage.getUserId();
+    final user = await TokenStorage.getUser();
 
-    print('🔌 Socket init - Token: ${token != null ? "Exists" : "Missing"}');
-    print('🔌 Socket init - UserId: $userIdStr');
+    print('🔌 Token exists: ${token != null}');
+    print('🔌 UserId from storage: $userIdStr');
+    print('🔌 Stored user: ${user?['id']} - ${user?['name']}');
+    print('🔌 =========================================');
 
     if (token == null || userIdStr == null) {
       print('❌ Cannot connect: No token or user ID');
@@ -72,11 +85,12 @@ class SocketService {
     }
 
     _currentUserId = userIdStr;
+    print('🔌 Set _currentUserId to: $_currentUserId');
 
     try {
       final String socketUrl = kIsWeb
-          ? 'http://localhost:5000'
-          : 'http://10.0.2.2:5000';
+          ? 'http://localhost:5001'
+          : 'http://10.0.2.2:5001';
       print('🔌 Connecting to socket at: $socketUrl');
 
       _socket = IO.io(socketUrl, <String, dynamic>{
@@ -85,7 +99,7 @@ class SocketService {
         'reconnection': true,
         'reconnectionAttempts': 5,
         'reconnectionDelay': 1000,
-        'auth': {'userId': int.parse(userIdStr), 'token': token},
+        'auth': {'userId': userIdStr, 'token': token},
         'extraHeaders': {'Authorization': 'Bearer $token'},
       });
 
@@ -116,7 +130,7 @@ class SocketService {
     _socket!.onConnect((_) {
       if (_isDisposed) return;
       _isConnected = true;
-      print('✅✅✅✅✅ Socket CONNECTED! ✅✅✅✅✅');
+      print('✅✅✅✅✅ Socket CONNECTED for user: $_currentUserId ✅✅✅✅✅');
       _connectionController.add(true);
       _socket!.emit('ping', {'timestamp': DateTime.now().toIso8601String()});
     });
@@ -130,7 +144,7 @@ class SocketService {
 
     _socket!.onDisconnect((_) {
       if (_isDisposed) return;
-      print('❌ Socket disconnected');
+      print('❌ Socket disconnected for user: $_currentUserId');
       _isConnected = false;
       _connectionController.add(false);
     });
@@ -138,6 +152,47 @@ class SocketService {
     _socket!.on('pong', (data) {
       if (_isDisposed) return;
       print('🏓 Socket pong received');
+    });
+
+    _socket!.on('chats_list', (data) {
+      if (_isDisposed) return;
+      print(
+        '📨 Received chats_list for user $_currentUserId: ${data?.length ?? 0} chats',
+      );
+      if (data != null) {
+        final chats = (data as List)
+            .map((json) => ChatModel.fromJson(json))
+            .toList();
+        _chatsController.add(chats);
+      }
+    });
+
+    _socket!.on('new_message', (data) {
+      if (_isDisposed) return;
+      print('💬 New message received for user $_currentUserId');
+      if (data != null) {
+        final message = Message.fromJson(data);
+        print(
+          '💬 Message sender: ${message.senderId}, Current user: $_currentUserId',
+        );
+        _newMessageController.add(message);
+      }
+    });
+
+    _socket!.on('user_typing', (data) {
+      if (_isDisposed) return;
+      print('✍️ Typing event: $data');
+      if (data != null) {
+        _typingController.add(data);
+      }
+    });
+
+    _socket!.on('messages_read', (data) {
+      if (_isDisposed) return;
+      print('✅ Messages read: $data');
+      if (data != null) {
+        _readReceiptController.add(data);
+      }
     });
 
     _socket!.on('message_deleted', (data) {
@@ -172,42 +227,6 @@ class SocketService {
       }
     });
 
-    _socket!.on('chats_list', (data) {
-      if (_isDisposed) return;
-      print('📨 Received chats_list: ${data?.length ?? 0} chats');
-      if (data != null) {
-        final chats = (data as List)
-            .map((json) => ChatModel.fromJson(json))
-            .toList();
-        _chatsController.add(chats);
-      }
-    });
-
-    _socket!.on('new_message', (data) {
-      if (_isDisposed) return;
-      print('💬 New message received');
-      if (data != null) {
-        final message = Message.fromJson(data);
-        _newMessageController.add(message);
-      }
-    });
-
-    _socket!.on('user_typing', (data) {
-      if (_isDisposed) return;
-      print('✍️ Typing event: $data');
-      if (data != null) {
-        _typingController.add(data);
-      }
-    });
-
-    _socket!.on('messages_read', (data) {
-      if (_isDisposed) return;
-      print('✅ Messages read: $data');
-      if (data != null) {
-        _readReceiptController.add(data);
-      }
-    });
-
     _socket!.on('new_message_notification', (data) {
       if (_isDisposed) return;
       print('🔔 New message notification: $data');
@@ -221,25 +240,11 @@ class SocketService {
         timeInSecForIosWeb: 3,
       );
     });
-
-    _socket!.on('message_error', (data) {
-      if (_isDisposed) return;
-      print('❌ Message error: $data');
-      Fluttertoast.showToast(
-        msg: data?['error'] ?? 'Failed to send message',
-        backgroundColor: Colors.red,
-      );
-    });
-
-    _socket!.on('chats_list_error', (data) {
-      if (_isDisposed) return;
-      print('❌ Chats list error: $data');
-    });
   }
 
   void joinChat(int chatId) {
     if (_isConnected && _socket != null && chatId != null) {
-      print('📢 Joining chat: $chatId');
+      print('📢 User $_currentUserId joining chat: $chatId');
       _socket!.emit('join_chat', chatId);
     } else {
       print(
@@ -248,15 +253,9 @@ class SocketService {
     }
   }
 
-  Future<int?> getCurrentUserIdAsync() async {
-    if (_currentUserId != null) return int.tryParse(_currentUserId!);
-    final userIdStr = await TokenStorage.getUserId();
-    return userIdStr != null ? int.tryParse(userIdStr) : null;
-  }
-
   void leaveChat(int chatId) {
     if (_isConnected && _socket != null && chatId != null) {
-      print('👋 Leaving chat: $chatId');
+      print('👋 User $_currentUserId leaving chat: $chatId');
       _socket!.emit('leave_chat', chatId);
     }
   }
@@ -287,14 +286,16 @@ class SocketService {
 
   void sendTyping(int chatId, bool isTyping) {
     if (_isConnected && _socket != null) {
-      print('✍️ Sending typing event for chat $chatId: $isTyping');
+      print(
+        '✍️ User $_currentUserId sending typing event for chat $chatId: $isTyping',
+      );
       _socket!.emit('typing', {'chatId': chatId, 'isTyping': isTyping});
     }
   }
 
   void markAsRead(int chatId) {
     if (_isConnected && _socket != null) {
-      print('✅ Marking chat $chatId as read');
+      print('✅ User $_currentUserId marking chat $chatId as read');
       _socket!.emit('mark_read', {'chatId': chatId});
     }
   }
@@ -308,7 +309,7 @@ class SocketService {
     int? replyTo,
   }) {
     if (!_isConnected) {
-      print('⚠️ Cannot send message: Not connected');
+      print('⚠️ Cannot send message: Not connected (user: $_currentUserId)');
       Fluttertoast.showToast(
         msg: 'Not connected to chat server',
         backgroundColor: Colors.orange,
@@ -321,7 +322,7 @@ class SocketService {
       return;
     }
 
-    print('📤 Sending message to chat $chatId: $content');
+    print('📤 User $_currentUserId sending message to chat $chatId: $content');
     print('📤 Reply to: $replyTo');
 
     final messageData = {'chatId': chatId, 'content': content, 'type': type};
@@ -334,23 +335,24 @@ class SocketService {
     if (fileName != null) messageData['fileName'] = fileName;
 
     _socket!.emit('send_message', messageData);
-    print('✅ Message sent');
+    print('✅ Message sent by user $_currentUserId');
   }
 
   void sendReaction(int messageId, String reaction) {
     if (_isConnected && _socket != null) {
-      print('😊 Sending reaction for message $messageId: $reaction');
+      print(
+        '😊 User $_currentUserId sending reaction for message $messageId: $reaction',
+      );
       _socket!.emit('send_reaction', {
         'messageId': messageId,
         'reaction': reaction,
       });
-    } else {
-      print('⚠️ Cannot send reaction: Not connected');
     }
   }
 
   void editMessage(int messageId, String content) {
     if (_isConnected && _socket != null) {
+      print('✏️ User $_currentUserId editing message $messageId');
       _socket!.emit('edit_message', {
         'messageId': messageId,
         'content': content,
@@ -360,6 +362,7 @@ class SocketService {
 
   void deleteMessage(int messageId) {
     if (_isConnected && _socket != null) {
+      print('🗑️ User $_currentUserId deleting message $messageId');
       _socket!.emit('delete_message', {'messageId': messageId});
     }
   }
@@ -372,6 +375,45 @@ class SocketService {
         'limit': limit,
       });
     }
+  }
+
+  Future<void> logoutAndClear() async {
+    print('🚪 User $_currentUserId logging out and clearing socket...');
+
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+      _socket = null;
+    }
+
+    _isConnected = false;
+    _currentUserId = null;
+
+    await TokenStorage.clearAll();
+
+    print('✅ Logout completed');
+  }
+
+  Future<void> loginWithNewUser(
+    String token,
+    String userId,
+    Map<String, dynamic> user,
+  ) async {
+    print('🔐 Logging in with new user: $userId - ${user['name']}');
+
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+      _socket = null;
+    }
+
+    _isConnected = false;
+
+    await TokenStorage.saveToken(token);
+    await TokenStorage.saveUserId(int.parse(userId));
+    await TokenStorage.saveUser(user);
+
+    await init();
   }
 
   void disconnect() {

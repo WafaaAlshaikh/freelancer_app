@@ -27,6 +27,7 @@ import {
   getClientDashboardOverview,
   getClientProfile,
   createContractFromProposalDirect,
+  createWallet,
 } from "../controllers/clientController.js";
 
 const router = express.Router();
@@ -61,6 +62,7 @@ router.post(
 
 router.get("/wallet", getWallet);
 router.post("/wallet/withdraw", requestWithdrawal);
+router.post('/wallet/create', createWallet);
 
 router.post("/contracts/:contractId/create-checkout", createCheckoutSession);
 router.get("/payment/success", handlePaymentSuccess);

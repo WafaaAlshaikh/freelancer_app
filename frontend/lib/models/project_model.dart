@@ -14,6 +14,9 @@ class Project {
   String? category;
   List<String>? skills;
   String? status;
+  int? contractId;
+  String? contractStatus;
+  String? escrowStatus;
   int? userId;
   int? views;
   int? proposalsCount;
@@ -33,6 +36,9 @@ class Project {
     this.category,
     this.skills,
     this.status,
+    this.contractId,
+    this.contractStatus,
+    this.escrowStatus,
     this.userId,
     this.views,
     this.proposalsCount,
@@ -94,6 +100,11 @@ class Project {
       category: json['category'],
       skills: skillsList,
       status: json['status'],
+      contractId: json['contractId'] is int
+          ? json['contractId']
+          : int.tryParse(json['contractId']?.toString() ?? ''),
+      contractStatus: json['contractStatus']?.toString(),
+      escrowStatus: json['escrowStatus']?.toString(),
       userId: json['UserId'] ?? json['user_id'],
       views: json['views'],
       proposalsCount: json['proposalsCount'] ?? json['proposals_count'],
