@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:freelancer_platform/models/usage_limits_model.dart';
 import 'package:freelancer_platform/screens/client/compare_freelancers_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/profile_screen.dart'
+    hide RatingStars;
+import 'package:freelancer_platform/screens/rating/reviews_screen.dart';
 import 'enhanced_client_profile_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -2254,6 +2257,14 @@ class _ClientDashboardState extends State<ClientDashboard> {
                         Expanded(flex: 3, child: _buildActiveContractsList()),
                         const SizedBox(width: 12),
                         Expanded(flex: 2, child: _buildTopFreelancersList()),
+                        const SizedBox(width: 12),
+                        if (_data?.topFreelancers.isNotEmpty == true)
+                          Expanded(
+                            flex: 2,
+                            child: _buildFreelancerWithRating(
+                              _data!.topFreelancers.first,
+                            ), 
+                          ),
                       ],
                     )
                   else ...[
@@ -2695,6 +2706,75 @@ class _ClientDashboardState extends State<ClientDashboard> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFreelancerWithRating(_FreelancerChip freelancer) {
+    return _SectionCard(
+      title: 'Top Rated ⭐',
+      action: 'View All',
+      onAction: () => setState(() => _selectedNav = 8),
+      child: GestureDetector(
+        onTap: () => _navigateToFreelancerProfile(freelancer.id),
+        child: Row(
+          children: [
+            _avatarWidget(
+              freelancer.name,
+              _getAvatarUrl(freelancer.avatar),
+              40,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    freelancer.name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      RatingStars(rating: freelancer.rating ?? 0, size: 12),
+                      const SizedBox(width: 8),
+                      Text(
+                        '(${freelancer.rating?.toStringAsFixed(1) ?? "0.0"})',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.star_border, color: Colors.amber),
+              onPressed: () {
+                _showFreelancerReviews(freelancer.id, freelancer.name);
+              },
+              tooltip: 'View Reviews',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFreelancerReviews(int freelancerId, String freelancerName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReviewsScreen(
+          userId: freelancerId,
+          userName: freelancerName,
+          userRole: 'freelancer',
         ),
       ),
     );

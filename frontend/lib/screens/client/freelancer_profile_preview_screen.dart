@@ -2,6 +2,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:freelancer_platform/models/rating_model.dart';
+import 'package:freelancer_platform/screens/rating/reviews_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:share_plus/share_plus.dart';
@@ -30,6 +32,8 @@ class _FreelancerProfilePreviewScreenState
   Map<String, dynamic> _profileData = {};
   bool _loading = true;
   bool _isHiring = false;
+  List<dynamic> _recentReviews = [];
+  RatingStats? _stats;
 
   static const Color _primary = Color(0xFF6366F1);
   static const Color _primaryDark = Color(0xFF4F46E5);
@@ -58,6 +62,76 @@ class _FreelancerProfilePreviewScreenState
     return [];
   }
 
+  void _loadReviews() async {
+    try {
+      final response = await ApiService.getUserRatings(widget.freelancerId);
+      setState(() {
+        _recentReviews = response['ratings'] ?? [];
+        _stats = RatingStats.fromJson(response['stats']);
+      });
+    } catch (e) {
+      print('Error loading reviews: $e');
+    }
+  }
+
+  Widget _buildReviewCard(Map<String, dynamic> review) {
+    final rating = (review['rating'] ?? 0).toDouble();
+    final comment = review['comment'] ?? '';
+    final fromUser = review['fromUser'] ?? {};
+    final userName = fromUser['name'] ?? 'Client';
+    final userAvatar = fromUser['avatar'];
+    final createdAt = review['createdAt'] != null
+        ? DateTime.tryParse(review['createdAt'])
+        : null;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: userAvatar != null
+                      ? NetworkImage(userAvatar)
+                      : null,
+                  child: userAvatar == null
+                      ? Text(userName[0].toUpperCase())
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      RatingStars(rating: rating, size: 12),
+                    ],
+                  ),
+                ),
+                if (createdAt != null)
+                  Text(
+                    _formatDate(createdAt),
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+              ],
+            ),
+            if (comment.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(comment, style: const TextStyle(fontSize: 13)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Map<String, dynamic> _safeMap(dynamic value) {
     if (value == null) return {};
     if (value is Map) return Map<String, dynamic>.from(value);
@@ -80,6 +154,7 @@ class _FreelancerProfilePreviewScreenState
   void initState() {
     super.initState();
     _loadFreelancerProfile();
+    _loadReviews();
   }
 
   Future<void> _loadFreelancerProfile() async {
@@ -139,6 +214,98 @@ class _FreelancerProfilePreviewScreenState
     }
   }
 
+  Widget _buildRatingAndReviews() {
+  final stats = _profileData['stats'] ?? {};
+  final reviews = _safeList(_profileData['reviews']);
+  final rating = (stats['rating'] ?? 0).toDouble();
+  final totalReviews = stats['total_reviews'] ?? 0;
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'Ratings & Reviews',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    rating.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
+                  ),
+                  RatingStars(rating: rating, size: 16),
+                  Text(
+                    '$totalReviews reviews',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReviewsScreen(
+                      userId: widget.freelancerId,
+                      userName: _profileData['user']?['name'] ?? 'Freelancer',
+                      userRole: 'freelancer',
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.star_border),
+              label: const Text('View All Reviews'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.amber,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Colors.amber),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      ...reviews.take(3).map((review) => _buildReviewCard(review)),
+      if (reviews.length > 3)
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReviewsScreen(
+                  userId: widget.freelancerId,
+                  userName: _profileData['user']?['name'] ?? 'Freelancer',
+                  userRole: 'freelancer',
+                ),
+              ),
+            );
+          },
+          child: const Text('See more reviews →'),
+        ),
+    ],
+  );
+}
   Future<void> _hireOrOpenProjectHire() async {
     if (widget.projectId == null) {
       await _startChat();
@@ -833,7 +1000,7 @@ class _FreelancerProfilePreviewScreenState
 
   Widget _buildSkillsSection() {
     final profile = _profileData['profile'] ?? {};
-    
+
     final skills = _safeList(profile['skills']);
     final topSkills = _safeList(profile['top_skills']);
 
@@ -1289,9 +1456,9 @@ class _FreelancerProfilePreviewScreenState
             final imageUrl = images.isNotEmpty
                 ? _mediaUrl(images[0].toString())
                 : '';
-            final technologies = _safeList(itemMap['technologies'])
-                .map((e) => e.toString())
-                .toList();
+            final technologies = _safeList(
+              itemMap['technologies'],
+            ).map((e) => e.toString()).toList();
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Material(

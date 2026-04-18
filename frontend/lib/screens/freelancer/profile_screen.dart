@@ -13,6 +13,7 @@ import 'package:freelancer_platform/screens/freelancer/edit_profile_screen.dart'
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/financial_dashboard_screen.dart';
 import 'package:freelancer_platform/screens/notifications/notifications_screen.dart';
+import 'package:freelancer_platform/screens/rating/reviews_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/skill_tests_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
@@ -1884,6 +1885,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                       )
                     : null,
               ),
+
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -1929,6 +1931,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               ),
             ],
           ),
+
+          _buildRatingSection(),
 
           const SizedBox(height: 16),
 
@@ -2008,6 +2012,71 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       ),
     );
   }
+
+  Widget _buildRatingSection() {
+  if (profile == null) {
+    return const SizedBox.shrink();
+  }
+  
+  final userId = profile!.id;
+  final rating = profile!.rating;
+  
+  if (userId == null || rating == null) {
+    return const SizedBox.shrink();
+  }
+
+  final userName = profile!.name ?? 'Freelancer';
+
+  return GestureDetector(
+    onTap: () {
+      if (userId != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ReviewsScreen(
+              userId: userId,
+              userName: userName,
+              userRole: 'freelancer',
+            ),
+          ),
+        );
+      } else {
+        Fluttertoast.showToast(msg: 'Unable to load reviews');
+      }
+    },
+    child: Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.star, color: Colors.amber),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rating: ${rating.toStringAsFixed(1)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Tap to see all reviews',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: Colors.grey),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _infoRow(IconData icon, String text) {
     return Padding(

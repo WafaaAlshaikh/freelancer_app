@@ -624,9 +624,139 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
         ),
       ),
       const SizedBox(width: 48),
-      Expanded(child: ZoomIn(child: _heroLottie(380))),
+      Expanded(
+  child: ZoomIn(
+    child: _buildDashboardPreview(),
+  ),
+),
     ],
   );
+
+  Widget _buildDashboardPreview() {
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [AppColors.darkCard, AppColors.darkCard2],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(32),
+      border: Border.all(color: AppColors.brand.withOpacity(0.3)),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.brand.withOpacity(0.2),
+          blurRadius: 30,
+          spreadRadius: 5,
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: AppColors.brandGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.dashboard, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Live Dashboard',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text('Live', style: TextStyle(color: Colors.green, fontSize: 11)),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            _buildStatCard('💰', 'Total Volume', '\$2.4M', '+23%'),
+            const SizedBox(width: 12),
+            _buildStatCard('👥', 'Active Users', '12.4K', '+18%'),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildStatCard('✅', 'Completed', '3,221', '+42%'),
+            const SizedBox(width: 12),
+            _buildStatCard('⭐', 'Rating', '4.98', '+0.2'),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Monthly Goal', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text('78%', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: 0.78,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  color: AppColors.brand2,
+                  minHeight: 8,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildStatCard(String icon, String label, String value, String change) {
+  return Expanded(
+    child: Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 24)),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(change, style: TextStyle(color: Colors.green[400], fontSize: 10)),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _heroBadge() => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

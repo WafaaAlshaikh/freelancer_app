@@ -30,6 +30,7 @@ class _ContractScreenState extends State<ContractScreen> {
   bool signing = false;
   bool _isProcessing = false;
   bool _couponBusy = false;
+  bool _canRate = false;
   final TextEditingController _couponController = TextEditingController();
 
   @override
@@ -91,26 +92,25 @@ class _ContractScreenState extends State<ContractScreen> {
   }
 
   Future<void> fetchContract() async {
-    setState(() => loading = true);
-
-    try {
-      final data = await ApiService.getContract(widget.contractId);
-      print('📥 Contract data received: $data');
-      print('📊 Milestones: ${data['milestones']}');
+  setState(() => loading = true);
+  try {
+    final data = await ApiService.getContract(widget.contractId);
+    setState(() {
+      contract = Contract.fromJson(data);
+      loading = false;
+    });
+    
+    if (contract?.status == 'completed') {
+      final canRateRes = await ApiService.checkCanRate(widget.contractId);
       setState(() {
-        contract = Contract.fromJson(data);
-        loading = false;
+        _canRate = canRateRes['canRate'] ?? false;
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        print('✅ Milestones in contract: ${contract?.milestones}');
-        print('📊 Milestones length: ${contract?.milestones?.length}');
-      });
-    } catch (e) {
-      setState(() => loading = false);
-      Fluttertoast.showToast(msg: "Error loading contract");
     }
+  } catch (e) {
+    setState(() => loading = false);
+    Fluttertoast.showToast(msg: "Error loading contract");
   }
-
+}
   bool get isAIGenerated {
     return contract?.terms?.contains('AI-generated') == true ||
         contract?.contractDocument?.contains('AI-generated') == true ||
@@ -1018,6 +1018,41 @@ class _ContractScreenState extends State<ContractScreen> {
                   const SizedBox(height: 24),
 
                   if (contract!.status == 'completed')
+
+if (contract!.status == 'completed' && _canRate == true)
+  Padding(
+    padding: const EdgeInsets.only(top: 16),
+    child: ElevatedButton.icon(
+      onPressed: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AddRatingScreen(
+              contractId: widget.contractId,
+              projectTitle: contract!.project?.title ?? 'Project',
+              otherPartyName: widget.userRole == 'client'
+                  ? contract!.freelancer?.name ?? 'Freelancer'
+                  : contract!.client?.name ?? 'Client',
+              role: widget.userRole,
+            ),
+          ),
+        );
+        if (result == true) {
+          setState(() => _canRate = false);
+          Fluttertoast.showToast(msg: 'Thank you for your rating!');
+        }
+      },
+      icon: const Icon(Icons.star_border),
+      label: const Text('Rate this experience'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.amber,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    ),
+  ),
                     FutureBuilder<Map<String, dynamic>>(
                       future: ApiService.checkCanRate(widget.contractId),
                       builder: (context, snapshot) {

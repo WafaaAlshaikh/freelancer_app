@@ -3502,6 +3502,34 @@ class ApiService {
       return null;
     }
   }
+
+  static Future<Map<String, dynamic>> markReviewHelpful(int reviewId) async {
+    try {
+      final response = await _dio.post(
+        '$BASE_URL/ratings/$reviewId/helpful',
+        options: Options(headers: headers),
+      );
+      return response.data;
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> addReviewReply(
+    int reviewId,
+    String reply,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '$BASE_URL/ratings/$reviewId/reply',
+        data: {'reply': reply},
+        options: Options(headers: headers),
+      );
+      return response.data;
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
 }
 
 class FinancialStatsResponse {
