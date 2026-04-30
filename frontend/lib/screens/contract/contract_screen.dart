@@ -3,12 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_html/flutter_html.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/contract_model.dart';
 import '../../services/api_service.dart';
 import 'contract_sign_screen.dart';
 import '../rating/add_rating_screen.dart';
 import '../workspace/connect_github_screen.dart';
 import '../payment/payment_screen.dart';
+import '../../theme/app_theme.dart';
 
 class ContractScreen extends StatefulWidget {
   final int contractId;
@@ -36,7 +38,11 @@ class _ContractScreenState extends State<ContractScreen> {
   @override
   void initState() {
     super.initState();
-    fetchContract();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        fetchContract(context);
+      }
+    });
   }
 
   @override
@@ -53,9 +59,10 @@ class _ContractScreenState extends State<ContractScreen> {
   }
 
   Future<void> _applyContractCoupon() async {
+    final t = AppLocalizations.of(context)!;
     final code = _couponController.text.trim();
     if (code.isEmpty) {
-      Fluttertoast.showToast(msg: 'Enter a coupon code');
+      Fluttertoast.showToast(msg: t.enterCouponCode);
       return;
     }
     setState(() => _couponBusy = true);
@@ -66,51 +73,63 @@ class _ContractScreenState extends State<ContractScreen> {
     if (!mounted) return;
     setState(() => _couponBusy = false);
     if (r['success'] == true) {
-      Fluttertoast.showToast(msg: r['message']?.toString() ?? 'Coupon applied');
+      Fluttertoast.showToast(msg: r['message']?.toString() ?? t.couponApplied);
       _couponController.clear();
-      fetchContract();
+      fetchContract(context);
     } else {
       Fluttertoast.showToast(
-        msg: r['message']?.toString() ?? 'Could not apply coupon',
+        msg: r['message']?.toString() ?? t.couldNotApplyCoupon,
       );
     }
   }
 
   Future<void> _removeContractCoupon() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _couponBusy = true);
     final r = await ApiService.removeContractCoupon(widget.contractId);
     if (!mounted) return;
     setState(() => _couponBusy = false);
     if (r['success'] == true) {
-      Fluttertoast.showToast(msg: r['message']?.toString() ?? 'Coupon removed');
-      fetchContract();
+      Fluttertoast.showToast(msg: r['message']?.toString() ?? t.couponRemoved);
+      fetchContract(context);
     } else {
       Fluttertoast.showToast(
-        msg: r['message']?.toString() ?? 'Could not remove coupon',
+        msg: r['message']?.toString() ?? t.couldNotRemoveCoupon,
       );
     }
   }
 
-  Future<void> fetchContract() async {
-  setState(() => loading = true);
-  try {
-    final data = await ApiService.getContract(widget.contractId);
-    setState(() {
-      contract = Contract.fromJson(data);
-      loading = false;
-    });
-    
-    if (contract?.status == 'completed') {
-      final canRateRes = await ApiService.checkCanRate(widget.contractId);
+  Future<void> fetchContract(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+
+    setState(() => loading = true);
+    try {
+      final data = await ApiService.getContract(widget.contractId);
+
+      if (!mounted) return;
+
       setState(() {
-        _canRate = canRateRes['canRate'] ?? false;
+        contract = Contract.fromJson(data);
+        loading = false;
       });
+
+      if (contract?.status == 'completed') {
+        final canRateRes = await ApiService.checkCanRate(widget.contractId);
+        if (mounted) {
+          setState(() {
+            _canRate = canRateRes['canRate'] ?? false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => loading = false);
+        Fluttertoast.showToast(msg: t.errorLoadingContract);
+      }
     }
-  } catch (e) {
-    setState(() => loading = false);
-    Fluttertoast.showToast(msg: "Error loading contract");
   }
-}
+
   bool get isAIGenerated {
     return contract?.terms?.contains('AI-generated') == true ||
         contract?.contractDocument?.contains('AI-generated') == true ||
@@ -129,6 +148,7 @@ class _ContractScreenState extends State<ContractScreen> {
   }
 
   Future<void> _initiatePayment() async {
+    final t = AppLocalizations.of(context)!;
     if (contract == null) return;
 
     setState(() => _isProcessing = true);
@@ -150,37 +170,38 @@ class _ContractScreenState extends State<ContractScreen> {
         );
 
         if (result == true) {
-          fetchContract();
+          fetchContract(context);
         }
       } else {
         Fluttertoast.showToast(
-          msg: paymentIntent['message'] ?? 'Error creating payment',
+          msg: paymentIntent['message'] ?? t.errorCreatingPayment,
         );
       }
     } catch (e) {
       print('Error initiating payment: $e');
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       setState(() => _isProcessing = false);
     }
   }
 
   Future<void> signContract() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => signing = true);
 
     try {
       final result = await ApiService.signContract(widget.contractId);
 
       if (result['contract'] != null) {
-        Fluttertoast.showToast(msg: "✅ Contract signed successfully");
-        fetchContract();
+        Fluttertoast.showToast(msg: t.contractSignedSuccess);
+        fetchContract(context);
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? "Error signing contract",
+          msg: result['message'] ?? t.errorSigningContract,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error: $e");
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       setState(() => signing = false);
     }
@@ -188,11 +209,6 @@ class _ContractScreenState extends State<ContractScreen> {
 
   bool get canSign {
     if (contract == null) return false;
-
-    print('🔍 Checking canSign for ${widget.userRole}');
-    print('📊 Contract status: ${contract!.status}');
-    print('👤 Client signed: ${contract!.clientSignedAt != null}');
-    print('👤 Freelancer signed: ${contract!.freelancerSignedAt != null}');
 
     if (widget.userRole == 'client') {
       return (contract!.status == 'draft' ||
@@ -216,55 +232,65 @@ class _ContractScreenState extends State<ContractScreen> {
   }
 
   String get contractStatusText {
+    final t = AppLocalizations.of(context);
     if (contract == null) return '';
+    if (t == null) return contract!.status ?? '';
 
     switch (contract!.status) {
       case 'draft':
-        return 'Awaiting Signatures';
+        return t.awaitingSignatures;
       case 'pending_client':
-        return 'Waiting for Client Signature';
+        return t.waitingForClientSignature;
       case 'pending_freelancer':
-        return 'Waiting for Freelancer Signature';
+        return t.waitingForFreelancerSignature;
       case 'active':
-        return 'Contract Active';
+        return t.contractActive;
       case 'completed':
-        return 'Contract Completed';
+        return t.contractCompleted;
       case 'cancelled':
-        return 'Contract Cancelled';
+        return t.contractCancelled;
       default:
-        return contract!.status ?? 'Unknown';
+        return contract!.status ?? t.unknown;
     }
   }
 
   Color get contractStatusColor {
+    final theme = Theme.of(context);
     switch (contract?.status) {
       case 'active':
-        return Colors.green;
+        return theme.colorScheme.secondary;
       case 'draft':
       case 'pending_client':
       case 'pending_freelancer':
-        return Colors.orange;
+        return AppColors.warning;
       case 'completed':
-        return Colors.blue;
+        return AppColors.info;
       case 'cancelled':
-        return Colors.red;
+        return AppColors.danger;
       default:
-        return Colors.grey;
+        return AppColors.gray;
     }
   }
 
   Future<void> _showConnectGithubDialog() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Connect GitHub'),
-        content: const Text(
-          'Do you want to connect a GitHub repository to this project?',
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.connectGithub,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
+        content: Text(
+          t.connectGithubDescription,
+          style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -277,12 +303,15 @@ class _ContractScreenState extends State<ContractScreen> {
                 ),
               ).then((value) {
                 if (value == true) {
-                  fetchContract();
+                  fetchContract(context);
                 }
               });
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-            child: const Text('Connect'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(t.connect),
           ),
         ],
       ),
@@ -325,26 +354,25 @@ class _ContractScreenState extends State<ContractScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('🎯 ContractScreen - userRole: ${widget.userRole}');
-    print('📄 Contract status: ${contract?.status}');
-    print('🔍 canSign: $canSign');
-    print('👤 clientSignedAt: ${contract?.clientSignedAt}');
-    print('👤 freelancerSignedAt: ${contract?.freelancerSignedAt}');
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Row(
           children: [
-            const Text("Contract Agreement"),
+            Text(t.contractAgreement),
             if (isAIGenerated) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
                     colors: [Colors.purple, Colors.blue],
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -361,9 +389,9 @@ class _ContractScreenState extends State<ContractScreen> {
             ],
           ],
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           if (contract?.status == 'active')
             TextButton.icon(
@@ -377,23 +405,39 @@ class _ContractScreenState extends State<ContractScreen> {
                   },
                 );
               },
-              icon: const Icon(Icons.timeline, size: 20),
-              label: const Text('Progress'),
+              icon: Icon(
+                Icons.timeline,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              label: Text(
+                t.progress,
+                style: TextStyle(color: theme.colorScheme.primary),
+              ),
             ),
           if (contract?.status == 'active' && widget.userRole == 'freelancer')
             IconButton(
-              icon: const Icon(Icons.calendar_month),
+              icon: Icon(Icons.calendar_month, color: theme.iconTheme.color),
               onPressed: () {
                 Navigator.pushNamed(context, '/calendar');
               },
-              tooltip: 'Calendar',
+              tooltip: t.calendar,
             ),
         ],
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : contract == null
-          ? const Center(child: Text("Contract not found"))
+          ? Center(
+              child: Text(
+                t.contractNotFound,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -431,7 +475,7 @@ class _ContractScreenState extends State<ContractScreen> {
                               ),
                               if (contract!.signedAt != null)
                                 Text(
-                                  "Signed on: ${_formatDate(contract!.signedAt)}",
+                                  '${t.signedOn}: ${_formatDate(contract!.signedAt)}',
                                   style: TextStyle(
                                     color: contractStatusColor.withOpacity(0.7),
                                     fontSize: 12,
@@ -449,25 +493,26 @@ class _ContractScreenState extends State<ContractScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: theme.colorScheme.secondary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Contract Amount",
+                        Text(
+                          t.contractAmount,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         Text(
-                          "\$${_formatAmountInt(contract!.agreedAmount)}",
+                          '${t.dollar}${_formatAmountInt(contract!.agreedAmount)}',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
+                            color: theme.colorScheme.secondary,
                           ),
                         ),
                       ],
@@ -483,11 +528,12 @@ class _ContractScreenState extends State<ContractScreen> {
                       children: [
                         Row(
                           children: [
-                            const Text(
-                              "Payment Milestones",
+                            Text(
+                              t.paymentMilestones,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                             if (isAIGenerated)
@@ -498,7 +544,7 @@ class _ContractScreenState extends State<ContractScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.shade100,
+                                  color: Colors.purple.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -511,7 +557,7 @@ class _ContractScreenState extends State<ContractScreen> {
                                     ),
                                     const SizedBox(width: 2),
                                     Text(
-                                      "AI Optimized",
+                                      t.aiOptimized,
                                       style: TextStyle(
                                         fontSize: 9,
                                         color: Colors.purple.shade700,
@@ -536,13 +582,17 @@ class _ContractScreenState extends State<ContractScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
                         child: Text(
-                          'No milestones found for this contract',
-                          style: TextStyle(color: Colors.grey.shade600),
+                          t.noMilestonesFound,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
                         ),
                       ),
                     ),
@@ -554,11 +604,12 @@ class _ContractScreenState extends State<ContractScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'GitHub Integration',
+                        Text(
+                          t.githubIntegration,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -567,37 +618,41 @@ class _ContractScreenState extends State<ContractScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: isDark
+                                  ? AppColors.darkSurface
+                                  : Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(color: theme.dividerColor),
                             ),
                             child: Column(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.link,
                                   size: 48,
-                                  color: Colors.grey,
+                                  color: AppColors.gray,
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
-                                  'Connect your GitHub repository',
+                                Text(
+                                  t.connectGithubRepository,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Track your progress and show your work',
-                                  style: TextStyle(color: Colors.grey.shade600),
+                                  t.trackProgressAndShowWork,
+                                  style: TextStyle(color: AppColors.gray),
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
                                   onPressed: _showConnectGithubDialog,
                                   icon: const Icon(Icons.link),
-                                  label: const Text('Connect Repository'),
+                                  label: Text(t.connectRepository),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
+                                    foregroundColor: Colors.white,
                                   ),
                                 ),
                               ],
@@ -607,22 +662,28 @@ class _ContractScreenState extends State<ContractScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: isDark
+                                  ? AppColors.darkSurface
+                                  : Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(color: theme.dividerColor),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.link, color: Colors.black),
+                                    Icon(
+                                      Icons.link,
+                                      color: theme.colorScheme.primary,
+                                    ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         contract!.githubRepo!,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
+                                          color: theme.colorScheme.onSurface,
                                         ),
                                       ),
                                     ),
@@ -636,8 +697,10 @@ class _ContractScreenState extends State<ContractScreen> {
                                   builder: (context, snapshot) {
                                     if (snapshot.connectionState ==
                                         ConnectionState.waiting) {
-                                      return const Center(
-                                        child: CircularProgressIndicator(),
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          color: theme.colorScheme.primary,
+                                        ),
                                       );
                                     }
 
@@ -650,16 +713,16 @@ class _ContractScreenState extends State<ContractScreen> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              'Recent Commits',
+                                              t.recentCommits,
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.grey.shade700,
+                                                color: AppColors.gray,
                                               ),
                                             ),
                                             Text(
-                                              '${commits.length} commits',
+                                              '${commits.length} ${t.commits}',
                                               style: TextStyle(
-                                                color: Colors.grey.shade600,
+                                                color: AppColors.gray,
                                               ),
                                             ),
                                           ],
@@ -675,9 +738,12 @@ class _ContractScreenState extends State<ContractScreen> {
                                                     ),
                                                 child: Row(
                                                   children: [
-                                                    const Icon(
+                                                    Icon(
                                                       Icons.fiber_manual_record,
                                                       size: 8,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .primary,
                                                     ),
                                                     const SizedBox(width: 8),
                                                     Expanded(
@@ -692,14 +758,18 @@ class _ContractScreenState extends State<ContractScreen> {
                                                             overflow:
                                                                 TextOverflow
                                                                     .ellipsis,
+                                                            style: TextStyle(
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .onSurface,
+                                                            ),
                                                           ),
                                                           Text(
                                                             '${commit['author']} • ${_formatDateShort(DateTime.parse(commit['date']))}',
                                                             style: TextStyle(
                                                               fontSize: 10,
-                                                              color: Colors
-                                                                  .grey
-                                                                  .shade600,
+                                                              color: AppColors
+                                                                  .gray,
                                                             ),
                                                           ),
                                                         ],
@@ -721,22 +791,29 @@ class _ContractScreenState extends State<ContractScreen> {
                       ],
                     ),
 
-                  const Text(
-                    "Contract Document",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    t.contractDocument,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 12),
 
                   Container(
                     height: 400,
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: theme.dividerColor),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: contract!.contractDocument != null
                         ? _buildHtmlDocument(contract!.contractDocument!)
-                        : const Center(
-                            child: Text("Contract document not available"),
+                        : Center(
+                            child: Text(
+                              t.contractDocumentNotAvailable,
+                              style: TextStyle(color: AppColors.gray),
+                            ),
                           ),
                   ),
 
@@ -745,7 +822,9 @@ class _ContractScreenState extends State<ContractScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -757,18 +836,19 @@ class _ContractScreenState extends State<ContractScreen> {
                                   ? Icons.check_circle
                                   : Icons.radio_button_unchecked,
                               color: contract!.clientSignedAt != null
-                                  ? Colors.green
-                                  : Colors.grey,
+                                  ? theme.colorScheme.secondary
+                                  : AppColors.gray,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    "Client Signature",
+                                  Text(
+                                    t.clientSignature,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                   ),
                                   if (contract!.clientSignedAt != null)
@@ -776,7 +856,7 @@ class _ContractScreenState extends State<ContractScreen> {
                                       _formatDate(contract!.clientSignedAt),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: AppColors.gray,
                                       ),
                                     ),
                                 ],
@@ -784,7 +864,7 @@ class _ContractScreenState extends State<ContractScreen> {
                             ),
                           ],
                         ),
-                        const Divider(height: 24),
+                        Divider(height: 24, color: theme.dividerColor),
                         Row(
                           children: [
                             Icon(
@@ -792,18 +872,19 @@ class _ContractScreenState extends State<ContractScreen> {
                                   ? Icons.check_circle
                                   : Icons.radio_button_unchecked,
                               color: contract!.freelancerSignedAt != null
-                                  ? Colors.green
-                                  : Colors.grey,
+                                  ? theme.colorScheme.secondary
+                                  : AppColors.gray,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    "Freelancer Signature",
+                                  Text(
+                                    t.freelancerSignature,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                   ),
                                   if (contract!.freelancerSignedAt != null)
@@ -811,7 +892,7 @@ class _ContractScreenState extends State<ContractScreen> {
                                       _formatDate(contract!.freelancerSignedAt),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: AppColors.gray,
                                       ),
                                     ),
                                 ],
@@ -829,6 +910,7 @@ class _ContractScreenState extends State<ContractScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Card(
                         elevation: 2,
+                        color: theme.cardColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -842,22 +924,22 @@ class _ContractScreenState extends State<ContractScreen> {
                                   Icon(
                                     Icons.attach_money,
                                     color: isEscrowFunded
-                                        ? Colors.green
-                                        : Colors.orange,
+                                        ? theme.colorScheme.secondary
+                                        : AppColors.warning,
                                     size: 24,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       isEscrowFunded
-                                          ? '✅ Escrow Funded'
-                                          : '💰 Payment Required',
+                                          ? t.escrowFunded
+                                          : t.paymentRequired,
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: isEscrowFunded
-                                            ? Colors.green
-                                            : Colors.orange,
+                                            ? theme.colorScheme.secondary
+                                            : AppColors.warning,
                                       ),
                                     ),
                                   ),
@@ -866,11 +948,11 @@ class _ContractScreenState extends State<ContractScreen> {
                               const SizedBox(height: 12),
                               Text(
                                 isEscrowFunded
-                                    ? 'The payment is secured in escrow. Milestone payments will be released upon approval.'
-                                    : 'To activate this contract and start working, please deposit the contract amount into escrow.',
+                                    ? t.escrowFundedDescription
+                                    : t.paymentRequiredDescription,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade600,
+                                  color: AppColors.gray,
                                   height: 1.4,
                                 ),
                               ),
@@ -881,24 +963,45 @@ class _ContractScreenState extends State<ContractScreen> {
                                   controller: _couponController,
                                   textCapitalization:
                                       TextCapitalization.characters,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                  ),
                                   decoration: InputDecoration(
-                                    labelText: 'Contract coupon (escrow)',
-                                    hintText: 'Apply before paying',
+                                    labelText: t.contractCouponEscrow,
+                                    hintText: t.applyBeforePaying,
+                                    labelStyle: TextStyle(
+                                      color: AppColors.gray,
+                                    ),
                                     border: const OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: theme.dividerColor,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
                                     suffixIcon: _couponBusy
-                                        ? const Padding(
-                                            padding: EdgeInsets.all(12),
+                                        ? Padding(
+                                            padding: const EdgeInsets.all(12),
                                             child: SizedBox(
                                               width: 20,
                                               height: 20,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
+                                                color:
+                                                    theme.colorScheme.primary,
                                               ),
                                             ),
                                           )
                                         : IconButton(
-                                            icon: const Icon(Icons.local_offer),
-                                            tooltip: 'Apply',
+                                            icon: Icon(
+                                              Icons.local_offer,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                            tooltip: t.apply,
                                             onPressed: _couponBusy
                                                 ? null
                                                 : _applyContractCoupon,
@@ -913,20 +1016,31 @@ class _ContractScreenState extends State<ContractScreen> {
                                     children: [
                                       Expanded(
                                         child: Chip(
-                                          avatar: const Icon(
+                                          avatar: Icon(
                                             Icons.sell,
                                             size: 18,
+                                            color: theme.colorScheme.primary,
                                           ),
                                           label: Text(
-                                            '${contract!.couponCode} · -\$${_formatAmount(contract!.couponDiscountAmount)}',
+                                            '${contract!.couponCode} · -${t.dollar}${_formatAmount(contract!.couponDiscountAmount)}',
+                                            style: TextStyle(
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                            ),
                                           ),
+                                          backgroundColor: theme.cardColor,
                                         ),
                                       ),
                                       TextButton(
                                         onPressed: _couponBusy
                                             ? null
                                             : _removeContractCoupon,
-                                        child: const Text('Remove'),
+                                        child: Text(
+                                          t.remove,
+                                          style: TextStyle(
+                                            color: AppColors.danger,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -934,10 +1048,10 @@ class _ContractScreenState extends State<ContractScreen> {
                                 const SizedBox(height: 12),
                                 if ((contract?.couponDiscountAmount ?? 0) > 0)
                                   Text(
-                                    'Amount due now: \$${_formatAmount(_clientEscrowAmountDue)} (after coupon)',
+                                    '${t.amountDueNow}: ${t.dollar}${_formatAmount(_clientEscrowAmountDue)} (${t.afterCoupon})',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.green.shade800,
+                                      color: theme.colorScheme.secondary,
                                     ),
                                   ),
                                 const SizedBox(height: 8),
@@ -950,7 +1064,7 @@ class _ContractScreenState extends State<ContractScreen> {
                                         ? null
                                         : _initiatePayment,
                                     icon: _isProcessing
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             width: 20,
                                             height: 20,
                                             child: CircularProgressIndicator(
@@ -961,15 +1075,17 @@ class _ContractScreenState extends State<ContractScreen> {
                                         : const Icon(Icons.lock_clock),
                                     label: Text(
                                       _isProcessing
-                                          ? 'Processing...'
-                                          : 'Pay \$${_formatAmount(_clientEscrowAmountDue)}',
+                                          ? t.processing
+                                          : '${t.pay} ${t.dollar}${_formatAmount(_clientEscrowAmountDue)}',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xff14A800),
+                                      backgroundColor:
+                                          theme.colorScheme.secondary,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 14,
                                       ),
@@ -983,25 +1099,27 @@ class _ContractScreenState extends State<ContractScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
+                                    color: theme.colorScheme.secondary
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.green.shade200,
+                                      color: theme.colorScheme.secondary
+                                          .withOpacity(0.3),
                                     ),
                                   ),
                                   child: Row(
                                     children: [
                                       Icon(
                                         Icons.check_circle,
-                                        color: Colors.green.shade700,
+                                        color: theme.colorScheme.secondary,
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
-                                          'Payment secured: \$${_formatAmount(contract?.agreedAmount)} in escrow',
+                                          '${t.paymentSecured}: ${t.dollar}${_formatAmount(contract?.agreedAmount)} ${t.inEscrow}',
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.green.shade700,
+                                            color: theme.colorScheme.secondary,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -1017,121 +1135,41 @@ class _ContractScreenState extends State<ContractScreen> {
 
                   const SizedBox(height: 24),
 
-                  if (contract!.status == 'completed')
-
-if (contract!.status == 'completed' && _canRate == true)
-  Padding(
-    padding: const EdgeInsets.only(top: 16),
-    child: ElevatedButton.icon(
-      onPressed: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AddRatingScreen(
-              contractId: widget.contractId,
-              projectTitle: contract!.project?.title ?? 'Project',
-              otherPartyName: widget.userRole == 'client'
-                  ? contract!.freelancer?.name ?? 'Freelancer'
-                  : contract!.client?.name ?? 'Client',
-              role: widget.userRole,
-            ),
-          ),
-        );
-        if (result == true) {
-          setState(() => _canRate = false);
-          Fluttertoast.showToast(msg: 'Thank you for your rating!');
-        }
-      },
-      icon: const Icon(Icons.star_border),
-      label: const Text('Rate this experience'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.amber,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    ),
-  ),
-                    FutureBuilder<Map<String, dynamic>>(
-                      future: ApiService.checkCanRate(widget.contractId),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData &&
-                            snapshot.data!['canRate'] == true) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.amber.shade200,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.rate_review,
-                                        color: Colors.amber.shade700,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Project completed! Rate your experience',
-                                          style: TextStyle(
-                                            color: Colors.amber.shade800,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        final result = await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => AddRatingScreen(
-                                              contractId: widget.contractId,
-                                              projectTitle:
-                                                  contract!.project?.title ??
-                                                  'Project',
-                                              otherPartyName:
-                                                  widget.userRole == 'client'
-                                                  ? contract!
-                                                            .freelancer
-                                                            ?.name ??
-                                                        'Freelancer'
-                                                  : contract!.client?.name ??
-                                                        'Client',
-                                              role: widget.userRole,
-                                            ),
-                                          ),
-                                        );
-
-                                        if (result == true) {
-                                          fetchContract();
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.amber,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      child: const Text('Write a Review'),
-                                    ),
-                                  ),
-                                ],
+                  if (contract!.status == 'completed' && _canRate == true)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final t = AppLocalizations.of(context)!;
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AddRatingScreen(
+                                contractId: widget.contractId,
+                                projectTitle:
+                                    contract!.project?.title ?? t.project,
+                                otherPartyName: widget.userRole == 'client'
+                                    ? contract!.freelancer?.name ?? t.freelancer
+                                    : contract!.client?.name ?? t.client,
+                                role: widget.userRole,
                               ),
                             ),
                           );
-                        }
-                        return const SizedBox.shrink();
-                      },
+                          if (result == true) {
+                            setState(() => _canRate = false);
+                            Fluttertoast.showToast(msg: t.thankYouForRating);
+                          }
+                        },
+                        icon: const Icon(Icons.star_border),
+                        label: Text(t.rateThisExperience),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
                     ),
 
                   if (canSign)
@@ -1141,19 +1179,17 @@ if (contract!.status == 'completed' && _canRate == true)
                       child: ElevatedButton(
                         onPressed: signing ? null : _navigateToSignScreen,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff14A800),
+                          backgroundColor: theme.colorScheme.secondary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: signing
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
+                            ? CircularProgressIndicator(color: Colors.white)
                             : Text(
                                 isSignedByMe
-                                    ? "Waiting for Other Party"
-                                    : "Sign Contract",
+                                    ? t.waitingForOtherParty
+                                    : t.signContract,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1167,9 +1203,9 @@ if (contract!.status == 'completed' && _canRate == true)
                       padding: const EdgeInsets.only(top: 16),
                       child: Center(
                         child: Text(
-                          "Contract is active. You can now start working!",
+                          t.contractActiveMessage,
                           style: TextStyle(
-                            color: Colors.green.shade700,
+                            color: theme.colorScheme.secondary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1182,6 +1218,9 @@ if (contract!.status == 'completed' && _canRate == true)
   }
 
   Widget _buildHtmlDocument(String htmlContent) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Html(
@@ -1190,11 +1229,11 @@ if (contract!.status == 'completed' && _canRate == true)
           "body": Style(
             fontSize: FontSize(14.0),
             lineHeight: LineHeight(1.6),
-            color: Colors.black87,
+            color: theme.colorScheme.onSurface,
           ),
           "h1": Style(
             fontSize: FontSize(24),
-            color: const Color(0xff14A800),
+            color: theme.colorScheme.secondary,
             textAlign: TextAlign.center,
             margin: Margins.only(bottom: 20),
             fontWeight: FontWeight.bold,
@@ -1203,26 +1242,36 @@ if (contract!.status == 'completed' && _canRate == true)
             fontSize: FontSize(18),
             fontWeight: FontWeight.bold,
             margin: Margins.only(top: 16, bottom: 8),
+            color: theme.colorScheme.onSurface,
           ),
-          "p": Style(margin: Margins.only(bottom: 8)),
+          "p": Style(
+            margin: Margins.only(bottom: 8),
+            color: theme.colorScheme.onSurface,
+          ),
           ".signature": Style(
             margin: Margins.only(top: 32),
             fontStyle: FontStyle.italic,
             fontSize: FontSize(16),
           ),
           ".terms": Style(
-            backgroundColor: Colors.grey.shade50,
+            backgroundColor: isDark
+                ? AppColors.darkSurface
+                : Colors.grey.shade50,
             padding: HtmlPaddings.all(16),
             margin: Margins.only(top: 8, bottom: 8),
           ),
           "strong": Style(fontWeight: FontWeight.bold),
           ".milestone-card": Style(
-            backgroundColor: Colors.grey.shade100,
+            backgroundColor: isDark
+                ? AppColors.darkSurface
+                : Colors.grey.shade100,
             padding: HtmlPaddings.all(12),
             margin: Margins.only(bottom: 12),
           ),
           ".clause": Style(
-            backgroundColor: Colors.grey.shade50,
+            backgroundColor: isDark
+                ? AppColors.darkSurface
+                : Colors.grey.shade50,
             padding: HtmlPaddings.all(12),
             margin: Margins.only(bottom: 12),
           ),
@@ -1232,6 +1281,10 @@ if (contract!.status == 'completed' && _canRate == true)
   }
 
   Widget _buildMilestoneCard(Map<String, dynamic> milestone, int index) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     double getAmount(dynamic value) {
       if (value == null) return 0.0;
       if (value is double) return value;
@@ -1253,26 +1306,27 @@ if (contract!.status == 'completed' && _canRate == true)
     String statusText;
 
     if (isApproved) {
-      statusColor = Colors.green;
+      statusColor = theme.colorScheme.secondary;
       statusIcon = Icons.check_circle;
-      statusText = 'Paid ✓';
+      statusText = t.paid;
     } else if (isCompleted) {
-      statusColor = Colors.orange;
+      statusColor = AppColors.warning;
       statusIcon = Icons.pending;
-      statusText = 'Completed - Awaiting Approval';
+      statusText = t.completedAwaitingApproval;
     } else if (isPending) {
-      statusColor = Colors.blue;
+      statusColor = AppColors.info;
       statusIcon = Icons.radio_button_unchecked;
-      statusText = 'In Progress';
+      statusText = t.inProgress;
     } else {
-      statusColor = Colors.grey;
+      statusColor = AppColors.gray;
       statusIcon = Icons.block;
-      statusText = 'Not Started';
+      statusText = t.notStarted;
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
+      color: theme.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1295,10 +1349,11 @@ if (contract!.status == 'completed' && _canRate == true)
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        milestone['title'] ?? 'Milestone ${index + 1}',
-                        style: const TextStyle(
+                        milestone['title'] ?? '${t.milestone} ${index + 1}',
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       Text(
@@ -1318,15 +1373,15 @@ if (contract!.status == 'completed' && _canRate == true)
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: theme.colorScheme.secondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '\$${amount.toStringAsFixed(0)}',
+                    '${t.dollar}${amount.toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
+                      color: theme.colorScheme.secondary,
                     ),
                   ),
                 ),
@@ -1341,7 +1396,7 @@ if (contract!.status == 'completed' && _canRate == true)
                 milestone['description'],
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey.shade700,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                   height: 1.4,
                 ),
               ),
@@ -1351,15 +1406,11 @@ if (contract!.status == 'completed' && _canRate == true)
             if (milestone['due_date'] != null)
               Row(
                 children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 14,
-                    color: Colors.grey.shade500,
-                  ),
+                  Icon(Icons.calendar_today, size: 14, color: AppColors.gray),
                   const SizedBox(width: 6),
                   Text(
-                    'Due: ${_formatDateShort(DateTime.parse(milestone['due_date']))}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    '${t.due}: ${_formatDateShort(DateTime.parse(milestone['due_date']))}',
+                    style: TextStyle(fontSize: 12, color: AppColors.gray),
                   ),
                 ],
               ),
@@ -1374,11 +1425,8 @@ if (contract!.status == 'completed' && _canRate == true)
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Progress',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
-                        ),
+                        t.progress,
+                        style: TextStyle(fontSize: 11, color: AppColors.gray),
                       ),
                       Text(
                         '${progress.toInt()}%',
@@ -1395,7 +1443,9 @@ if (contract!.status == 'completed' && _canRate == true)
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress / 100,
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: isDark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade200,
                       valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                       minHeight: 6,
                     ),
@@ -1416,11 +1466,11 @@ if (contract!.status == 'completed' && _canRate == true)
                         icon: const Icon(Icons.check_circle, size: 18),
                         label: Text(
                           progress >= 100
-                              ? 'Mark as Completed'
-                              : 'Update Progress',
+                              ? t.markAsCompleted
+                              : t.updateProgress,
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff14A800),
+                          backgroundColor: theme.colorScheme.secondary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -1444,10 +1494,11 @@ if (contract!.status == 'completed' && _canRate == true)
                             : () => _approveMilestone(index),
                         icon: const Icon(Icons.attach_money, size: 18),
                         label: Text(
-                          'Approve & Release \$${amount.toStringAsFixed(0)}',
+                          '${t.approveAndRelease} ${t.dollar}${amount.toStringAsFixed(0)}',
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          backgroundColor: AppColors.warning,
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -1460,9 +1511,10 @@ if (contract!.status == 'completed' && _canRate == true)
                       child: OutlinedButton.icon(
                         onPressed: () => _requestRevision(index),
                         icon: const Icon(Icons.edit, size: 18),
-                        label: const Text("Request Changes"),
+                        label: Text(t.requestChanges),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
+                          foregroundColor: AppColors.danger,
+                          side: BorderSide(color: AppColors.danger),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -1479,22 +1531,22 @@ if (contract!.status == 'completed' && _canRate == true)
                 margin: const EdgeInsets.only(top: 12),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade50,
+                  color: theme.colorScheme.secondary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.check_circle,
-                      color: Colors.green.shade700,
+                      color: theme.colorScheme.secondary,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Payment released on ${_formatDateShort(milestone['approved_at'] != null ? DateTime.parse(milestone['approved_at']) : DateTime.now())}',
+                      '${t.paymentReleasedOn} ${_formatDateShort(milestone['approved_at'] != null ? DateTime.parse(milestone['approved_at']) : DateTime.now())}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.green.shade700,
+                        color: theme.colorScheme.secondary,
                       ),
                     ),
                   ],
@@ -1507,6 +1559,7 @@ if (contract!.status == 'completed' && _canRate == true)
   }
 
   Future<void> _completeMilestone(int index) async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _isProcessing = true);
 
     try {
@@ -1519,23 +1572,25 @@ if (contract!.status == 'completed' && _canRate == true)
 
       if (result['success'] == true || result['message'] != null) {
         Fluttertoast.showToast(
-          msg: result['message'] ?? '✅ Milestone marked as completed',
+          msg: result['message'] ?? t.milestoneMarkedCompleted,
         );
-        fetchContract();
+        await fetchContract(context);
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? 'Error completing milestone',
+          msg: result['message'] ?? t.errorCompletingMilestone,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _approveMilestone(int index) async {
+    final t = AppLocalizations.of(context)!;
     final milestone = contract!.milestones![index];
+    final theme = Theme.of(context);
     double getAmount(dynamic value) {
       if (value == null) return 0.0;
       if (value is double) return value;
@@ -1549,51 +1604,61 @@ if (contract!.status == 'completed' && _canRate == true)
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Approve Milestone'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.approveMilestone,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to approve "${milestone['title']}"?'),
+            Text(
+              t.approveMilestoneConfirmation(milestone['title']),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_money, color: Colors.green),
+                  Icon(
+                    Icons.attach_money,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    '\$${amount.toStringAsFixed(2)} will be released to the freelancer',
+                    t.amountWillBeReleased(amount.toStringAsFixed(2)),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
+                      color: Theme.of(context).colorScheme.secondary,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'This action cannot be undone.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            Text(
+              t.thisActionCannotBeUndone,
+              style: TextStyle(fontSize: 12, color: AppColors.gray),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff14A800),
+              backgroundColor: Theme.of(context).colorScheme.secondary,
             ),
-            child: const Text('Approve & Release'),
+            child: Text(t.approveAndRelease),
           ),
         ],
       ),
@@ -1611,39 +1676,58 @@ if (contract!.status == 'completed' && _canRate == true)
 
       if (result['success'] == true) {
         Fluttertoast.showToast(
-          msg: result['message'] ?? '✅ Milestone approved and payment released',
+          msg: result['message'] ?? t.milestoneApprovedPaymentReleased,
         );
-        await fetchContract();
+        await fetchContract(context);
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? 'Error approving milestone',
+          msg: result['message'] ?? t.errorApprovingMilestone,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _requestRevision(int index) async {
+    final t = AppLocalizations.of(context)!;
     final controller = TextEditingController();
+    final theme = Theme.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Request Changes'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.requestChanges,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Please explain what needs to be changed:'),
+            Text(
+              t.explainWhatNeedsToBeChanged,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
               maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'Describe the changes needed...',
-                border: OutlineInputBorder(),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              decoration: InputDecoration(
+                hintText: t.describeChangesNeeded,
+                hintStyle: TextStyle(color: AppColors.gray),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Theme.of(context).dividerColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1651,18 +1735,18 @@ if (contract!.status == 'completed' && _canRate == true)
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Send Request'),
+            child: Text(t.sendRequest),
           ),
         ],
       ),
     );
 
     if (confirmed == true && controller.text.isNotEmpty) {
-      Fluttertoast.showToast(msg: 'Revision request sent to freelancer');
+      Fluttertoast.showToast(msg: t.revisionRequestSent);
     }
   }
 
@@ -1678,12 +1762,13 @@ if (contract!.status == 'completed' && _canRate == true)
     );
 
     if (result == true) {
-      fetchContract();
+      await fetchContract(context);
     }
   }
 
   String _formatDate(DateTime? date) {
-    if (date == null) return 'Not signed';
+    final t = AppLocalizations.of(context);
+    if (date == null) return t?.notSigned ?? 'Not signed';
     return '${date.day}/${date.month}/${date.year}';
   }
 

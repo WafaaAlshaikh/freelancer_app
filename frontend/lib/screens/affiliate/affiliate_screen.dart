@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class AffiliateScreen extends StatefulWidget {
   const AffiliateScreen({super.key});
@@ -23,6 +25,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
   }
 
   Future<void> _loadData() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _loading = true);
     try {
       final response = await ApiService.getAffiliateInfo();
@@ -34,49 +37,71 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
       });
     } catch (e) {
       setState(() => _loading = false);
-      Fluttertoast.showToast(msg: 'Error loading data');
+      Fluttertoast.showToast(msg: t.errorLoadingData);
     }
   }
 
   void _shareCode() {
+    final t = AppLocalizations.of(context)!;
     if (_referralCode != null) {
-      Share.share(
-        'Join me on Freelancer Platform and get benefits! Use my code: $_referralCode',
-      );
+      Share.share('${t.shareReferralMessage} $_referralCode');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Refer & Earn')),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(t.referAndEarn),
+        elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
+      ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   Card(
+                    color: theme.cardColor,
+                    elevation: isDark ? 1 : 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          const Text(
-                            'Your Referral Code',
-                            style: TextStyle(fontSize: 16),
+                          Text(
+                            t.yourReferralCode,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(color: theme.dividerColor),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: SelectableText(
-                              _referralCode ?? 'Loading...',
-                              style: const TextStyle(
+                              _referralCode ?? t.loading,
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -84,7 +109,14 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                           ElevatedButton.icon(
                             onPressed: _shareCode,
                             icon: const Icon(Icons.share),
-                            label: const Text('Share Code'),
+                            label: Text(t.shareCode),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -92,20 +124,28 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                   ),
                   const SizedBox(height: 16),
                   Card(
+                    color: theme.cardColor,
+                    elevation: isDark ? 1 : 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          const Text(
-                            'Total Earnings',
-                            style: TextStyle(fontSize: 16),
+                          Text(
+                            t.totalEarnings,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                           Text(
-                            '\$${_totalEarnings.toStringAsFixed(2)}',
-                            style: const TextStyle(
+                            '${t.dollar}${_totalEarnings.toStringAsFixed(2)}',
+                            style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                              color: theme.colorScheme.secondary,
                             ),
                           ),
                         ],
@@ -115,25 +155,48 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                   const SizedBox(height: 16),
                   if (_referrals.isNotEmpty)
                     Card(
+                      color: theme.cardColor,
+                      elevation: isDark ? 1 : 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Referred Friends',
+                            Text(
+                              t.referredFriends,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 8),
                             ..._referrals.map(
                               (ref) => ListTile(
-                                leading: const Icon(Icons.person),
-                                title: Text(ref['name'] ?? 'User'),
-                                subtitle: Text(ref['joinedAt'] ?? ''),
-                                trailing: Text('\$${ref['commission'] ?? 0}'),
+                                leading: Icon(
+                                  Icons.person,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                title: Text(
+                                  ref['name'] ?? t.user,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  ref['joinedAt'] ?? '',
+                                  style: TextStyle(color: AppColors.gray),
+                                ),
+                                trailing: Text(
+                                  '${t.dollar}${ref['commission'] ?? 0}',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.secondary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                           ],

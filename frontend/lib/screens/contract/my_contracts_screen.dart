@@ -1,8 +1,11 @@
 // screens/contract/my_contracts_screen.dart
+
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/contract_model.dart';
 import '../../services/api_service.dart';
 import '../freelancer/work_submission_screen.dart';
+import '../../theme/app_theme.dart';
 
 class MyContractsScreen extends StatefulWidget {
   final String userRole;
@@ -35,22 +38,33 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          widget.userRole == 'client' ? "My Contracts" : "Active Projects",
+          widget.userRole == 'client' ? t.myContracts : t.activeProjects,
+          style: TextStyle(color: theme.colorScheme.onSurface),
         ),
-        backgroundColor: Colors.white,
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: theme.iconTheme.color),
             onPressed: fetchContracts,
           ),
         ],
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : contracts.isEmpty
           ? Center(
               child: Column(
@@ -59,12 +73,15 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                   Icon(
                     Icons.description,
                     size: 64,
-                    color: Colors.grey.shade300,
+                    color: theme.colorScheme.onSurface.withOpacity(0.3),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "No contracts yet",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                    t.noContractsYet,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -81,8 +98,13 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
   }
 
   Widget _buildContractCard(Contract contract) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: theme.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         children: [
@@ -100,17 +122,23 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
               ),
             ),
             title: Text(
-              contract.project?.title ?? 'Untitled Project',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              contract.project?.title ?? t.untitledProject,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(contract.statusText),
                 Text(
-                  "\$${contract.agreedAmount?.toStringAsFixed(0)}",
+                  contract.statusText,
+                  style: TextStyle(color: contract.statusColor),
+                ),
+                Text(
+                  "${t.dollar}${contract.agreedAmount?.toStringAsFixed(0)}",
                   style: TextStyle(
-                    color: Colors.green.shade700,
+                    color: theme.colorScheme.secondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -121,7 +149,9 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: contract.isSignedByBoth ? Colors.green : Colors.orange,
+                color: contract.isSignedByBoth
+                    ? theme.colorScheme.secondary
+                    : AppColors.warning,
               ),
             ),
             onTap: () {
@@ -144,6 +174,9 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
   }
 
   Widget _buildWorkSubmissionButtons(Contract contract) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final hasMilestones =
         contract.milestones != null && contract.milestones!.isNotEmpty;
 
@@ -163,9 +196,9 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                   ).then((_) => fetchContracts());
                 },
                 icon: const Icon(Icons.upload_file, size: 18),
-                label: const Text('Submit Final Work'),
+                label: Text(t.submitFinalWork),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff14A800),
+                  backgroundColor: theme.colorScheme.secondary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -194,11 +227,15 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(),
+          Divider(color: theme.dividerColor),
           const SizedBox(height: 8),
-          const Text(
-            'Submit Work for Milestones:',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          Text(
+            t.submitWorkForMilestones,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           ...inProgressMilestones.entries.map((entry) {
@@ -223,10 +260,10 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                         ).then((_) => fetchContracts());
                       },
                       icon: const Icon(Icons.work, size: 18),
-                      label: Text('Submit: ${milestone['title']}'),
+                      label: Text('${t.submit}: ${milestone['title']}'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade50,
-                        foregroundColor: Colors.blue.shade700,
+                        backgroundColor: AppColors.infoBg,
+                        foregroundColor: AppColors.info,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -244,15 +281,16 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
   }
 
   String _getSignatureStatus(Contract contract) {
-    if (contract.isSignedByBoth) return 'Signed ✓';
+    final t = AppLocalizations.of(context);
+    if (contract.isSignedByBoth) return t?.signed ?? 'Signed ✓';
     if (widget.userRole == 'client') {
       return contract.clientSignedAt != null
-          ? 'Waiting for Freelancer'
-          : 'Sign Now';
+          ? (t?.waitingForFreelancer ?? 'Waiting for Freelancer')
+          : (t?.signNow ?? 'Sign Now');
     } else {
       return contract.freelancerSignedAt != null
-          ? 'Waiting for Client'
-          : 'Sign Now';
+          ? (t?.waitingForClient ?? 'Waiting for Client')
+          : (t?.signNow ?? 'Sign Now');
     }
   }
 }

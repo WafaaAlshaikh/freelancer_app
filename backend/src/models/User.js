@@ -107,6 +107,10 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  reset_password_code: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   reset_password_expires: {
     type: DataTypes.DATE,
     allowNull: true,
@@ -195,16 +199,16 @@ const User = sequelize.define("User", {
     allowNull: true,
   },
   saved_filters: {
-  type: DataTypes.TEXT,
-  defaultValue: "[]",
-  get() {
-    const raw = this.getDataValue('saved_filters');
-    return raw ? JSON.parse(raw) : [];
+    type: DataTypes.TEXT,
+    defaultValue: "[]",
+    get() {
+      const raw = this.getDataValue("saved_filters");
+      return raw ? JSON.parse(raw) : [];
+    },
+    set(val) {
+      this.setDataValue("saved_filters", JSON.stringify(val));
+    },
   },
-  set(val) {
-    this.setDataValue('saved_filters', JSON.stringify(val));
-  },
-},
 });
 
 export default User;

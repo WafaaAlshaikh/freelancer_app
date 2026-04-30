@@ -2,7 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/rating_model.dart';
+import '../../theme/app_theme.dart';
 
 class RatingBreakdownWidget extends StatelessWidget {
   final RatingStats stats;
@@ -11,52 +13,75 @@ class RatingBreakdownWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSummaryCard(),
+          _buildSummaryCard(context),
           const SizedBox(height: 20),
-          _buildDistributionChart(),
+          _buildDistributionChart(context),
           const SizedBox(height: 20),
-          if (stats.categoryAverages!.isNotEmpty) _buildCategoryAverages(),
+          if (stats.categoryAverages!.isNotEmpty)
+            _buildCategoryAverages(context),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryCard() {
+  Widget _buildSummaryCard(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple.shade50, Colors.blue.shade50],
+          colors: isDark
+              ? [
+                  Colors.purple.shade900.withOpacity(0.3),
+                  Colors.blue.shade900.withOpacity(0.3),
+                ]
+              : [Colors.purple.shade50, Colors.blue.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          const Text(
-            'Rating Summary',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            t.ratingSummary,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _summaryItem(
-                'Average Rating',
+                context,
+                t.averageRating,
                 stats.average.toStringAsFixed(1),
                 '⭐',
               ),
               _summaryItem(
-                'Total Reviews',
+                context,
+                t.totalReviews,
                 stats.total.toString(),
                 '📝',
               ),
               _summaryItem(
-                'Positive Rate',
+                context,
+                t.positiveRate,
                 '${((stats.distribution[4] ?? 0) + (stats.distribution[5] ?? 0)) * 100 ~/ stats.total}%',
                 '👍',
               ),
@@ -67,39 +92,65 @@ class RatingBreakdownWidget extends StatelessWidget {
     );
   }
 
-  Widget _summaryItem(String label, String value, String icon) {
+  Widget _summaryItem(
+    BuildContext context,
+    String label,
+    String value,
+    String icon,
+  ) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Text(icon, style: const TextStyle(fontSize: 24)),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 11,
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildDistributionChart() {
-    final maxCount = stats.distribution.values.reduce((a, b) => a > b ? a : b).toDouble();
+  Widget _buildDistributionChart(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final maxCount = stats.distribution.values
+        .reduce((a, b) => a > b ? a : b)
+        .toDouble();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Rating Distribution',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.ratingDistribution,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -109,7 +160,7 @@ class RatingBreakdownWidget extends StatelessWidget {
                 maxY: maxCount,
                 barTouchData: BarTouchData(enabled: true),
                 titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
+                  leftTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
                   bottomTitles: AxisTitles(
@@ -118,7 +169,10 @@ class RatingBreakdownWidget extends StatelessWidget {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           '${value.toInt()} ★',
-                          style: const TextStyle(fontSize: 11),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
                         );
                       },
                     ),
@@ -156,7 +210,9 @@ class RatingBreakdownWidget extends StatelessWidget {
             children: List.generate(5, (i) {
               final rating = i + 1;
               final count = stats.distribution[rating] ?? 0;
-              final percentage = stats.total > 0 ? (count / stats.total * 100).toInt() : 0;
+              final percentage = stats.total > 0
+                  ? (count / stats.total * 100).toInt()
+                  : 0;
               return Column(
                 children: [
                   Text(
@@ -169,7 +225,10 @@ class RatingBreakdownWidget extends StatelessWidget {
                   ),
                   Text(
                     '$percentage%',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ],
               );
@@ -180,57 +239,84 @@ class RatingBreakdownWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryAverages() {
+  Widget _buildCategoryAverages(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Category Averages',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.categoryAverages,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 12),
-          ...stats.categoryAverages!.entries.map((entry) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: Text(entry.key, style: const TextStyle(fontSize: 13)),
-                ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      ...List.generate(5, (i) => Icon(
-                        i < entry.value.toInt() ? Icons.star : Icons.star_border,
-                        size: 16,
-                        color: Colors.amber,
-                      )),
-                      const SizedBox(width: 8),
-                      Text(
-                        entry.value.toStringAsFixed(1),
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ...stats.categoryAverages!.entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 100,
+                    child: Text(
+                      entry.key,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface.withOpacity(0.8),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Row(
+                      children: [
+                        ...List.generate(
+                          5,
+                          (i) => Icon(
+                            i < entry.value.toInt()
+                                ? Icons.star
+                                : Icons.star_border,
+                            size: 16,
+                            color: Colors.amber,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          entry.value.toStringAsFixed(1),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
   }
 
   Color _getRatingColor(int rating) {
-    if (rating >= 4) return Colors.green;
-    if (rating == 3) return Colors.orange;
-    return Colors.red;
+    if (rating >= 4) return AppColors.success;
+    if (rating == 3) return AppColors.warning;
+    return AppColors.danger;
   }
 }

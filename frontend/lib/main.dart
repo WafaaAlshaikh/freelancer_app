@@ -2,6 +2,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:freelancer_platform/screens/auth/reset_password_screen.dart';
+import 'package:freelancer_platform/screens/settings/settings_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:freelancer_platform/providers/theme_provider.dart';
 import 'package:freelancer_platform/models/contract_model.dart';
 import 'package:freelancer_platform/models/interview_model.dart';
 import 'package:freelancer_platform/models/project_model.dart';
@@ -16,6 +20,7 @@ import 'package:freelancer_platform/screens/features/features_shop_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/financial_dashboard_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/profile_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/work_submission_screen.dart';
 import 'package:freelancer_platform/screens/interview/interview_calendar_screen.dart';
 import 'package:freelancer_platform/screens/interview/interview_stats_screen.dart';
@@ -64,6 +69,9 @@ import 'package:freelancer_platform/screens/subscription/subscription_success_sc
 import 'package:freelancer_platform/screens/subscription/subscription_cancel_screen.dart';
 import 'screens/interview/interviews_screen.dart';
 import 'screens/interview/interview_detail_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:freelancer_platform/services/language_service.dart';
+import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,265 +111,323 @@ void main() async {
   }
 
   print('✅ App initialized with userId: $savedUserId');
+  final locale = await LanguageService.getSavedLocale();
 
-  runApp(FreelancerApp(initialRole: savedRole));
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
+      child: FreelancerApp(initialRole: savedRole, initialLocale: locale),
+    ),
+  );
 }
 
-class FreelancerApp extends StatelessWidget {
+class FreelancerApp extends StatefulWidget {
   final String? initialRole;
-  const FreelancerApp({super.key, this.initialRole});
+  final Locale initialLocale;
+
+  const FreelancerApp({
+    super.key,
+    this.initialRole,
+    required this.initialLocale,
+  });
+
+  @override
+  State<FreelancerApp> createState() => _FreelancerAppState();
+}
+
+class _FreelancerAppState extends State<FreelancerApp> {
+  late Locale _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    _locale = widget.initialLocale;
+  }
+
+  void _setLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+    LanguageService.setLocale(locale);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Freelancer Platform',
-      theme: AppTheme.lightTheme,
-      initialRoute: _getInitialRoute(),
-      routes: {
-        '/': (_) => const LandingScreenEnhanced(),
-        '/login': (_) => const LoginScreen(),
-        '/signup': (_) => const SignupScreen(),
-        '/verify': (_) => const VerifyScreen(),
-        '/forgot': (_) => ForgotPasswordScreen(),
-        '/home': (_) => HomeScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Freelancer Platform',
+          locale: _locale,
+          supportedLocales: const [Locale('en'), Locale('ar')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.themeMode,
+          initialRoute: _getInitialRoute(),
+          routes: {
+            '/': (_) => const LandingScreenEnhanced(),
+            '/login': (_) => const LoginScreen(),
+            '/signup': (_) => const SignupScreen(),
+            '/verify': (_) => const VerifyScreen(),
+            '/forgot': (_) => ForgotPasswordScreen(),
 
-        '/freelancer/home': (_) => const FreelancerHomeScreen(),
-        '/freelancer/my-proposals': (_) => const MyProposalsScreen(),
-        '/freelancer/my-projects': (_) => const MyProjectsScreen(),
+            '/home': (_) => HomeScreen(),
 
-        '/projects': (_) => const FreelancerHomeScreen(),
+            '/freelancer/home': (_) => FreelancerHomeScreen(),
+            '/freelancer/my-proposals': (_) => const MyProposalsScreen(),
+            '/freelancer/my-projects': (_) => const MyProjectsScreen(),
 
-        '/client/dashboard': (_) => const ClientDashboard(),
-        '/client/create-project': (_) => const CreateProjectScreen(),
-        '/subscription/plans': (_) => const SubscriptionPlansScreen(),
-        '/subscription/my': (_) => const MySubscriptionScreen(),
-        '/features/shop': (_) => const FeaturesShopScreen(),
-        '/subscription_success': (_) => const SubscriptionSuccessScreen(),
-        '/subscription_cancel': (_) => const SubscriptionCancelScreen(),
-        '/subscription/invoices': (_) => const SubscriptionInvoicesScreen(),
-        '/subscription/comparison': (_) => const SubscriptionComparisonScreen(),
-        '/subscription/usage': (_) => const SubscriptionUsageScreen(),
-        '/chats': (_) => ChatsListScreen(),
+            '/projects': (_) => FreelancerHomeScreen(),
+            '/settings': (_) => SettingsScreen(onLocaleChange: _setLocale),
 
-        '/favorites': (_) => const FavoritesScreen(),
-        '/financial-dashboard': (_) => const FinancialDashboardScreen(),
-        '/advanced-search': (_) => const AdvancedSearchScreen(),
+            '/client/dashboard': (_) => const ClientDashboard(),
+            '/client/create-project': (_) => const CreateProjectScreen(),
+            '/subscription/plans': (_) => const SubscriptionPlansScreen(),
+            '/subscription/my': (_) => const MySubscriptionScreen(),
+            '/features/shop': (_) => const FeaturesShopScreen(),
+            '/subscription_success': (_) => const SubscriptionSuccessScreen(),
+            '/subscription_cancel': (_) => const SubscriptionCancelScreen(),
+            '/subscription/invoices': (_) => const SubscriptionInvoicesScreen(),
+            '/subscription/comparison': (_) =>
+                const SubscriptionComparisonScreen(),
+            '/subscription/usage': (_) => const SubscriptionUsageScreen(),
+            '/chats': (_) => ChatsListScreen(),
 
-        '/my-contracts': (context) {
-          final userRole =
-              ModalRoute.of(context)!.settings.arguments as String? ?? 'client';
-          return MyContractsScreen(userRole: userRole);
-        },
-      },
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/freelancer/project-details':
-            final projectId = settings.arguments as int;
-            return MaterialPageRoute(
-              builder: (_) => ProjectDetailsScreen(projectId: projectId),
-            );
+            '/favorites': (_) => const FavoritesScreen(),
+            '/financial-dashboard': (_) => const FinancialDashboardScreen(),
+            '/advanced-search': (_) => const AdvancedSearchScreen(),
 
-          case '/freelancer/submit-proposal':
-            final project = settings.arguments as Project;
-            return MaterialPageRoute(
-              builder: (_) => SubmitProposalScreen(project: project),
-            );
+            '/my-contracts': (context) {
+              final userRole =
+                  ModalRoute.of(context)!.settings.arguments as String? ??
+                  'client';
+              return MyContractsScreen(userRole: userRole);
+            },
+          },
+          onGenerateRoute: (settings) {
+            switch (settings.name) {
+              case '/freelancer/project-details':
+                final projectId = settings.arguments as int;
+                return MaterialPageRoute(
+                  builder: (_) => ProjectDetailsScreen(projectId: projectId),
+                );
 
-          case '/work-submission':
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (_) => WorkSubmissionScreen(
-                contract: args['contract'],
-                milestoneIndex: args['milestoneIndex'],
-                milestone: args['milestone'],
-              ),
-            );
+              case '/freelancer/submit-proposal':
+                final project = settings.arguments as Project;
+                return MaterialPageRoute(
+                  builder: (_) => SubmitProposalScreen(project: project),
+                );
 
-          case '/subscription_success':
-            return MaterialPageRoute(
-              builder: (_) => const SubscriptionSuccessScreen(),
-            );
+              case '/work-submission':
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (_) => WorkSubmissionScreen(
+                    contract: args['contract'],
+                    milestoneIndex: args['milestoneIndex'],
+                    milestone: args['milestone'],
+                  ),
+                );
 
-          case '/subscription_cancel':
-            return MaterialPageRoute(
-              builder: (_) => const SubscriptionCancelScreen(),
-            );
+              case '/subscription_success':
+                return MaterialPageRoute(
+                  builder: (_) => const SubscriptionSuccessScreen(),
+                );
 
-          case '/subscription/plans':
-            return MaterialPageRoute(
-              builder: (_) => const SubscriptionPlansScreen(),
-            );
+              case '/subscription_cancel':
+                return MaterialPageRoute(
+                  builder: (_) => const SubscriptionCancelScreen(),
+                );
 
-          case '/subscription/comparison':
-            return MaterialPageRoute(
-              builder: (_) => const SubscriptionComparisonScreen(),
-            );
-          case '/compare-freelancers':
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (_) => CompareFreelancersScreen(
-                projectId: args['projectId'],
-                freelancerIds: args['freelancerIds'],
-              ),
-            );
-          case '/subscription/my':
-            return MaterialPageRoute(
-              builder: (_) => const MySubscriptionScreen(),
-            );
+              case '/subscription/plans':
+                return MaterialPageRoute(
+                  builder: (_) => const SubscriptionPlansScreen(),
+                );
 
-          case '/client/project-details':
-            final projectId = settings.arguments as int;
-            return MaterialPageRoute(
-              builder: (_) => client.ProjectDetailsScreen(projectId: projectId),
-            );
+              case '/subscription/comparison':
+                return MaterialPageRoute(
+                  builder: (_) => const SubscriptionComparisonScreen(),
+                );
+              case '/compare-freelancers':
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (_) => CompareFreelancersScreen(
+                    projectId: args['projectId'],
+                    freelancerIds: args['freelancerIds'],
+                  ),
+                );
+              case '/subscription/my':
+                return MaterialPageRoute(
+                  builder: (_) => const MySubscriptionScreen(),
+                );
 
-          case '/features/shop':
-            return MaterialPageRoute(
-              builder: (_) => const FeaturesShopScreen(),
-            );
+              case '/client/project-details':
+                final projectId = settings.arguments as int;
+                return MaterialPageRoute(
+                  builder: (_) =>
+                      client.ProjectDetailsScreen(projectId: projectId),
+                );
 
-          case '/admin/dashboard':
-            return MaterialPageRoute(
-              builder: (_) => const AdminDashboardScreen(),
-            );
+              case '/features/shop':
+                return MaterialPageRoute(
+                  builder: (_) => const FeaturesShopScreen(),
+                );
 
-          case '/client/project-proposals':
-            final projectId = settings.arguments as int;
-            return MaterialPageRoute(
-              builder: (_) => ProjectProposalsScreen(projectId: projectId),
-            );
+              case '/admin/dashboard':
+                return MaterialPageRoute(
+                  builder: (_) => const AdminDashboardScreen(),
+                );
 
-          case '/client/edit-project':
-            final project = settings.arguments as Project;
-            return MaterialPageRoute(
-              builder: (_) => EditProjectScreen(project: project),
-            );
+              case '/client/project-proposals':
+                final projectId = settings.arguments as int;
+                return MaterialPageRoute(
+                  builder: (_) => ProjectProposalsScreen(projectId: projectId),
+                );
 
-          case '/interviews':
-            return MaterialPageRoute(builder: (_) => const InterviewsScreen());
+              case '/client/edit-project':
+                final project = settings.arguments as Project;
+                return MaterialPageRoute(
+                  builder: (_) => EditProjectScreen(project: project),
+                );
 
-          case '/interview-detail':
-            final invitation = settings.arguments as InterviewInvitation;
-            return MaterialPageRoute(
-              builder: (_) => InterviewDetailScreen(invitation: invitation),
-            );
+              case '/interviews':
+                return MaterialPageRoute(
+                  builder: (_) => const InterviewsScreen(),
+                );
 
-          case '/interview-stats':
-            return MaterialPageRoute(
-              builder: (_) => const InterviewStatsScreen(),
-            );
-          case '/interview-calendar':
-            return MaterialPageRoute(
-              builder: (_) => const InterviewCalendarScreen(),
-            );
+              case '/interview-detail':
+                final invitation = settings.arguments as InterviewInvitation;
+                return MaterialPageRoute(
+                  builder: (_) => InterviewDetailScreen(invitation: invitation),
+                );
 
-          case '/chat':
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (_) => ChatScreen(
-                chatId: int.parse(args['chatId'].toString()),
-                otherUserId: int.parse(args['otherUserId'].toString()),
-                otherUserName: args['otherUserName'],
-                otherUserAvatar: args['otherUserAvatar'],
-              ),
-            );
+              case '/interview-stats':
+                return MaterialPageRoute(
+                  builder: (_) => const InterviewStatsScreen(),
+                );
+              case '/interview-calendar':
+                return MaterialPageRoute(
+                  builder: (_) => const InterviewCalendarScreen(),
+                );
 
-          case '/contract':
-            final args = settings.arguments as Map<String, dynamic>;
-            final contractId = args['contractId'] as int;
-            final userRole = args['userRole'] as String;
+              case '/chat':
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    chatId: int.parse(args['chatId'].toString()),
+                    otherUserId: int.parse(args['otherUserId'].toString()),
+                    otherUserName: args['otherUserName'],
+                    otherUserAvatar: args['otherUserAvatar'],
+                  ),
+                );
+
+              case '/contract':
+                final args = settings.arguments as Map<String, dynamic>;
+                final contractId = args['contractId'] as int;
+                final userRole = args['userRole'] as String;
+                return MaterialPageRoute(
+                  builder: (_) => ContractScreen(
+                    contractId: contractId,
+                    userRole: userRole,
+                  ),
+                );
+
+              case '/contract/progress':
+                final args = settings.arguments as Map<String, dynamic>;
+                final contractId = args['contractId'] as int;
+                final userRole = args['userRole'] as String;
+                return MaterialPageRoute(
+                  builder: (_) => ContractProgressScreen(
+                    contractId: contractId,
+                    userRole: userRole,
+                  ),
+                );
+
+              case '/add-rating':
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (_) => AddRatingScreen(
+                    contractId: args['contractId'],
+                    projectTitle: args['projectTitle'],
+                    otherPartyName: args['otherPartyName'],
+                    role: args['role'],
+                  ),
+                );
+
+              case '/calendar':
+                return MaterialPageRoute(
+                  builder: (_) => const CalendarScreen(),
+                );
+
+              case '/add-reminder':
+                final contractId = settings.arguments as int;
+                return MaterialPageRoute(
+                  builder: (_) => AddReminderScreen(contractId: contractId),
+                );
+
+              case '/wallet':
+                final userRole = settings.arguments as String? ?? 'client';
+                return MaterialPageRoute(
+                  builder: (_) => WalletScreen(userRole: userRole),
+                );
+
+              case '/negotiation':
+                final proposal = settings.arguments as Proposal;
+                return MaterialPageRoute(
+                  builder: (_) => NegotiationScreen(proposal: proposal),
+                );
+
+              case '/payment':
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (_) => PaymentScreen(
+                    contractId: args['contractId'],
+                    paymentIntent: args['paymentIntent'],
+                  ),
+                );
+
+              case '/connect-github':
+                final contractId = settings.arguments as int;
+                return MaterialPageRoute(
+                  builder: (_) => ConnectGithubScreen(contractId: contractId),
+                );
+
+              case '/ai-chat':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (_) => AIChatScreen(projectId: args?['projectId']),
+                );
+
+              case '/test-results':
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (_) => TestResultsScreen(
+                    userTestId: args['userTestId'],
+                    test: args['test'],
+                    result: args['result'],
+                  ),
+                );
+
+              default:
+                return MaterialPageRoute(
+                  builder: (_) => const Scaffold(
+                    body: Center(child: Text('Route not found')),
+                  ),
+                );
+            }
+          },
+          onUnknownRoute: (settings) {
             return MaterialPageRoute(
               builder: (_) =>
-                  ContractScreen(contractId: contractId, userRole: userRole),
+                  const Scaffold(body: Center(child: Text('Page not found'))),
             );
-
-          case '/contract/progress':
-            final args = settings.arguments as Map<String, dynamic>;
-            final contractId = args['contractId'] as int;
-            final userRole = args['userRole'] as String;
-            return MaterialPageRoute(
-              builder: (_) => ContractProgressScreen(
-                contractId: contractId,
-                userRole: userRole,
-              ),
-            );
-
-          case '/add-rating':
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (_) => AddRatingScreen(
-                contractId: args['contractId'],
-                projectTitle: args['projectTitle'],
-                otherPartyName: args['otherPartyName'],
-                role: args['role'],
-              ),
-            );
-
-          case '/calendar':
-            return MaterialPageRoute(builder: (_) => const CalendarScreen());
-
-          case '/add-reminder':
-            final contractId = settings.arguments as int;
-            return MaterialPageRoute(
-              builder: (_) => AddReminderScreen(contractId: contractId),
-            );
-
-          case '/wallet':
-            final userRole = settings.arguments as String? ?? 'client';
-            return MaterialPageRoute(
-              builder: (_) => WalletScreen(userRole: userRole),
-            );
-
-          case '/negotiation':
-            final proposal = settings.arguments as Proposal;
-            return MaterialPageRoute(
-              builder: (_) => NegotiationScreen(proposal: proposal),
-            );
-
-          case '/payment':
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (_) => PaymentScreen(
-                contractId: args['contractId'],
-                paymentIntent: args['paymentIntent'],
-              ),
-            );
-
-          case '/connect-github':
-            final contractId = settings.arguments as int;
-            return MaterialPageRoute(
-              builder: (_) => ConnectGithubScreen(contractId: contractId),
-            );
-
-          case '/ai-chat':
-            final args = settings.arguments as Map<String, dynamic>?;
-            return MaterialPageRoute(
-              builder: (_) => AIChatScreen(projectId: args?['projectId']),
-            );
-
-          case '/test-results':
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (_) => TestResultsScreen(
-                userTestId: args['userTestId'],
-                test: args['test'],
-                result: args['result'],
-              ),
-            );
-
-          default:
-            return MaterialPageRoute(
-              builder: (_) =>
-                  const Scaffold(body: Center(child: Text('Route not found'))),
-            );
-        }
-      },
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (_) =>
-              const Scaffold(body: Center(child: Text('Page not found'))),
+          },
         );
       },
     );
@@ -369,9 +435,9 @@ class FreelancerApp extends StatelessWidget {
 
   String _getInitialRoute() {
     if (ApiService.token != null) {
-      if (initialRole == 'freelancer') {
+      if (widget.initialRole == 'freelancer') {
         return '/freelancer/home';
-      } else if (initialRole == 'client') {
+      } else if (widget.initialRole == 'client') {
         return '/client/dashboard';
       }
     }

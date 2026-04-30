@@ -1,8 +1,11 @@
 // lib/screens/notifications/notifications_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../models/notification_model.dart';
+import '../../theme/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -19,15 +22,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   int currentPage = 0;
   bool hasMore = true;
   final int pageSize = 20;
-  
-  final ScrollController _scrollController = ScrollController(); 
+
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _loadNotifications();
     _loadUnreadCount();
-    
+
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
@@ -77,7 +80,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         loading = false;
         isLoadingMore = false;
       });
-      Fluttertoast.showToast(msg: 'Error loading notifications');
+      final t = AppLocalizations.of(context)!;
+      Fluttertoast.showToast(msg: t.errorLoadingNotifications);
     }
   }
 
@@ -93,21 +97,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _markAllAsRead() async {
+    final t = AppLocalizations.of(context)!;
     await ApiService.markAllNotificationsAsRead();
     setState(() {
       for (var notification in notifications) {
-        notification.isRead = true; 
+        notification.isRead = true;
       }
       unreadCount = 0;
     });
-    Fluttertoast.showToast(msg: 'All notifications marked as read');
+    Fluttertoast.showToast(msg: t.allNotificationsMarkedAsRead);
   }
 
   Future<void> _markAsRead(NotificationModel notification) async {
     if (!notification.isRead) {
       await ApiService.markNotificationAsRead(notification.id);
       setState(() {
-        notification.isRead = true; 
+        notification.isRead = true;
         unreadCount--;
       });
     }
@@ -143,41 +148,58 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.notifications),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           if (notifications.isNotEmpty)
             TextButton(
               onPressed: _markAllAsRead,
-              child: const Text('Mark all as read'),
+              child: Text(
+                t.markAllAsRead,
+                style: TextStyle(color: theme.colorScheme.primary),
+              ),
             ),
         ],
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : notifications.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: () => _loadNotifications(refresh: true),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: notifications.length + (hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == notifications.length) {
-                        return _buildLoadingMore();
-                      }
-                      return _buildNotificationCard(notifications[index]);
-                    },
-                  ),
-                ),
+          ? _buildEmptyState()
+          : RefreshIndicator(
+              onRefresh: () => _loadNotifications(refresh: true),
+              color: theme.colorScheme.primary,
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: notifications.length + (hasMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == notifications.length) {
+                    return _buildLoadingMore();
+                  }
+                  return _buildNotificationCard(notifications[index]);
+                },
+              ),
+            ),
     );
   }
 
   Widget _buildEmptyState() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -185,21 +207,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Icon(
             Icons.notifications_none,
             size: 80,
-            color: Colors.grey.shade300,
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
-            'No notifications yet',
+            t.noNotificationsYet,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'When you receive notifications, they will appear here',
-            style: TextStyle(color: Colors.grey.shade500),
+            t.notificationsWillAppearHere,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -207,18 +232,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildNotificationCard(NotificationModel notification) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isUnread = !notification.isRead;
-    
+
     return GestureDetector(
       onTap: () => _markAsRead(notification),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isUnread ? Colors.blue.shade50 : Colors.white,
+          color: isUnread
+              ? (isDark ? AppColors.infoBg.withOpacity(0.2) : AppColors.infoBg)
+              : theme.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isUnread ? Colors.blue.shade200 : Colors.grey.shade200,
+            color: isUnread
+                ? (isDark
+                      ? AppColors.info.withOpacity(0.3)
+                      : AppColors.info.withOpacity(0.2))
+                : theme.dividerColor,
           ),
         ),
         child: Row(
@@ -232,8 +266,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Text(
                     notification.title,
                     style: TextStyle(
-                      fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isUnread
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: 15,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -241,7 +278,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     notification.body,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade600,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -249,7 +286,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     _formatDate(notification.createdAt),
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
                     ),
                   ),
                 ],
@@ -259,13 +296,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Container(
                 width: 10,
                 height: 10,
-                decoration: const BoxDecoration(
-                  color: Color(0xff14A800),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondary,
                   shape: BoxShape.circle,
                 ),
               ),
             IconButton(
-              icon: const Icon(Icons.close, size: 18),
+              icon: Icon(Icons.close, size: 18, color: theme.iconTheme.color),
               onPressed: () async {
                 await ApiService.deleteNotification(notification.id);
                 setState(() {
@@ -281,6 +318,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildNotificationIcon(String type) {
+    final theme = Theme.of(context);
     IconData icon;
     Color color;
 
@@ -289,22 +327,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'proposal_accepted':
       case 'proposal_rejected':
         icon = Icons.assignment;
-        color = Colors.blue;
+        color = AppColors.info;
         break;
       case 'contract_signed':
       case 'contract_created':
         icon = Icons.description;
-        color = Colors.green;
+        color = theme.colorScheme.secondary;
         break;
       case 'milestone_due':
       case 'milestone_completed':
         icon = Icons.flag;
-        color = Colors.orange;
+        color = AppColors.warning;
         break;
       case 'payment_received':
       case 'payment_released':
         icon = Icons.attach_money;
-        color = Colors.green;
+        color = theme.colorScheme.secondary;
         break;
       case 'message':
         icon = Icons.message;
@@ -316,11 +354,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         break;
       case 'reminder':
         icon = Icons.alarm;
-        color = Colors.red;
+        color = AppColors.danger;
         break;
       default:
         icon = Icons.notifications;
-        color = Colors.grey;
+        color = AppColors.gray;
     }
 
     return Container(
@@ -334,28 +372,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   String _formatDate(DateTime date) {
+    final t = AppLocalizations.of(context);
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
+      return '${difference.inDays} ${t?.daysAgo ?? 'd ago'}';
     } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
+      return '${difference.inHours} ${t?.hoursAgo ?? 'h ago'}';
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
+      return '${difference.inMinutes} ${t?.minutesAgo ?? 'm ago'}';
     } else {
-      return 'Just now';
+      return t?.justNow ?? 'Just now';
     }
   }
 
   Widget _buildLoadingMore() {
-    return const Padding(
-      padding: EdgeInsets.all(16),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Center(
         child: SizedBox(
           width: 24,
           height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: theme.colorScheme.primary,
+          ),
         ),
       ),
     );

@@ -17,29 +17,8 @@ import '../../models/message_model.dart';
 import '../../services/socket_service.dart';
 import '../../services/chat_service.dart';
 import '../../utils/token_storage.dart';
+import '../../theme/app_theme.dart';
 import 'dart:html' as html;
-
-class _C {
-  static const sidebarBg = Color(0xFF2D2B55);
-  static const sidebarText = Color(0xFFC8C6E8);
-  static const accent = Color(0xFF6C63FF);
-  static const accentDark = Color(0xFF4F46E5);
-  static const accentLight = Color(0xFFA78BFA);
-  static const accentBg = Color(0xFFEEF2FF);
-  static const green = Color(0xFF14A800);
-  static const greenBg = Color(0xFFECFDF5);
-  static const warning = Color(0xFFF59E0B);
-  static const warningBg = Color(0xFFFFFBEB);
-  static const danger = Color(0xFFEF4444);
-  static const info = Color(0xFF3B82F6);
-  static const infoBg = Color(0xFFEFF6FF);
-  static const pageBg = Color(0xFFF5F6F8);
-  static const card = Colors.white;
-  static const dark = Color(0xFF1F2937);
-  static const gray = Color(0xFF6B7280);
-  static const border = Color(0xFFE5E7EB);
-  static const borderLight = Color(0xFFF0F0F0);
-}
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -107,12 +86,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    print('🔴🔴🔴 CHAT SCREEN INIT - START 🔴🔴🔴');
-    print('📱 Chat ID: ${widget.chatId}');
-    print('📱 Other User ID: ${widget.otherUserId}');
-    print('📱 Other User Name: ${widget.otherUserName}');
-    print('🔴🔴🔴 ======================== 🔴🔴🔴');
-
     _initAnimations();
     _initAndLoad();
     _messageController.addListener(_onMessageChanged);
@@ -132,25 +105,19 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _initAndLoad() async {
-    print('🔵 _initAndLoad - Getting current user ID...');
     final userIdStr = await TokenStorage.getUserId();
-    print('🔵 User ID from storage: $userIdStr');
-
     if (mounted) {
       setState(
         () =>
             currentUserId = userIdStr != null ? int.tryParse(userIdStr) : null,
       );
     }
-    print('🔵 Current user ID set to: $currentUserId');
-
     await _loadMessages();
     _setupSocketListeners();
   }
 
   @override
   void dispose() {
-    print('🔴 CHAT SCREEN DISPOSE');
     _newMessageSubscription?.cancel();
     _typingSubscription?.cancel();
     _readReceiptSubscription?.cancel();
@@ -171,7 +138,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Future<void> _loadMessages() async {
     if (!mounted) return;
-    print('🟢 _loadMessages - Loading messages for chat ${widget.chatId}');
     setState(() => loading = true);
     try {
       final result = await ChatService.getMessages(
@@ -180,25 +146,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         offset: currentPage * pageSize,
       );
 
-      print('🟢 API Response - Messages count: ${result['messages'].length}');
-      print('🟢 Has more: ${result['hasMore']}');
-
-      for (var msgJson in result['messages']) {
-        print(
-          '🟢 RAW API: id=${msgJson['id']}, sender_id=${msgJson['sender_id']}, content=${msgJson['content']}',
-        );
-      }
-
       if (!mounted) return;
       final newMessages = (result['messages'] as List)
           .map((j) => Message.fromJson(j))
           .toList();
-
-      for (var msg in newMessages) {
-        print(
-          '🟢 PARSED: id=${msg.id}, sender_id=${msg.senderId}, content=${msg.content}, sender_name=${msg.senderName}',
-        );
-      }
 
       for (var msg in newMessages) _receivedMessageIds.add(msg.id);
       setState(() {
@@ -207,18 +158,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         if (newMessages.isNotEmpty) currentPage++;
         loading = false;
       });
-
-      print('🟢 Total messages in state: ${messages.length}');
       _scrollToBottom();
       _socket.markAsRead(widget.chatId);
     } catch (e) {
-      print('❌ Error loading messages: $e');
       if (mounted) setState(() => loading = false);
     }
   }
 
   void _setupSocketListeners() {
-    print('🟡 Setting up socket listeners...');
     _newMessageSubscription?.cancel();
     _typingSubscription?.cancel();
     _readReceiptSubscription?.cancel();
@@ -229,33 +176,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _messageErrorSubscription?.cancel();
 
     if (_socket.isConnected) {
-      print('🟡 Socket is connected, joining chat ${widget.chatId}');
       _socket.joinChat(widget.chatId);
-    } else {
-      print('🟡 Socket not connected yet');
     }
 
     _connectionSubscription = _socket.onConnectionChange.listen((connected) {
-      print('🟡 Connection changed: $connected');
       if (connected && mounted) _socket.joinChat(widget.chatId);
     });
 
     _newMessageSubscription = _socket.onNewMessage.listen((message) {
-      print('🟣 NEW MESSAGE RECEIVED via socket');
-      print('🟣 Message ID: ${message.id}');
-      print('🟣 Sender ID: ${message.senderId}');
-      print('🟣 Content: ${message.content}');
-      print('🟣 Current user ID: $currentUserId');
-      print('🟣 Is this my message? ${message.senderId == currentUserId}');
-
       if (!mounted) return;
-      if (_receivedMessageIds.contains(message.id)) {
-        print('🟣 Message already received, ignoring');
-        return;
-      }
+      if (_receivedMessageIds.contains(message.id)) return;
       _receivedMessageIds.add(message.id);
       if (message.chatId == widget.chatId) {
-        print('🟣 Adding message to list');
         setState(() => messages.add(message));
         _scrollToBottom();
         _socket.markAsRead(widget.chatId);
@@ -322,7 +254,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       Fluttertoast.showToast(
         msg: error['error'] ?? 'Failed to send message',
-        backgroundColor: _C.danger,
+        backgroundColor: AppColors.danger,
       );
     });
   }
@@ -356,16 +288,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     if (_isSending) return;
     _isSending = true;
 
-    print('📤 SENDING MESSAGE - Content: $content');
-    print('📤 Current user ID: $currentUserId');
-
     try {
       if (!_socket.isConnected) {
         final connected = await _socket.ensureConnection();
         if (!connected) {
           Fluttertoast.showToast(
             msg: 'Could not connect to chat server',
-            backgroundColor: _C.danger,
+            backgroundColor: AppColors.danger,
           );
           return;
         }
@@ -381,7 +310,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Error sending message: $e',
-        backgroundColor: _C.danger,
+        backgroundColor: AppColors.danger,
       );
     } finally {
       _isSending = false;
@@ -399,21 +328,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       if (bytes.length > _maxFileSize) {
         Fluttertoast.showToast(
           msg: 'File too large. Max size: 10 MB',
-          backgroundColor: _C.warning,
+          backgroundColor: AppColors.warning,
         );
         return;
       }
       if (type == 'image' && !_allowedImageTypes.contains(ext)) {
         Fluttertoast.showToast(
           msg: 'Only images: ${_allowedImageTypes.join(", ")}',
-          backgroundColor: _C.warning,
+          backgroundColor: AppColors.warning,
         );
         return;
       }
       if (type == 'file' && !_allowedFileTypes.contains(ext)) {
         Fluttertoast.showToast(
           msg: 'File type not allowed: ${_allowedFileTypes.join(", ")}',
-          backgroundColor: _C.warning,
+          backgroundColor: AppColors.warning,
         );
         return;
       }
@@ -428,18 +357,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
         Fluttertoast.showToast(
           msg: 'File uploaded successfully',
-          backgroundColor: _C.green,
+          backgroundColor: AppColors.green,
         );
       } else {
         Fluttertoast.showToast(
           msg: 'Failed to upload file',
-          backgroundColor: _C.danger,
+          backgroundColor: AppColors.danger,
         );
       }
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Error: ${e.toString()}',
-        backgroundColor: _C.danger,
+        backgroundColor: AppColors.danger,
       );
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -463,13 +392,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
         Fluttertoast.showToast(
           msg: 'File uploaded successfully',
-          backgroundColor: _C.green,
+          backgroundColor: AppColors.green,
         );
       }
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Error: ${e.toString()}',
-        backgroundColor: _C.danger,
+        backgroundColor: AppColors.danger,
       );
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -545,13 +474,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
         Fluttertoast.showToast(
           msg: 'File uploaded successfully',
-          backgroundColor: _C.green,
+          backgroundColor: AppColors.green,
         );
       }
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Error: ${e.toString()}',
-        backgroundColor: _C.danger,
+        backgroundColor: AppColors.danger,
       );
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -559,9 +488,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _showReactionPicker(Message message) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: _C.card,
+      backgroundColor: theme.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -579,7 +509,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _C.pageBg,
+                      color: theme.scaffoldBackgroundColor,
                       borderRadius: BorderRadius.circular(40),
                     ),
                     child: Text(emoji, style: const TextStyle(fontSize: 24)),
@@ -593,9 +523,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _showMessageOptions(Message message, bool isMe) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: _C.card,
+      backgroundColor: theme.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -608,11 +539,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               decoration: BoxDecoration(
-                color: _C.border,
+                color: theme.dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            _optionTile(ctx, Icons.reply_rounded, 'Reply', _C.dark, () {
+            _optionTile(ctx, Icons.reply_rounded, 'Reply', AppColors.dark, () {
               setState(() => _replyingTo = message);
               _messageFocusNode.requestFocus();
             }),
@@ -620,7 +551,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               ctx,
               Icons.emoji_emotions_outlined,
               'React',
-              _C.dark,
+              AppColors.dark,
               () {
                 _showReactionPicker(message);
               },
@@ -630,14 +561,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 ctx,
                 Icons.edit_outlined,
                 'Edit',
-                _C.accent,
+                AppColors.accent,
                 () => _editMessage(message),
               ),
               _optionTile(
                 ctx,
                 Icons.delete_outline,
                 'Delete',
-                _C.danger,
+                AppColors.danger,
                 () => _deleteMessage(message),
               ),
             ],
@@ -681,43 +612,48 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _editMessage(Message message) {
+    final theme = Theme.of(context);
     final ctrl = TextEditingController(text: message.content);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _C.card,
+        backgroundColor: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Edit Message',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         content: TextField(
           controller: ctrl,
           maxLines: 3,
           autofocus: true,
-          style: const TextStyle(fontSize: 14),
+          style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: 'Edit your message...',
             filled: true,
-            fillColor: _C.pageBg,
+            fillColor: theme.scaffoldBackgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: _C.border),
+              borderSide: BorderSide(color: theme.dividerColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: _C.border),
+              borderSide: BorderSide(color: theme.dividerColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: _C.accent),
+              borderSide: const BorderSide(color: AppColors.accent),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: _C.gray)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.gray)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -727,7 +663,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _C.accent,
+              backgroundColor: AppColors.accent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -741,30 +677,38 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _deleteMessage(Message message) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _C.card,
+        backgroundColor: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Delete Message',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to delete this message?',
-          style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+          style: TextStyle(fontSize: 14, color: AppColors.gray),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: _C.gray)),
+            child: Text('Cancel', style: TextStyle(color: AppColors.gray)),
           ),
           TextButton(
             onPressed: () {
               _socket.deleteMessage(message.id);
               Navigator.pop(ctx);
             },
-            child: const Text('Delete', style: TextStyle(color: _C.danger)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -788,7 +732,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Could not open file',
-        backgroundColor: _C.danger,
+        backgroundColor: AppColors.danger,
       );
     }
   }
@@ -801,7 +745,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         Fluttertoast.showToast(msg: 'Download started: $fileName');
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e', backgroundColor: _C.danger);
+      Fluttertoast.showToast(
+        msg: 'Error: $e',
+        backgroundColor: AppColors.danger,
+      );
     }
   }
 
@@ -811,7 +758,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Error sharing: $e',
-        backgroundColor: _C.danger,
+        backgroundColor: AppColors.danger,
       );
     }
   }
@@ -827,38 +774,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final currentUserIdFromSocket = SocketService.instance.getCurrentUserId();
-    print('🔴🔴🔴 DIAGNOSTIC - START 🔴🔴🔴');
-    print('Current user from SocketService: $currentUserIdFromSocket');
-    print('Current user from state variable: $currentUserId');
-    print('Total messages: ${messages.length}');
-
-    for (var i = 0; i < messages.length; i++) {
-      final msg = messages[i];
-      final isMe = msg.senderId == currentUserIdFromSocket;
-      print(
-        'Message $i: id=${msg.id}, sender_id=${msg.senderId}, sender_name=${msg.senderName}, isMe=$isMe, color=${isMe ? "BLUE" : "GREY"}',
-      );
-    }
-    print('🔴🔴🔴 DIAGNOSTIC - END 🔴🔴🔴');
-    print('🏗️ BUILDING CHAT SCREEN - Messages count: ${messages.length}');
-    for (var msg in messages) {
-      final isMe = msg.senderId == currentUserId;
-      print(
-        '🏗️ Message in state: id=${msg.id}, sender=${msg.senderId}, currentUser=$currentUserId, isMe=$isMe, content=${msg.content}',
-      );
-    }
 
     return Scaffold(
-      backgroundColor: _C.pageBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(),
       body: Column(
         children: [
           if (_replyingTo != null) _buildReplyingBar(),
           Expanded(
             child: loading && messages.isEmpty
-                ? const Center(
-                    child: CircularProgressIndicator(color: _C.accent),
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary,
+                    ),
                   )
                 : messages.isEmpty
                 ? _buildEmptyMessages()
@@ -878,21 +809,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       itemCount: messages.length,
                       itemBuilder: (ctx, i) {
                         final msg = messages[messages.length - 1 - i];
-                        final currentUserIdFromSocket = SocketService.instance
-                            .getCurrentUserId();
                         final isMe = msg.senderId == currentUserIdFromSocket;
-
-                        print('🎨 Building message at index $i');
-                        print('🎨 Message ID: ${msg.id}');
-                        print('🎨 Message sender_id: ${msg.senderId}');
-                        print(
-                          '🎨 Current user from socket: $currentUserIdFromSocket',
-                        );
-                        print('🎨 Current user from state: $currentUserId');
-                        print('🎨 isMe: $isMe');
-                        print('🎨 Content: ${msg.content}');
-                        print('🎨 ========================');
-
                         return GestureDetector(
                           onLongPress: () => _showMessageOptions(msg, isMe),
                           child: _buildMessageBubble(msg, isMe),
@@ -910,10 +827,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return AppBar(
       elevation: 0,
-      backgroundColor: _C.card,
-      foregroundColor: _C.dark,
+      backgroundColor: theme.cardColor,
+      foregroundColor: theme.colorScheme.onSurface,
       surfaceTintColor: Colors.transparent,
       titleSpacing: 0,
       title: Row(
@@ -922,7 +842,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: _C.accentBg,
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                 backgroundImage: widget.otherUserAvatar?.isNotEmpty == true
                     ? NetworkImage(widget.otherUserAvatar!)
                     : null,
@@ -931,10 +851,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         widget.otherUserName.isNotEmpty
                             ? widget.otherUserName[0].toUpperCase()
                             : '?',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: _C.accent,
+                          color: theme.colorScheme.primary,
                         ),
                       )
                     : null,
@@ -946,9 +866,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: _C.green,
+                    color: theme.colorScheme.secondary,
                     shape: BoxShape.circle,
-                    border: Border.all(color: _C.card, width: 1.5),
+                    border: Border.all(color: theme.cardColor, width: 1.5),
                   ),
                 ),
               ),
@@ -961,10 +881,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               children: [
                 Text(
                   widget.otherUserName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: _C.dark,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 if (_isOtherTyping)
@@ -976,16 +896,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           width: 5,
                           height: 5,
                           decoration: BoxDecoration(
-                            color: _C.green.withOpacity(_typingAnimation.value),
+                            color: theme.colorScheme.secondary.withOpacity(
+                              _typingAnimation.value,
+                            ),
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Text(
+                        Text(
                           'Typing...',
                           style: TextStyle(
                             fontSize: 11,
-                            color: _C.green,
+                            color: theme.colorScheme.secondary,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -998,15 +920,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: const BoxDecoration(
-                          color: _C.green,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondary,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Text(
+                      Text(
                         'Online',
-                        style: TextStyle(fontSize: 11, color: _C.green),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.colorScheme.secondary,
+                        ),
                       ),
                     ],
                   ),
@@ -1028,24 +953,27 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(0.5),
-        child: Container(height: 0.5, color: _C.border),
+        child: Container(height: 0.5, color: theme.dividerColor),
       ),
     );
   }
 
   Widget _appBarAction(IconData icon, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(right: 4),
       child: Container(
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: _C.pageBg,
+          color: theme.scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _C.border),
+          border: Border.all(color: theme.dividerColor),
         ),
         child: IconButton(
-          icon: Icon(icon, size: 17, color: _C.gray),
+          icon: Icon(icon, size: 17, color: AppColors.gray),
           onPressed: onTap,
           padding: EdgeInsets.zero,
         ),
@@ -1054,13 +982,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildReplyingBar() {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: theme.cardColor,
         border: Border(
-          top: BorderSide(color: _C.border),
-          left: const BorderSide(color: _C.accent, width: 3),
+          top: BorderSide(color: theme.dividerColor),
+          left: BorderSide(color: theme.colorScheme.primary, width: 3),
         ),
       ),
       child: Row(
@@ -1071,10 +1001,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               children: [
                 Text(
                   'Replying to ${_replyingTo!.senderName}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: _C.accent,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1082,7 +1012,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   _replyingTo!.content,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: _C.gray),
+                  style: TextStyle(fontSize: 12, color: AppColors.gray),
                 ),
               ],
             ),
@@ -1093,10 +1023,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: _C.pageBg,
+                color: theme.scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.close, size: 14, color: _C.gray),
+              child: Icon(Icons.close, size: 14, color: AppColors.gray),
             ),
           ),
         ],
@@ -1105,20 +1035,25 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTypingIndicator() {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(left: 16, bottom: 6, top: 4),
       child: Row(
         children: [
           CircleAvatar(
             radius: 14,
-            backgroundColor: _C.accentBg,
+            backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
             backgroundImage: widget.otherUserAvatar != null
                 ? NetworkImage(widget.otherUserAvatar!)
                 : null,
             child: widget.otherUserAvatar == null
                 ? Text(
                     widget.otherUserName[0].toUpperCase(),
-                    style: const TextStyle(fontSize: 11, color: _C.accent),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.primary,
+                    ),
                   )
                 : null,
           ),
@@ -1126,9 +1061,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: _C.card,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _C.border),
+              border: Border.all(color: theme.dividerColor),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1153,7 +1088,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         height: 6,
         margin: const EdgeInsets.only(right: 3),
         decoration: BoxDecoration(
-          color: _C.gray.withOpacity(value),
+          color: AppColors.gray.withOpacity(value),
           shape: BoxShape.circle,
         ),
       ),
@@ -1162,6 +1097,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildEmptyMessages() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1170,28 +1108,28 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: _C.accentBg,
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.chat_bubble_outline_rounded,
               size: 36,
-              color: _C.accent,
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'No messages yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: _C.dark,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Start the conversation below',
-            style: TextStyle(fontSize: 13, color: _C.gray),
+            style: TextStyle(fontSize: 13, color: AppColors.gray),
           ),
         ],
       ),
@@ -1199,20 +1137,25 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildUploadingIndicator() {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: _C.card,
+      color: theme.cardColor,
       child: Row(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: _C.accent),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 10),
-          const Text(
+          Text(
             'Uploading...',
-            style: TextStyle(fontSize: 13, color: _C.gray),
+            style: TextStyle(fontSize: 13, color: AppColors.gray),
           ),
         ],
       ),
@@ -1220,9 +1163,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMessageBubble(Message message, bool isMe) {
-    print(
-      '💬 BUILDING BUBBLE: sender=${message.senderName}(${message.senderId}), isMe=$isMe, color=${isMe ? "BLUE (right)" : "GREY (left)"}',
-    );
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
@@ -1235,7 +1177,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           if (!isMe) ...[
             CircleAvatar(
               radius: 15,
-              backgroundColor: _C.accentBg,
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
               backgroundImage: message.senderAvatar?.isNotEmpty == true
                   ? NetworkImage(message.senderAvatar!)
                   : null,
@@ -1244,7 +1186,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       message.senderName.isNotEmpty
                           ? message.senderName[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(fontSize: 11, color: _C.accent),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.primary,
+                      ),
                     )
                   : null,
             ),
@@ -1254,14 +1199,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isMe ? _C.accent : _C.card,
+                color: isMe ? theme.colorScheme.primary : theme.cardColor,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
                   bottomLeft: Radius.circular(isMe ? 16 : 4),
                   bottomRight: Radius.circular(isMe ? 4 : 16),
                 ),
-                border: isMe ? null : Border.all(color: _C.border),
+                border: isMe ? null : Border.all(color: theme.dividerColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1273,16 +1218,19 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       padding: const EdgeInsets.only(bottom: 3),
                       child: Text(
                         message.senderName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: _C.accent,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
                   if (message.reaction != null)
                     _buildReactionBadge(message, isMe),
-                  _buildMessageContent(message, isMe ? Colors.white : _C.dark),
+                  _buildMessageContent(
+                    message,
+                    isMe ? Colors.white : theme.colorScheme.onSurface,
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1291,7 +1239,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _formatTime(message.createdAt),
                         style: TextStyle(
                           fontSize: 10,
-                          color: isMe ? Colors.white54 : _C.gray,
+                          color: isMe ? Colors.white54 : AppColors.gray,
                         ),
                       ),
                       if (message.isEdited)
@@ -1301,7 +1249,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             fontSize: 9,
                             color: isMe
                                 ? Colors.white38
-                                : _C.gray.withOpacity(0.6),
+                                : AppColors.gray.withOpacity(0.6),
                           ),
                         ),
                       if (isMe) ...[
@@ -1312,7 +1260,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               : Icons.done,
                           size: 12,
                           color: message.readBy.length > 1
-                              ? _C.accentLight
+                              ? AppColors.accentLight
                               : Colors.white54,
                         ),
                       ],
@@ -1329,15 +1277,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildReplyPreview(Message message, bool isMe) {
+    final theme = Theme.of(context);
+
     if (message.replyTo == null) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isMe ? Colors.white.withOpacity(0.15) : _C.accentBg,
+        color: isMe
+            ? Colors.white.withOpacity(0.15)
+            : theme.colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border(
-          left: BorderSide(color: isMe ? Colors.white54 : _C.accent, width: 2),
+          left: BorderSide(
+            color: isMe ? Colors.white54 : theme.colorScheme.primary,
+            width: 2,
+          ),
         ),
       ),
       child: Column(
@@ -1348,7 +1303,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: isMe ? Colors.white70 : _C.accent,
+              color: isMe ? Colors.white70 : theme.colorScheme.primary,
             ),
           ),
           Text(
@@ -1357,7 +1312,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              color: isMe ? Colors.white60 : _C.gray,
+              color: isMe ? Colors.white60 : AppColors.gray,
             ),
           ),
         ],
@@ -1366,19 +1321,25 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildReactionBadge(Message message, bool isMe) {
+    final theme = Theme.of(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: isMe ? Colors.white.withOpacity(0.2) : _C.pageBg,
+        color: isMe
+            ? Colors.white.withOpacity(0.2)
+            : theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isMe ? Colors.white24 : _C.border),
+        border: Border.all(color: isMe ? Colors.white24 : theme.dividerColor),
       ),
       child: Text(message.reaction!, style: const TextStyle(fontSize: 12)),
     );
   }
 
   Widget _buildMessageContent(Message message, Color textColor) {
+    final theme = Theme.of(context);
+
     if (message.type == 'image') {
       return GestureDetector(
         onTap: () => Navigator.push(
@@ -1397,10 +1358,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             placeholder: (_, __) => Container(
               height: 200,
               width: 200,
-              color: _C.pageBg,
-              child: const Center(
+              color: theme.scaffoldBackgroundColor,
+              child: Center(
                 child: CircularProgressIndicator(
-                  color: _C.accent,
+                  color: theme.colorScheme.primary,
                   strokeWidth: 2,
                 ),
               ),
@@ -1408,10 +1369,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             errorWidget: (_, __, ___) => Container(
               height: 200,
               width: 200,
-              color: _C.pageBg,
-              child: const Icon(
+              color: theme.scaffoldBackgroundColor,
+              child: Icon(
                 Icons.broken_image_outlined,
-                color: _C.gray,
+                color: AppColors.gray,
                 size: 36,
               ),
             ),
@@ -1457,43 +1418,52 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildInputBar() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
-        color: _C.card,
-        border: Border(top: BorderSide(color: _C.border)),
+        color: theme.cardColor,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
       ),
       child: Row(
         children: [
           _inputAction(
             Icons.image_outlined,
-            _C.accent,
+            theme.colorScheme.primary,
             _isUploading ? null : _pickAndSendImage,
           ),
           const SizedBox(width: 4),
           _inputAction(
             Icons.attach_file_rounded,
-            _C.gray,
+            AppColors.gray,
             _isUploading ? null : _pickAndSendFile,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: _C.pageBg,
+                color: theme.scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: _C.border),
+                border: Border.all(color: theme.dividerColor),
               ),
               child: TextField(
                 controller: _messageController,
                 focusNode: _messageFocusNode,
                 enabled: !_isUploading,
-                style: const TextStyle(fontSize: 14, color: _C.dark),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: theme.colorScheme.onSurface,
+                ),
                 decoration: InputDecoration(
                   hintText: _replyingTo != null
                       ? 'Reply...'
                       : 'Type a message...',
-                  hintStyle: const TextStyle(color: _C.gray, fontSize: 14),
+                  hintStyle: const TextStyle(
+                    color: AppColors.gray,
+                    fontSize: 14,
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -1513,7 +1483,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: _isUploading ? _C.border : _C.accent,
+                color: _isUploading
+                    ? theme.dividerColor
+                    : theme.colorScheme.primary,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: _isUploading
@@ -1540,6 +1512,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _inputAction(IconData icon, Color color, VoidCallback? onTap) {
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1549,7 +1523,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: onTap == null ? _C.gray : color, size: 18),
+        child: Icon(
+          icon,
+          color: onTap == null ? AppColors.gray : color,
+          size: 18,
+        ),
       ),
     );
   }
@@ -1561,6 +1539,9 @@ class FullScreenImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(

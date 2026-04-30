@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../services/api_service.dart';
 import '../../models/rating_model.dart';
+import '../../l10n/app_localizations.dart';
+import '../../theme/app_theme.dart';
 import 'review_details_screen.dart';
 import 'add_rating_screen.dart';
 
@@ -104,18 +106,23 @@ class _ReviewsScreenState extends State<ReviewsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.userName}\'s Reviews'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text('${widget.userName} ${t.reviews}'),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xff14A800),
-          tabs: const [
-            Tab(text: 'Reviews', icon: Icon(Icons.star)),
-            Tab(text: 'Analytics', icon: Icon(Icons.analytics)),
+          indicatorColor: AppColors.secondary,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.6),
+          tabs: [
+            Tab(text: t.reviews, icon: const Icon(Icons.star)),
+            Tab(text: t.analytics, icon: const Icon(Icons.analytics)),
           ],
         ),
       ),
@@ -129,21 +136,33 @@ class _ReviewsScreenState extends State<ReviewsScreen>
   }
 
   Widget _buildReviewsList() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_reviews.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.star_border, size: 64, color: Colors.grey.shade400),
+            Icon(
+              Icons.star_border,
+              size: 64,
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
+            ),
             const SizedBox(height: 16),
             Text(
-              'No reviews yet',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+              t.noReviewsYet,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Reviews will appear here once completed projects are rated',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+              t.reviewsWillAppearHere,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -157,12 +176,11 @@ class _ReviewsScreenState extends State<ReviewsScreen>
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+            ),
           ),
           child: Column(
             children: [
@@ -184,35 +202,38 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                         const SizedBox(height: 4),
                         RatingStars(rating: _stats?.average ?? 0, size: 16),
                         Text(
-                          '${_stats?.total ?? 0} reviews',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
+                          '${_stats?.total ?? 0} ${t.reviews.toLowerCase()}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Container(width: 1, height: 50, color: Colors.grey.shade300),
+                  Container(
+                    width: 1,
+                    height: 50,
+                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                  ),
                   Expanded(
                     child: Column(
                       children: [
-                        _buildFilterChip('All', 'all', _reviews.length),
+                        _buildFilterChip(t.all, 'all', _reviews.length),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             _buildSmallFilterChip(
-                              'Positive',
+                              t.positive,
                               'positive',
                               _reviews.where((r) => r.rating >= 4).length,
-                              Colors.green,
+                              AppColors.success,
                             ),
                             _buildSmallFilterChip(
-                              'Negative',
+                              t.negative,
                               'negative',
                               _reviews.where((r) => r.rating <= 2).length,
-                              Colors.red,
+                              AppColors.danger,
                             ),
                           ],
                         ),
@@ -224,7 +245,6 @@ class _ReviewsScreenState extends State<ReviewsScreen>
             ],
           ),
         ),
-
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -240,22 +260,28 @@ class _ReviewsScreenState extends State<ReviewsScreen>
   }
 
   Widget _buildFilterChip(String label, String value, int count) {
+    final theme = Theme.of(context);
     final isSelected = _filter == value;
+
     return GestureDetector(
       onTap: () => setState(() => _filter = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.amber : Colors.white,
+          color: isSelected ? AppColors.secondary : theme.cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.amber.shade200),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.secondary
+                : theme.colorScheme.onSurface.withOpacity(0.2),
+          ),
         ),
         child: Text(
           '$label ($count)',
-          style: TextStyle(
+          style: theme.textTheme.bodySmall?.copyWith(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : Colors.grey.shade700,
+            color: isSelected ? Colors.white : theme.colorScheme.onSurface,
           ),
         ),
       ),
@@ -269,6 +295,8 @@ class _ReviewsScreenState extends State<ReviewsScreen>
     Color color,
   ) {
     final isSelected = _filter == value;
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: () => setState(() => _filter = value),
       child: Container(
@@ -280,7 +308,7 @@ class _ReviewsScreenState extends State<ReviewsScreen>
         ),
         child: Text(
           '$label ($count)',
-          style: TextStyle(
+          style: theme.textTheme.bodySmall?.copyWith(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             color: color,
@@ -291,12 +319,17 @@ class _ReviewsScreenState extends State<ReviewsScreen>
   }
 
   Widget _buildReviewCard(Rating review) {
-    final fromUserName = review.fromUser?['name'] ?? 'User';
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final fromUserName = review.fromUser?['name'] ?? t.user;
     final fromUserAvatar = review.fromUser?['avatar'];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: isDark ? 2 : 1,
+      color: theme.cardColor,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -316,7 +349,7 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: Colors.amber.shade100,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
                     backgroundImage: fromUserAvatar != null
                         ? NetworkImage(fromUserAvatar)
                         : null,
@@ -325,7 +358,10 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                             fromUserName.isNotEmpty
                                 ? fromUserName[0].toUpperCase()
                                 : 'U',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
                           )
                         : null,
                   ),
@@ -336,13 +372,15 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                       children: [
                         Text(
                           fromUserName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Text(
                           review.formattedDate,
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 11,
-                            color: Colors.grey.shade500,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],
@@ -355,14 +393,14 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
+                        color: AppColors.successBg,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
-                        'Verified',
+                      child: Text(
+                        t.verified,
                         style: TextStyle(
                           fontSize: 10,
-                          color: Colors.green,
+                          color: AppColors.success,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -375,7 +413,7 @@ class _ReviewsScreenState extends State<ReviewsScreen>
               if (review.comment != null && review.comment!.isNotEmpty)
                 Text(
                   review.comment!,
-                  style: const TextStyle(height: 1.4),
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -384,13 +422,17 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(
                     children: [
-                      const Icon(Icons.thumb_up, size: 14, color: Colors.grey),
+                      Icon(
+                        Icons.thumb_up,
+                        size: 14,
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      ),
                       const SizedBox(width: 4),
                       Text(
-                        '${review.helpfulCount} found this helpful',
-                        style: TextStyle(
+                        '${review.helpfulCount} ${t.foundThisHelpful}',
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 11,
-                          color: Colors.grey.shade600,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -401,22 +443,27 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                   margin: const EdgeInsets.only(top: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: isDark ? AppColors.darkCard2 : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Response from seller:',
-                        style: TextStyle(
+                      Text(
+                        t.responseFromSeller,
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(review.reply!, style: const TextStyle(fontSize: 13)),
+                      Text(
+                        review.reply!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -428,6 +475,9 @@ class _ReviewsScreenState extends State<ReviewsScreen>
   }
 
   Widget _buildAnalyticsTab() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     if (_stats == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -448,6 +498,10 @@ class _ReviewsScreenState extends State<ReviewsScreen>
   }
 
   Widget _buildRatingDistribution() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_stats == null) return const SizedBox.shrink();
 
     final maxCount = _stats!.distribution.values
@@ -457,16 +511,20 @@ class _ReviewsScreenState extends State<ReviewsScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Rating Distribution',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.ratingDistribution,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           ...List.generate(5, (i) {
@@ -508,7 +566,9 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                     width: 45,
                     child: Text(
                       '$percentage%',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
                     ),
                   ),
                 ],
@@ -521,41 +581,49 @@ class _ReviewsScreenState extends State<ReviewsScreen>
   }
 
   Widget _buildRatingBreakdown() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_stats == null) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Rating Summary',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.ratingSummary,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               _buildBreakdownItem(
-                'Positive',
+                t.positive,
                 _stats!.positiveRate,
-                Colors.green,
+                AppColors.success,
                 _stats!.positiveCount,
               ),
               _buildBreakdownItem(
-                'Neutral',
+                t.neutral,
                 _stats!.neutralRate,
-                Colors.orange,
+                AppColors.warning,
                 _stats!.neutralCount,
               ),
               _buildBreakdownItem(
-                'Negative',
+                t.negative,
                 _stats!.negativeRate,
-                Colors.red,
+                AppColors.danger,
                 _stats!.negativeCount,
               ),
             ],
@@ -571,6 +639,8 @@ class _ReviewsScreenState extends State<ReviewsScreen>
     Color color,
     int count,
   ) {
+    final theme = Theme.of(context);
+
     return Expanded(
       child: Column(
         children: [
@@ -583,10 +653,18 @@ class _ReviewsScreenState extends State<ReviewsScreen>
             ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
           Text(
             '($count)',
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
           ),
         ],
       ),
@@ -594,6 +672,10 @@ class _ReviewsScreenState extends State<ReviewsScreen>
   }
 
   Widget _buildReviewHighlights() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final withComments = _reviews
         .where((r) => r.comment != null && r.comment!.isNotEmpty)
         .length;
@@ -605,38 +687,48 @@ class _ReviewsScreenState extends State<ReviewsScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: isDark ? AppColors.darkCard2 : AppColors.infoBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _highlightItem('📝', '$withComments', 'With Comments'),
-          _highlightItem('💬', '$withReplies', 'With Replies'),
-          _highlightItem('⭐', avgRating.toStringAsFixed(1), 'Average'),
+          _highlightItem('📝', '$withComments', t.withComments),
+          _highlightItem('💬', '$withReplies', t.withReplies),
+          _highlightItem('⭐', avgRating.toStringAsFixed(1), t.average),
         ],
       ),
     );
   }
 
   Widget _highlightItem(String icon, String value, String label) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Text(icon, style: const TextStyle(fontSize: 24)),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontSize: 10,
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
       ],
     );
   }
 
   Color _getRatingColor(int rating) {
-    if (rating >= 4) return Colors.green;
-    if (rating == 3) return Colors.orange;
-    return Colors.red;
+    if (rating >= 4) return AppColors.success;
+    if (rating == 3) return AppColors.warning;
+    return AppColors.danger;
   }
 }
 
@@ -654,6 +746,8 @@ class RatingStars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -671,10 +765,10 @@ class RatingStars extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             rating.toStringAsFixed(1),
-            style: TextStyle(
+            style: theme.textTheme.bodySmall?.copyWith(
               fontSize: size * 0.8,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
         ],

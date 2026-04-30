@@ -1,11 +1,13 @@
 // screens/freelancer/project_details_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:freelancer_platform/models/usage_limits_model.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/usage_limits_model.dart';
 import '../../models/project_model.dart';
 import '../../services/api_service.dart';
 import 'submit_proposal_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../theme/app_theme.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final int projectId;
@@ -29,18 +31,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   bool _isFavorite = false;
 
   Future<void> _toggleFavorite() async {
+    final t = AppLocalizations.of(context)!;
     try {
       if (_isFavorite) {
         await ApiService.removeFromFavorites(widget.projectId);
         setState(() => _isFavorite = false);
-        Fluttertoast.showToast(msg: 'Removed from favorites');
+        Fluttertoast.showToast(msg: t.removedFromFavorites);
       } else {
         await ApiService.addToFavorites(widget.projectId);
         setState(() => _isFavorite = true);
-        Fluttertoast.showToast(msg: 'Added to favorites');
+        Fluttertoast.showToast(msg: t.addedToFavorites);
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     }
   }
 
@@ -98,7 +101,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
     try {
       final response = await ApiService.getSmartPricing(widget.projectId);
-      print('📊 Smart pricing response: $response');
 
       if (response['success'] == true && response['pricing'] != null) {
         setState(() {
@@ -110,7 +112,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         setState(() => loadingPricing = false);
       }
     } catch (e) {
-      print('❌ Error loading smart pricing: $e');
       setState(() => loadingPricing = false);
     }
   }
@@ -119,9 +120,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     if (!mounted) return;
 
     try {
-      print('📥 Fetching project details for ID: ${widget.projectId}');
       final data = await ApiService.getProjectById(widget.projectId);
-      print('📦 Response: $data');
 
       if (!mounted) return;
 
@@ -133,10 +132,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         loading = false;
       });
     } catch (e) {
-      print('❌ Error loading project details: $e');
       if (!mounted) return;
       setState(() => loading = false);
-      Fluttertoast.showToast(msg: "Error loading project details");
+      final t = AppLocalizations.of(context)!;
+      Fluttertoast.showToast(msg: t.errorLoadingProjectDetails);
     }
   }
 
@@ -163,6 +162,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 
   void _navigateToSubmitProposal() {
+    final t = AppLocalizations.of(context)!;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -172,37 +172,40 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     ).then((submitted) {
       if (submitted == true) {
         setState(() => hasSubmitted = true);
-        Fluttertoast.showToast(msg: "Proposal submitted successfully!");
+        Fluttertoast.showToast(msg: t.proposalSubmittedSuccess);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final hasContract = _contractId != null && _contractId! > 0;
     final isOpen = project?.status == 'open';
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Project Details"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.projectDetails),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           IconButton(
             icon: Icon(
               _isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: _isFavorite ? Colors.red : null,
+              color: _isFavorite ? Colors.red : theme.iconTheme.color,
             ),
-            onPressed: () => _toggleFavorite(),
+            onPressed: _toggleFavorite,
           ),
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.purple, Colors.blue],
-                ),
-                borderRadius: BorderRadius.circular(12),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.purple, Colors.blue]),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
               child: const Icon(
                 Icons.auto_awesome,
@@ -217,14 +220,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 arguments: {'projectId': widget.projectId},
               );
             },
-            tooltip: 'AI Assistant',
+            tooltip: t.aiAssistant,
           ),
         ],
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : project == null
-          ? const Center(child: Text("Project not found"))
+          ? Center(
+              child: Text(
+                t.projectNotFound,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -244,7 +256,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          project!.title ?? 'Untitled',
+                          project!.title ?? t.untitled,
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -262,7 +274,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                project!.client?.name ?? 'Unknown Client',
+                                project!.client?.name ?? t.unknownClient,
                                 style: const TextStyle(color: Colors.white70),
                               ),
                             ),
@@ -282,17 +294,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.shade200,
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -303,30 +313,30 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         Expanded(
                           child: _buildInfoItem(
                             icon: Icons.attach_money,
-                            label: 'Budget',
+                            label: t.budget,
                             value: '\$${project!.budget?.toStringAsFixed(0)}',
-                            color: Colors.green,
+                            color: AppColors.secondary,
                           ),
                         ),
                         Container(
                           height: 40,
                           width: 1,
-                          color: Colors.grey.shade300,
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade300,
                         ),
                         Expanded(
                           child: _buildInfoItem(
                             icon: Icons.access_time,
-                            label: 'Duration',
-                            value: '${project!.duration} days',
-                            color: Colors.orange,
+                            label: t.duration,
+                            value: '${project!.duration} ${t.days}',
+                            color: AppColors.warning,
                           ),
                         ),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   if (showSmartPricing && smartPricing != null)
                     if (isOpen)
                       Container(
@@ -334,15 +344,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [
-                              Colors.amber.shade50,
-                              Colors.orange.shade50,
-                            ],
+                            colors: isDark
+                                ? [
+                                    Colors.amber.shade900.withOpacity(0.3),
+                                    Colors.orange.shade900.withOpacity(0.3),
+                                  ]
+                                : [Colors.amber.shade50, Colors.orange.shade50],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.amber.shade200),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.amber.shade800
+                                : Colors.amber.shade200,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,11 +367,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
                                       colors: [Colors.amber, Colors.orange],
                                     ),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(12),
+                                    ),
                                   ),
                                   child: const Icon(
                                     Icons.auto_awesome,
@@ -364,18 +382,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                const Text(
-                                  "AI Smart Pricing Analysis",
+                                Text(
+                                  t.aiSmartPricingAnalysis,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.orange,
+                                    color: AppColors.warning,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 16),
-
                             Row(
                               children: [
                                 Expanded(
@@ -383,11 +400,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        "Recommended Price",
+                                      Text(
+                                        t.recommendedPrice,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey,
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.6),
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -407,11 +425,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        "Hourly Rate",
+                                      Text(
+                                        t.hourlyRate,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey,
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.6),
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -430,16 +449,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        "Est. Hours",
+                                      Text(
+                                        t.estHours,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey,
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.6),
                                         ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        "${smartPricing!['estimated_hours'] ?? '?'} hrs",
+                                        "${smartPricing!['estimated_hours'] ?? '?'} ${t.hours}",
                                         style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
@@ -450,9 +470,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 ),
                               ],
                             ),
-
                             const SizedBox(height: 12),
-
                             Row(
                               children: [
                                 const Icon(
@@ -462,10 +480,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  "Confidence: ${smartPricing!['confidence_score'] ?? 85}%",
-                                  style: const TextStyle(
+                                  "${t.confidence}: ${smartPricing!['confidence_score'] ?? 85}%",
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
                                   ),
                                 ),
                                 const Spacer(),
@@ -473,38 +492,42 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   Flexible(
                                     child: Text(
                                       smartPricing!['justification'],
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
-                                        color: Colors.grey,
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.6),
                                       ),
                                       textAlign: TextAlign.right,
                                     ),
                                   ),
                               ],
                             ),
-
                             const SizedBox(height: 12),
-
                             if (smartPricing!['pricing_breakdown'] != null)
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: isDark
+                                      ? AppColors.darkSurface
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Column(
                                   children: [
                                     _buildBreakdownRow(
-                                      "Base Rate",
+                                      t.baseRate,
                                       "\$${smartPricing!['pricing_breakdown']['base_rate']?.toStringAsFixed(0) ?? '?'}/hr",
+                                      isDark,
                                     ),
                                     _buildBreakdownRow(
-                                      "Complexity",
+                                      t.complexity,
                                       "+${((smartPricing!['pricing_breakdown']['complexity_multiplier'] ?? 1) - 1) * 100}%",
+                                      isDark,
                                     ),
                                     _buildBreakdownRow(
-                                      "Experience",
+                                      t.experience,
                                       "+${((smartPricing!['pricing_breakdown']['experience_multiplier'] ?? 1) - 1) * 100}%",
+                                      isDark,
                                     ),
                                   ],
                                 ),
@@ -512,53 +535,61 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           ],
                         ),
                       ),
-
                   Card(
                     elevation: 0,
+                    color: theme.cardColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
+                      side: BorderSide(
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                      ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Description',
-                            style: TextStyle(
-                              fontSize: 18,
+                          Text(
+                            t.description,
+                            style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            project!.description ?? 'No description',
-                            style: const TextStyle(height: 1.6, fontSize: 15),
+                            project!.description ?? t.noDescription,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              height: 1.6,
+                              fontSize: 15,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   if (project!.skills != null && project!.skills!.isNotEmpty)
                     Card(
                       elevation: 0,
+                      color: theme.cardColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                        side: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Required Skills',
-                              style: TextStyle(
-                                fontSize: 18,
+                            Text(
+                              t.requiredSkills,
+                              style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -573,16 +604,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: AppColors.info.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Colors.blue.shade200,
+                                      color: AppColors.info.withOpacity(0.3),
                                     ),
                                   ),
                                   child: Text(
                                     skill,
                                     style: TextStyle(
-                                      color: Colors.blue.shade700,
+                                      color: AppColors.info,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -593,14 +624,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ),
                       ),
                     ),
-
                   const SizedBox(height: 20),
-
                   Card(
                     elevation: 0,
+                    color: theme.cardColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
+                      side: BorderSide(
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                      ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -608,7 +642,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         children: [
                           CircleAvatar(
                             radius: 30,
-                            backgroundColor: Colors.grey.shade300,
+                            backgroundColor: isDark
+                                ? Colors.grey.shade800
+                                : Colors.grey.shade300,
                             backgroundImage: project!.client?.avatar != null
                                 ? NetworkImage(
                                     _getAvatarUrl(project!.client!.avatar),
@@ -617,7 +653,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             child: project!.client?.avatar == null
                                 ? Text(
                                     project!.client?.name?[0].toUpperCase() ??
-                                        'C',
+                                        t.client[0],
                                     style: const TextStyle(
                                       fontSize: 24,
                                       color: Colors.white,
@@ -630,26 +666,27 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Client',
-                                  style: TextStyle(
-                                    color: Colors.grey,
+                                Text(
+                                  t.client,
+                                  style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 12,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
                                   ),
                                 ),
                                 Text(
-                                  project!.client?.name ?? 'Unknown',
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  project!.client?.name ?? t.unknown,
+                                  style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  project!.client?.email ?? 'No email',
-                                  style: TextStyle(
+                                  project!.client?.email ?? t.noEmail,
+                                  style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 12,
-                                    color: Colors.grey.shade600,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
                                   ),
                                 ),
                               ],
@@ -659,18 +696,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
                   if (isOpen &&
                       _usage != null &&
                       _usage!.proposalsLimit != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Proposals remaining this month: ${_usage!.remainingProposals}',
+                      t.proposalsRemainingThisMonth(_usage!.remainingProposals),
                       style: TextStyle(
                         color: _usage!.remainingProposals <= 0
-                            ? Colors.red
-                            : Colors.green,
+                            ? AppColors.danger
+                            : AppColors.secondary,
                         fontSize: 12,
                       ),
                     ),
@@ -678,10 +714,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       TextButton(
                         onPressed: () =>
                             Navigator.pushNamed(context, '/subscription/plans'),
-                        child: const Text('Upgrade to send more proposals'),
+                        child: Text(
+                          t.upgradeToSendMoreProposals,
+                          style: TextStyle(color: theme.colorScheme.primary),
+                        ),
                       ),
                   ],
-
                   if (hasContract)
                     SizedBox(
                       width: double.infinity,
@@ -709,9 +747,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 ),
                               )
                             : const Icon(Icons.description_outlined),
-                        label: const Text(
-                          'Open Contract',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        label: Text(
+                          t.openContract,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.indigo,
@@ -729,15 +767,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       child: ElevatedButton.icon(
                         onPressed: _navigateToSubmitProposal,
                         icon: const Icon(Icons.send, color: Colors.white),
-                        label: const Text(
-                          'Submit Proposal',
-                          style: TextStyle(
+                        label: Text(
+                          t.submitProposal,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff14A800),
+                          backgroundColor: AppColors.secondary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -748,21 +786,20 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
+                        color: AppColors.secondary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.green.shade200),
+                        border: Border.all(
+                          color: AppColors.secondary.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.green.shade600,
-                          ),
+                          Icon(Icons.check_circle, color: AppColors.secondary),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'You have already submitted a proposal for this project',
-                              style: TextStyle(fontSize: 14),
+                              t.alreadySubmittedProposal,
+                              style: theme.textTheme.bodyMedium,
                             ),
                           ),
                         ],
@@ -772,20 +809,24 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
+                        color: AppColors.warning.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade200),
+                        border: Border.all(
+                          color: AppColors.warning.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info, color: Colors.orange.shade600),
+                          Icon(Icons.info, color: AppColors.warning),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               hasContract
-                                  ? 'This project is ${project!.statusText}. Your workspace is in the contract.'
-                                  : 'This project is ${project!.statusText}',
-                              style: const TextStyle(fontSize: 14),
+                                  ? t.projectStatusWithContract(
+                                      project!.statusText ?? '',
+                                    )
+                                  : t.projectStatus(project!.statusText ?? ''),
+                              style: theme.textTheme.bodyMedium,
                             ),
                           ),
                         ],
@@ -803,13 +844,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     required String value,
     required Color color,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       children: [
         Icon(icon, color: color, size: 28),
         const SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontSize: 12,
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -824,16 +871,28 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
-  Widget _buildBreakdownRow(String label, String value) {
+  Widget _buildBreakdownRow(String label, String value, bool isDark) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12)),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
           Text(
             value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ],
       ),
@@ -841,16 +900,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 
   String _formatDate(DateTime? date) {
-    if (date == null) return 'Unknown';
+    final t = AppLocalizations.of(context);
+    if (date == null) return t?.unknown ?? 'Unknown';
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
+      return '${difference.inDays} ${t?.daysAgo ?? 'd ago'}';
     } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
+      return '${difference.inHours} ${t?.hoursAgo ?? 'h ago'}';
     } else {
-      return 'Just now';
+      return t?.justNow ?? 'Just now';
     }
   }
 }

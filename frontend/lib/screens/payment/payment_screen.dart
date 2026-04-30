@@ -1,10 +1,13 @@
 // lib/screens/payment/payment_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 import 'dart:html' as html;
 
 class PaymentScreen extends StatefulWidget {
@@ -34,13 +37,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _confirmPaymentManually() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _confirming = true);
 
     try {
       final result = await ApiService.manualConfirmPayment(widget.contractId);
 
       if (result['success'] == true) {
-        Fluttertoast.showToast(msg: '✅ Payment confirmed!');
+        Fluttertoast.showToast(msg: t.paymentConfirmed);
         if (mounted) {
           Navigator.pushReplacementNamed(
             context,
@@ -50,11 +54,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         }
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? 'Failed to confirm payment',
+          msg: result['message'] ?? t.failedToConfirmPayment,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       if (mounted) {
         setState(() => _confirming = false);
@@ -78,6 +82,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _presentPaymentSheet() async {
+    final t = AppLocalizations.of(context)!;
     if (kIsWeb) {
       await _openStripeCheckout();
       return;
@@ -94,7 +99,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
 
       if (result['message'] != null) {
-        Fluttertoast.showToast(msg: '✅ Payment successful!');
+        Fluttertoast.showToast(msg: t.paymentSuccessful);
         if (mounted) {
           Navigator.pushReplacementNamed(
             context,
@@ -105,7 +110,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        Fluttertoast.showToast(msg: 'Payment failed: $e');
+        Fluttertoast.showToast(msg: '${t.paymentFailed}: $e');
       }
     } finally {
       if (mounted) {
@@ -115,6 +120,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _openStripeCheckout() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _isProcessing = true);
 
     try {
@@ -136,10 +142,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           html.window.open(checkoutUrl, '_blank');
 
           Fluttertoast.showToast(
-            msg: 'Complete payment in the new tab',
+            msg: t.completePaymentInNewTab,
             timeInSecForIosWeb: 3,
             gravity: ToastGravity.BOTTOM,
-            backgroundColor: Colors.blue,
+            backgroundColor: AppColors.info,
             textColor: Colors.white,
           );
 
@@ -168,7 +174,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       print('❌ Payment error: $e');
       if (mounted) {
-        Fluttertoast.showToast(msg: 'Payment failed: $e');
+        Fluttertoast.showToast(msg: '${t.paymentFailed}: $e');
       }
     } finally {
       if (mounted) {
@@ -186,6 +192,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     double amount = 0.0;
     if (widget.paymentIntent['amount'] != null) {
       final amountValue = widget.paymentIntent['amount'];
@@ -215,11 +225,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Complete Payment'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.completePayment),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -228,38 +239,40 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: AppColors.success.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.lock_clock,
-                size: 64,
-                color: Colors.green.shade700,
-              ),
+              child: Icon(Icons.lock_clock, size: 64, color: AppColors.success),
             ),
             const SizedBox(height: 24),
 
-            const Text(
-              'Secure Payment',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              t.securePayment,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
 
-            const Text(
-              'Your payment will be held in escrow until the project is completed.',
+            Text(
+              t.paymentHeldInEscrow,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: 32),
 
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -268,32 +281,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _paymentLine('Contract total', agreed),
+                  _paymentLine(t.contractTotal, agreed),
                   if (discount > 0) ...[
                     const SizedBox(height: 6),
                     _paymentLine(
-                      'Coupon discount',
+                      t.couponDiscount,
                       -discount,
-                      valueColor: Colors.green.shade700,
+                      valueColor: AppColors.success,
                     ),
                   ],
-                  const Divider(height: 20),
+                  Divider(height: 20, color: theme.dividerColor),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Charged now (escrow)',
+                      Text(
+                        t.chargedNowEscrow,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       Text(
-                        '\$${displayCharge.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        '${t.dollar}${displayCharge.toStringAsFixed(2)}',
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          color: AppColors.success,
                         ),
                       ),
                     ],
@@ -301,10 +315,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   if (commissionMap != null) ...[
                     const SizedBox(height: 12),
                     Text(
-                      'Commission (on release): ~${commissionMap['rate_percent'] ?? '—'}% · est. fee \$${_parseMoney(commissionMap['estimated_fee_on_release'] ?? commissionMap['estimated_fee']).toStringAsFixed(2)}',
+                      '${t.commissionOnRelease}: ~${commissionMap['rate_percent'] ?? '—'}% · ${t.estFee} ${t.dollar}${_parseMoney(commissionMap['estimated_fee_on_release'] ?? commissionMap['estimated_fee']).toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                         height: 1.35,
                       ),
                     ),
@@ -316,7 +330,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           commissionMap['note'].toString(),
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade600,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ),
@@ -329,20 +343,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: AppColors.infoBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.security, color: Colors.blue.shade700),
+                  Icon(Icons.security, color: AppColors.info),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Your payment is secure and will only be released when you approve each milestone.',
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 12,
-                      ),
+                      t.paymentSecureDescription,
+                      style: TextStyle(color: AppColors.info, fontSize: 12),
                     ),
                   ),
                 ],
@@ -354,27 +365,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: kIsWeb ? Colors.amber.shade50 : Colors.green.shade50,
+                color: kIsWeb ? AppColors.warningBg : AppColors.successBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Icon(
                     kIsWeb ? Icons.web : Icons.phone_android,
-                    color: kIsWeb
-                        ? Colors.amber.shade700
-                        : Colors.green.shade700,
+                    color: kIsWeb ? AppColors.warning : AppColors.success,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      kIsWeb
-                          ? 'You will be redirected to Stripe secure checkout page.'
-                          : 'Secure in-app payment with Stripe.',
+                      kIsWeb ? t.stripeWebRedirect : t.stripeInAppPayment,
                       style: TextStyle(
-                        color: kIsWeb
-                            ? Colors.amber.shade800
-                            : Colors.green.shade800,
+                        color: kIsWeb ? AppColors.warning : AppColors.success,
                         fontSize: 12,
                       ),
                     ),
@@ -389,7 +394,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: ElevatedButton(
                 onPressed: _isProcessing ? null : _presentPaymentSheet,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff14A800),
+                  backgroundColor: AppColors.secondary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -397,7 +402,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 child: _isProcessing
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(
-                        kIsWeb ? 'Pay with Stripe' : 'Pay Now',
+                        kIsWeb ? t.payWithStripe : t.payNow,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -414,7 +419,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   child: OutlinedButton(
                     onPressed: _confirming ? null : _confirmPaymentManually,
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xff14A800)),
+                      side: BorderSide(color: AppColors.secondary),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -425,9 +430,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text(
-                            'Confirm Payment (Manual)',
-                            style: TextStyle(fontSize: 16),
+                        : Text(
+                            t.confirmPaymentManual,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.secondary,
+                            ),
                           ),
                   ),
                 ),
@@ -435,8 +443,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const SizedBox(height: 16),
 
             Text(
-              'By paying, you agree to our Terms of Service',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              t.agreeToTermsByPaying,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
             ),
           ],
         ),
@@ -445,21 +456,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _paymentLine(String label, double signedAmount, {Color? valueColor}) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context)!;
     final negative = signedAmount < 0;
-    final body = '\$${signedAmount.abs().toStringAsFixed(2)}';
+    final body = '${t.dollar}${signedAmount.abs().toStringAsFixed(2)}';
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
+          style: TextStyle(
+            fontSize: 14,
+            color: theme.colorScheme.onSurface.withOpacity(0.8),
+          ),
         ),
         Text(
           negative ? '-$body' : body,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: valueColor ?? Colors.black87,
+            color: valueColor ?? theme.colorScheme.onSurface,
           ),
         ),
       ],

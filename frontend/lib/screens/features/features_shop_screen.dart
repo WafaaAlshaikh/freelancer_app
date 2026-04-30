@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:freelancer_platform/models/project_model.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/project_model.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class FeaturesShopScreen extends StatefulWidget {
   const FeaturesShopScreen({super.key});
@@ -20,30 +22,41 @@ class _FeaturesShopScreenState extends State<FeaturesShopScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPrices();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadPrices(context);
+      }
+    });
   }
 
-  Future<void> _loadPrices() async {
+  Future<void> _loadPrices(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+    
     setState(() => _loading = true);
     try {
       final response = await ApiService.getFeaturePrices();
       if (response['success'] == true && response['prices'] != null) {
+        if (!mounted) return;
         setState(() {
           _prices = Map<String, double>.from(response['prices']);
           _loading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() => _loading = false);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loading = false);
-      Fluttertoast.showToast(msg: 'Error loading prices: $e');
+      Fluttertoast.showToast(msg: '${t.errorLoadingPrices}: $e');
     }
   }
 
-  Future<void> _purchaseFeature(String feature, {int? entityId}) async {
+  Future<void> _purchaseFeature(BuildContext context, String feature, {int? entityId}) async {
+    final t = AppLocalizations.of(context)!;
     if (feature == 'project_highlight' && entityId == null) {
-      final selectedProject = await _selectProject();
+      final selectedProject = await _selectProject(context);
       if (selectedProject == null) return;
       entityId = selectedProject.id;
     }
@@ -56,32 +69,41 @@ class _FeaturesShopScreenState extends State<FeaturesShopScreen> {
       );
 
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: '✅ Feature purchased successfully!');
-        Navigator.pop(context, true);
+        Fluttertoast.showToast(msg: t.featurePurchasedSuccess);
+        if (mounted) Navigator.pop(context, true);
       } else {
-        Fluttertoast.showToast(msg: response['message'] ?? 'Purchase failed');
+        Fluttertoast.showToast(msg: response['message'] ?? t.purchaseFailed);
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
-      setState(() => _purchasingFeature = null);
+      if (mounted) setState(() => _purchasingFeature = null);
     }
   }
 
-  Future<Project?> _selectProject() async {
+  Future<Project?> _selectProject(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final projects = await ApiService.getMyProjects();
     if (projects.isEmpty) {
-      Fluttertoast.showToast(msg: 'You have no projects to highlight');
+      Fluttertoast.showToast(msg: t.noProjectsToHighlight);
       return null;
     }
     return await showDialog<Project>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: Text('Select a project'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.selectProject,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         children: projects
             .map(
               (p) => SimpleDialogOption(
-                child: Text(p.title ?? 'Untitled'),
+                child: Text(
+                  p.title ?? t.untitled,
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
                 onPressed: () => Navigator.pop(context, p),
               ),
             )
@@ -92,42 +114,46 @@ class _FeaturesShopScreenState extends State<FeaturesShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Boost Your Profile'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.boostYourProfile),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(color: theme.colorScheme.primary),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 _buildFeatureCard(
-                  title: 'Feature Your Profile',
-                  description:
-                      'Get featured at the top of search results for 7 days',
+                  title: t.featureYourProfile,
+                  description: t.featureYourProfileDesc,
                   price: _prices['profile_feature'] ?? 9.99,
                   icon: Icons.rocket_launch,
-                  color: Colors.orange,
+                  color: AppColors.warning,
                   feature: 'profile_feature',
                 ),
                 const SizedBox(height: 16),
                 _buildFeatureCard(
-                  title: 'Highlight Your Project',
-                  description:
-                      'Make your project stand out with a highlight badge',
+                  title: t.highlightYourProject,
+                  description: t.highlightYourProjectDesc,
                   price: _prices['project_highlight'] ?? 4.99,
                   icon: Icons.bolt,
-                  color: Colors.amber,
+                  color: AppColors.secondary,
                   feature: 'project_highlight',
                 ),
                 const SizedBox(height: 16),
                 _buildFeatureCard(
-                  title: 'Skill Certificate',
-                  description: 'Get certified and earn a verified badge',
+                  title: t.skillCertificate,
+                  description: t.skillCertificateDesc,
                   price: _prices['skill_certificate'] ?? 29.00,
                   icon: Icons.verified,
                   color: Colors.purple,
@@ -135,11 +161,11 @@ class _FeaturesShopScreenState extends State<FeaturesShopScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildFeatureCard(
-                  title: 'AI Resume Review',
-                  description: 'Get professional feedback on your resume',
+                  title: t.aiResumeReview,
+                  description: t.aiResumeReviewDesc,
                   price: _prices['ai_resume_review'] ?? 9.99,
                   icon: Icons.auto_awesome,
-                  color: Colors.blue,
+                  color: AppColors.info,
                   feature: 'ai_resume_review',
                 ),
               ],
@@ -155,16 +181,19 @@ class _FeaturesShopScreenState extends State<FeaturesShopScreen> {
     required Color color,
     required String feature,
   }) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isPurchasing = _purchasingFeature == feature;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -189,15 +218,17 @@ class _FeaturesShopScreenState extends State<FeaturesShopScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -215,20 +246,24 @@ class _FeaturesShopScreenState extends State<FeaturesShopScreen> {
           SizedBox(
             width: 100,
             child: ElevatedButton(
-              onPressed: isPurchasing ? null : () => _purchaseFeature(feature),
+              onPressed: isPurchasing ? null : () => _purchaseFeature(context, feature), 
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: isPurchasing
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Text('Buy Now'),
+                  : Text(t.buyNow),
             ),
           ),
         ],

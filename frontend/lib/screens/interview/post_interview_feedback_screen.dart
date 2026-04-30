@@ -1,8 +1,11 @@
 // lib/screens/interview/post_interview_feedback_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class PostInterviewFeedbackScreen extends StatefulWidget {
   final int invitationId;
@@ -44,14 +47,75 @@ class _PostInterviewFeedbackScreenState
   }
 
   @override
+  void dispose() {
+    _commentController.dispose();
+    _improvementsController.dispose();
+    super.dispose();
+  }
+
+  String _getRatingText(double rating) {
+    final t = AppLocalizations.of(context);
+    if (rating >= 4.5) return t?.excellent ?? 'Excellent! 🌟';
+    if (rating >= 3.5) return t?.veryGood ?? 'Very Good! 👍';
+    if (rating >= 2.5) return t?.good ?? 'Good 👌';
+    if (rating >= 1.5) return t?.fair ?? 'Fair 😐';
+    return t?.poor ?? 'Poor 😞';
+  }
+
+  Color _getRatingColor(double rating) {
+    final theme = Theme.of(context);
+    if (rating >= 4) return theme.colorScheme.secondary;
+    if (rating >= 3) return AppColors.warning;
+    return AppColors.danger;
+  }
+
+  Future<void> _submitFeedback() async {
+    final t = AppLocalizations.of(context)!;
+    setState(() => _submitting = true);
+
+    final averageRating =
+        (_quickRatingsValues.values.reduce((a, b) => a + b) /
+            _quickRatingsValues.length) +
+        _rating;
+    final finalRating = (averageRating / 2).round();
+
+    final result = await ApiService.addPostInterviewFeedback(
+      invitationId: widget.invitationId,
+      rating: finalRating,
+      comment: _commentController.text,
+      improvements: _improvementsController.text,
+      wouldHireAgain: _wouldHireAgain,
+    );
+
+    setState(() => _submitting = false);
+
+    if (result['success'] == true) {
+      Fluttertoast.showToast(
+        msg: t.thankYouForFeedback,
+        backgroundColor: AppColors.success,
+      );
+      Navigator.pop(context, true);
+    } else {
+      Fluttertoast.showToast(
+        msg: result['message'] ?? t.errorSubmittingFeedback,
+        backgroundColor: AppColors.danger,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Interview Feedback'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.interviewFeedback),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -78,11 +142,20 @@ class _PostInterviewFeedbackScreenState
   }
 
   Widget _buildHeader() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple.shade50, Colors.blue.shade50],
+          colors: isDark
+              ? [
+                  Colors.purple.shade900.withOpacity(0.5),
+                  Colors.blue.shade900.withOpacity(0.5),
+                ]
+              : [Colors.purple.shade50, Colors.blue.shade50],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -90,21 +163,24 @@ class _PostInterviewFeedbackScreenState
       ),
       child: Column(
         children: [
-          const Icon(Icons.feedback, size: 48, color: Colors.purple),
+          Icon(Icons.feedback, size: 48, color: theme.colorScheme.primary),
           const SizedBox(height: 12),
           Text(
-            'Share Your Experience',
+            t.shareYourExperience,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.purple.shade700,
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Your feedback helps ${widget.freelancerName} improve and helps other clients make informed decisions.',
+            t.feedbackDescription(widget.freelancerName),
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            style: TextStyle(
+              fontSize: 13,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
         ],
       ),
@@ -112,18 +188,33 @@ class _PostInterviewFeedbackScreenState
   }
 
   Widget _buildOverallRating() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Overall Rating',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.overallRating,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 12),
           Center(
@@ -161,18 +252,33 @@ class _PostInterviewFeedbackScreenState
   }
 
   Widget _buildDetailedRatings() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Detailed Ratings',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.detailedRatings,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 12),
           ..._quickRatings.map(
@@ -181,7 +287,13 @@ class _PostInterviewFeedbackScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(rating, style: const TextStyle(fontSize: 13)),
+                  Text(
+                    _getRatingLabel(rating),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   RatingBar.builder(
                     initialRating: _quickRatingsValues[rating]!,
@@ -205,31 +317,65 @@ class _PostInterviewFeedbackScreenState
     );
   }
 
+  String _getRatingLabel(String ratingKey) {
+    final t = AppLocalizations.of(context)!;
+    switch (ratingKey) {
+      case 'Professionalism':
+        return t.ratingLabelProfessionalism;
+      case 'Communication':
+        return t.ratingLabelCommunication;
+      case 'Technical Skills':
+        return t.ratingLabelTechnicalSkills;
+      case 'Punctuality':
+        return t.ratingLabelPunctuality;
+      default:
+        return ratingKey;
+    }
+  }
+
   Widget _buildCommentSection() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'What went well?',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.whatWentWell,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _commentController,
             maxLines: 4,
+            style: TextStyle(color: theme.colorScheme.onSurface),
             decoration: InputDecoration(
-              hintText: 'Share what you liked about the interview...',
+              hintText: t.whatWentWellHint,
+              hintStyle: TextStyle(color: AppColors.gray),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: Colors.grey.shade50,
+              fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
             ),
           ),
         ],
@@ -238,30 +384,48 @@ class _PostInterviewFeedbackScreenState
   }
 
   Widget _buildImprovementsSection() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'What could be improved?',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.whatCouldBeImproved,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: _improvementsController,
             maxLines: 3,
+            style: TextStyle(color: theme.colorScheme.onSurface),
             decoration: InputDecoration(
-              hintText: 'Constructive feedback for improvement...',
+              hintText: t.whatCouldBeImprovedHint,
+              hintStyle: TextStyle(color: AppColors.gray),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: Colors.grey.shade50,
+              fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
             ),
           ),
         ],
@@ -270,32 +434,48 @@ class _PostInterviewFeedbackScreenState
   }
 
   Widget _buildHireAgain() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.people, color: Colors.purple),
+          Icon(Icons.people, color: theme.colorScheme.primary),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Would you hire this freelancer again?',
-              style: TextStyle(fontSize: 14),
+              t.wouldYouHireAgain,
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
           Switch(
             value: _wouldHireAgain,
             onChanged: (value) => setState(() => _wouldHireAgain = value),
-            activeColor: Colors.green,
+            activeColor: theme.colorScheme.secondary,
           ),
           Text(
-            _wouldHireAgain ? 'Yes' : 'No',
+            _wouldHireAgain ? t.yes : t.no,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: _wouldHireAgain ? Colors.green : Colors.red,
+              color: _wouldHireAgain
+                  ? theme.colorScheme.secondary
+                  : AppColors.danger,
             ),
           ),
         ],
@@ -304,71 +484,30 @@ class _PostInterviewFeedbackScreenState
   }
 
   Widget _buildSubmitButton() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return SizedBox(
       width: double.infinity,
       height: 55,
       child: ElevatedButton(
         onPressed: _submitting || _rating == 0 ? null : _submitFeedback,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff14A800),
+          backgroundColor: theme.colorScheme.secondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: _submitting
             ? const CircularProgressIndicator(color: Colors.white)
-            : const Text(
-                'Submit Feedback',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            : Text(
+                t.submitFeedback,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
       ),
     );
-  }
-
-  Future<void> _submitFeedback() async {
-    setState(() => _submitting = true);
-
-    final averageRating =
-        (_quickRatingsValues.values.reduce((a, b) => a + b) /
-            _quickRatingsValues.length) +
-        _rating;
-    final finalRating = (averageRating / 2).round();
-
-    final result = await ApiService.addPostInterviewFeedback(
-      invitationId: widget.invitationId,
-      rating: finalRating,
-      comment: _commentController.text,
-      improvements: _improvementsController.text,
-      wouldHireAgain: _wouldHireAgain,
-    );
-
-    setState(() => _submitting = false);
-
-    if (result['success'] == true) {
-      Fluttertoast.showToast(
-        msg: 'Thank you for your feedback!',
-        backgroundColor: Colors.green,
-      );
-      Navigator.pop(context, true);
-    } else {
-      Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error submitting feedback',
-        backgroundColor: Colors.red,
-      );
-    }
-  }
-
-  String _getRatingText(double rating) {
-    if (rating >= 4.5) return 'Excellent! 🌟';
-    if (rating >= 3.5) return 'Very Good! 👍';
-    if (rating >= 2.5) return 'Good 👌';
-    if (rating >= 1.5) return 'Fair 😐';
-    return 'Poor 😞';
-  }
-
-  Color _getRatingColor(double rating) {
-    if (rating >= 4) return Colors.green;
-    if (rating >= 3) return Colors.orange;
-    return Colors.red;
   }
 }

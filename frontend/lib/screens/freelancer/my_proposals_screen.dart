@@ -1,22 +1,15 @@
 // screens/freelancer/my_proposals_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/proposal_model.dart';
 import '../../models/usage_limits_model.dart';
 import '../../services/api_service.dart';
 import 'project_details_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
-class AppColors {
-  static const sidebarBg = Color(0xFF2D2B55);
-  static const sidebarText = Color(0xFFC8C6E8);
-  static const sidebarActive = Color(0xFF5B58E2);
-  static const accent = Color(0xFF6C63FF);
-  static const accentLight = Color(0xFFA78BFA);
-  static const green = Color(0xFF14A800);
-  static const pageBg = Color(0xFFF5F6F8);
-  static const cardBg = Colors.white;
-}
+import '../../theme/app_theme.dart';
+import '../../providers/theme_provider.dart';
 
 class MyProposalsScreen extends StatefulWidget {
   const MyProposalsScreen({super.key});
@@ -41,8 +34,13 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    fetchProposals();
     _loadUsage();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    fetchProposals(context);
   }
 
   @override
@@ -69,7 +67,8 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
     }
   }
 
-  Future<void> fetchProposals() async {
+  Future<void> fetchProposals(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     setState(() => loading = true);
 
     try {
@@ -77,7 +76,6 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
 
       setState(() {
         proposals = data.map((json) => Proposal.fromJson(json)).toList();
-
         pendingProposals = proposals
             .where((p) => p.status == 'pending')
             .toList();
@@ -87,16 +85,19 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
         rejectedProposals = proposals
             .where((p) => p.status == 'rejected')
             .toList();
-
         loading = false;
       });
     } catch (e) {
       setState(() => loading = false);
-      Fluttertoast.showToast(msg: "Error loading proposals");
+      Fluttertoast.showToast(msg: t.errorLoadingProposals);
     }
   }
 
   Widget _buildProposalsLimitIndicator() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_loadingUsage || _usage == null) return const SizedBox.shrink();
     if (_usage!.proposalsLimit == null) return const SizedBox.shrink();
 
@@ -109,13 +110,15 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isLimitReached
-            ? Colors.red.shade50
-            : AppColors.accent.withOpacity(0.08),
+            ? (isDark
+                  ? Colors.red.shade900.withOpacity(0.3)
+                  : Colors.red.shade50)
+            : theme.colorScheme.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isLimitReached
-              ? Colors.red.shade200
-              : AppColors.accent.withOpacity(0.2),
+              ? (isDark ? Colors.red.shade800 : Colors.red.shade200)
+              : theme.colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -129,15 +132,19 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                   Icon(
                     Icons.production_quantity_limits,
                     size: 18,
-                    color: isLimitReached ? Colors.red : AppColors.accent,
+                    color: isLimitReached
+                        ? Colors.red
+                        : theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Proposals This Month',
+                    t.proposalsThisMonth,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
-                      color: isLimitReached ? Colors.red : AppColors.accent,
+                      color: isLimitReached
+                          ? Colors.red
+                          : theme.colorScheme.primary,
                     ),
                   ),
                 ],
@@ -147,7 +154,7 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                 decoration: BoxDecoration(
                   color: isLimitReached
                       ? Colors.red.withOpacity(0.1)
-                      : AppColors.accent.withOpacity(0.1),
+                      : theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -155,7 +162,9 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color: isLimitReached ? Colors.red : AppColors.accent,
+                    color: isLimitReached
+                        ? Colors.red
+                        : theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -166,9 +175,11 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: percentage.clamp(0.0, 1.0),
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: isDark
+                  ? Colors.grey.shade800
+                  : Colors.grey.shade200,
               valueColor: AlwaysStoppedAnimation(
-                isLimitReached ? Colors.red : AppColors.accent,
+                isLimitReached ? Colors.red : theme.colorScheme.primary,
               ),
               minHeight: 6,
             ),
@@ -193,10 +204,12 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'You have reached your proposal limit. Upgrade to submit more.',
+                      t.proposalLimitReached,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.red.shade700,
+                        color: isDark
+                            ? Colors.red.shade300
+                            : Colors.red.shade700,
                       ),
                     ),
                   ),
@@ -205,16 +218,17 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                       Navigator.pushNamed(context, '/subscription/plans');
                     },
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.accent,
+                      foregroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
-                      'Upgrade',
+                    child: Text(
+                      t.upgrade,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -225,8 +239,11 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '✨ You have $remaining proposal${remaining > 1 ? 's' : ''} remaining this month.',
-                style: TextStyle(fontSize: 11, color: AppColors.accent),
+                t.proposalsRemaining(remaining),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ),
         ],
@@ -235,30 +252,32 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
   }
 
   Widget _buildStatusBadge(String? status) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     Color statusColor;
     IconData statusIcon;
     String statusText;
 
     switch (status) {
       case 'pending':
-        statusColor = Colors.orange;
+        statusColor = AppColors.warning;
         statusIcon = Icons.hourglass_empty;
-        statusText = 'PENDING';
+        statusText = t.pending;
         break;
       case 'accepted':
-        statusColor = AppColors.green;
+        statusColor = AppColors.success;
         statusIcon = Icons.check_circle;
-        statusText = 'ACCEPTED';
+        statusText = t.accepted;
         break;
       case 'rejected':
-        statusColor = Colors.red;
+        statusColor = AppColors.danger;
         statusIcon = Icons.cancel;
-        statusText = 'REJECTED';
+        statusText = t.rejected;
         break;
       default:
         statusColor = Colors.grey;
         statusIcon = Icons.help;
-        statusText = 'UNKNOWN';
+        statusText = t.unknown;
     }
 
     return Container(
@@ -287,30 +306,33 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
   }
 
   String _formatDate(DateTime? date) {
-    if (date == null) return 'Unknown';
+    final t = AppLocalizations.of(context);
+    if (date == null) return t?.unknown ?? 'Unknown';
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+      return '${difference.inDays} ${t?.daysAgo ?? 'd ago'}';
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+      return '${difference.inHours} ${t?.hoursAgo ?? 'h ago'}';
     } else {
-      return 'Just now';
+      return t?.justNow ?? 'Just now';
     }
   }
 
   Widget _buildProposalCard(Proposal proposal) {
-    final statusColor = _getStatusColor(proposal.status);
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -340,11 +362,9 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                   children: [
                     Expanded(
                       child: Text(
-                        proposal.project?.title ?? 'Unknown Project',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        proposal.project?.title ?? t.unknownProject,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D2B55),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -353,9 +373,7 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                     _buildStatusBadge(proposal.status),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
                 Row(
                   children: [
                     Container(
@@ -364,7 +382,10 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: [AppColors.accent, AppColors.accentLight],
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withOpacity(0.7),
+                          ],
                         ),
                       ),
                       child: CircleAvatar(
@@ -381,7 +402,7 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                             ? Text(
                                 proposal.project?.client?.name?[0]
                                         .toUpperCase() ??
-                                    'C',
+                                    t.client[0],
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -397,10 +418,9 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            proposal.project?.client?.name ?? 'Unknown Client',
-                            style: const TextStyle(
+                            proposal.project?.client?.name ?? t.unknownClient,
+                            style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -409,14 +429,17 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                               Icon(
                                 Icons.access_time,
                                 size: 12,
-                                color: Colors.grey.shade500,
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.5,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 _formatDate(proposal.createdAt),
-                                style: TextStyle(
+                                style: theme.textTheme.bodySmall?.copyWith(
                                   fontSize: 11,
-                                  color: Colors.grey.shade500,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.5),
                                 ),
                               ),
                             ],
@@ -426,26 +449,30 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: isDark
+                        ? AppColors.darkSurface.withOpacity(0.5)
+                        : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade100),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade200,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        proposal.proposalText ?? 'No message provided',
+                        proposal.proposalText ?? t.noMessageProvided,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 13,
-                          color: Colors.grey.shade700,
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
                           height: 1.4,
                         ),
                       ),
@@ -459,7 +486,7 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.green.withOpacity(0.1),
+                                color: AppColors.secondary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -468,7 +495,7 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                                   Icon(
                                     Icons.attach_money,
                                     size: 14,
-                                    color: AppColors.green,
+                                    color: AppColors.secondary,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -476,7 +503,7 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: AppColors.green,
+                                      color: AppColors.secondary,
                                     ),
                                   ),
                                 ],
@@ -491,7 +518,9 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.accent.withOpacity(0.1),
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -500,14 +529,14 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                                   Icon(
                                     Icons.access_time,
                                     size: 14,
-                                    color: AppColors.accent,
+                                    color: theme.colorScheme.primary,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '${proposal.deliveryTime} days',
+                                    '${proposal.deliveryTime} ${t.days}',
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: AppColors.accent,
+                                      color: theme.colorScheme.primary,
                                     ),
                                   ),
                                 ],
@@ -519,7 +548,6 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                     ],
                   ),
                 ),
-
                 if (proposal.status == 'accepted' && proposal.project != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 14),
@@ -539,12 +567,12 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                         size: 18,
                         color: Colors.white,
                       ),
-                      label: const Text(
-                        "Start Working",
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      label: Text(
+                        t.startWorking,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.green,
+                        backgroundColor: AppColors.secondary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -563,20 +591,11 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
     );
   }
 
-  Color _getStatusColor(String? status) {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'accepted':
-        return AppColors.green;
-      case 'rejected':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
   Widget _buildProposalsList(List<Proposal> proposalsList) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (proposalsList.isEmpty) {
       return Center(
         child: Column(
@@ -586,21 +605,21 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.08),
+                color: theme.colorScheme.primary.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.inbox_outlined,
                 size: 40,
-                color: AppColors.accent.withOpacity(0.5),
+                color: theme.colorScheme.primary.withOpacity(0.5),
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              "No proposals in this category",
-              style: TextStyle(
+              t.noProposalsInCategory,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 14,
-                color: Colors.grey.shade500,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -610,8 +629,8 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: fetchProposals,
-      color: AppColors.accent,
+      onRefresh: () => fetchProposals(context),
+      color: theme.colorScheme.primary,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: proposalsList.length,
@@ -625,31 +644,33 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          "My Proposals",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D2B55),
-          ),
+        title: Text(
+          t.myProposals,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.cardBg,
         elevation: 0,
-        foregroundColor: Colors.black,
         centerTitle: false,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
-            color: AppColors.cardBg,
+            color: theme.cardColor,
             child: TabBar(
               controller: _tabController,
-              indicatorColor: AppColors.accent,
+              indicatorColor: theme.colorScheme.primary,
               indicatorWeight: 3,
-              labelColor: Color(0xFF2D2B55),
-              unselectedLabelColor: Colors.grey.shade500,
+              labelColor: theme.colorScheme.onSurface,
+              unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(
+                0.5,
+              ),
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
@@ -659,17 +680,17 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                 fontSize: 13,
               ),
               tabs: [
-                Tab(text: "All (${proposals.length})"),
-                Tab(text: "Pending (${pendingProposals.length})"),
-                Tab(text: "Accepted (${acceptedProposals.length})"),
-                Tab(text: "Rejected (${rejectedProposals.length})"),
+                Tab(text: "${t.all} (${proposals.length})"),
+                Tab(text: "${t.pending} (${pendingProposals.length})"),
+                Tab(text: "${t.accepted} (${acceptedProposals.length})"),
+                Tab(text: "${t.rejected} (${rejectedProposals.length})"),
               ],
             ),
           ),
         ),
       ),
       body: loading
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -678,13 +699,15 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                     height: 40,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
-                      color: AppColors.accent,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    "Loading proposals...",
-                    style: TextStyle(color: Colors.grey),
+                    t.loadingProposals,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
@@ -698,28 +721,30 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.08),
+                      color: theme.colorScheme.primary.withOpacity(0.08),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.send_outlined,
                       size: 50,
-                      color: AppColors.accent.withOpacity(0.5),
+                      color: theme.colorScheme.primary.withOpacity(0.5),
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    "No Proposals Yet",
-                    style: TextStyle(
-                      fontSize: 20,
+                    t.noProposalsYet,
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D2B55),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Browse projects and submit your first proposal",
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    t.browseProjectsAndSubmitProposal,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
@@ -727,9 +752,9 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
                       Navigator.pushNamed(context, '/projects');
                     },
                     icon: const Icon(Icons.search, size: 18),
-                    label: const Text("Find Projects"),
+                    label: Text(t.findProjects),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
+                      backgroundColor: theme.colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 28,

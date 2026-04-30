@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:freelancer_platform/screens/interview/interview_calendar_screen.dart';
-import 'package:freelancer_platform/screens/interview/interview_stats_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/interview_model.dart';
 import '../../services/api_service.dart';
 import '../../utils/token_storage.dart';
+import '../../theme/app_theme.dart';
+import 'interview_calendar_screen.dart';
 import 'interview_detail_screen.dart';
+import 'interview_stats_screen.dart';
 
 class InterviewsScreen extends StatefulWidget {
   const InterviewsScreen({super.key});
@@ -22,56 +24,68 @@ class _InterviewsScreenState extends State<InterviewsScreen>
   bool _loading = true;
   String _selectedStatus = 'all';
   String? _userRole;
-  late TabController _tabController;
 
-  final List<Map<String, dynamic>> _statusFilters = [
-    {'value': 'all', 'label': 'All', 'icon': Icons.list},
-    {
-      'value': 'pending',
-      'label': 'Pending',
-      'icon': Icons.access_time,
-      'color': Colors.orange,
-    },
-    {
-      'value': 'accepted',
-      'label': 'Accepted',
-      'icon': Icons.check_circle,
-      'color': Colors.green,
-    },
-    {
-      'value': 'completed',
-      'label': 'Completed',
-      'icon': Icons.verified,
-      'color': Colors.blue,
-    },
-    {
-      'value': 'declined',
-      'label': 'Declined',
-      'icon': Icons.cancel,
-      'color': Colors.red,
-    },
-  ];
+  List<Map<String, dynamic>> get _statusFilters {
+    final t = AppLocalizations.of(context);
+    return [
+      {
+        'value': 'all',
+        'label': t?.all ?? 'All',
+        'icon': Icons.list,
+        'color': AppColors.gray,
+      },
+      {
+        'value': 'pending',
+        'label': t?.pending ?? 'Pending',
+        'icon': Icons.access_time,
+        'color': AppColors.warning,
+      },
+      {
+        'value': 'accepted',
+        'label': t?.accepted ?? 'Accepted',
+        'icon': Icons.check_circle,
+        'color': AppColors.success,
+      },
+      {
+        'value': 'completed',
+        'label': t?.completed ?? 'Completed',
+        'icon': Icons.verified,
+        'color': AppColors.info,
+      },
+      {
+        'value': 'declined',
+        'label': t?.declined ?? 'Declined',
+        'icon': Icons.cancel,
+        'color': AppColors.danger,
+      },
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadUserRole();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadUserRole();
+        _loadData(context);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
   Future<void> _loadUserRole() async {
     final role = await TokenStorage.getUserRole();
-    setState(() => _userRole = role);
+    if (mounted) setState(() => _userRole = role);
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+
     setState(() => _loading = true);
 
     try {
@@ -80,6 +94,8 @@ class _InterviewsScreenState extends State<InterviewsScreen>
       );
 
       final stats = await ApiService.getInterviewStats();
+
+      if (!mounted) return;
 
       setState(() {
         if (interviewsRes['success'] == true &&
@@ -94,22 +110,22 @@ class _InterviewsScreenState extends State<InterviewsScreen>
         }
 
         _stats = stats;
-
         _loading = false;
       });
     } catch (e) {
       print('Error loading interviews: $e');
+      if (!mounted) return;
       setState(() {
         _loading = false;
         _invitations = [];
         _stats = InterviewStats();
       });
-      Fluttertoast.showToast(msg: 'Error loading interviews: $e');
+      Fluttertoast.showToast(msg: '${t.errorLoadingInterviews}: $e');
     }
   }
 
   Future<void> _refresh() async {
-    await _loadData();
+    await _loadData(context);
   }
 
   void _navigateToDetail(InterviewInvitation invitation) async {
@@ -126,31 +142,34 @@ class _InterviewsScreenState extends State<InterviewsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isClient = _userRole == 'client';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Interviews',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          t.interviews,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           IconButton(
-            icon: const Icon(Icons.analytics),
+            icon: Icon(Icons.analytics, color: theme.iconTheme.color),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const InterviewStatsScreen()),
               );
             },
-            tooltip: 'Statistics',
+            tooltip: t.statistics,
           ),
           IconButton(
-            icon: const Icon(Icons.calendar_month),
+            icon: Icon(Icons.calendar_month, color: theme.iconTheme.color),
             onPressed: () {
               Navigator.push(
                 context,
@@ -159,7 +178,7 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                 ),
               );
             },
-            tooltip: 'Calendar',
+            tooltip: t.calendar,
           ),
         ],
         bottom: PreferredSize(
@@ -175,17 +194,21 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatChip('Total', _stats!.total, Colors.grey),
-                      _buildStatChip('Pending', _stats!.pending, Colors.orange),
+                      _buildStatChip(t.total, _stats!.total, AppColors.gray),
                       _buildStatChip(
-                        'Accepted',
-                        _stats!.accepted,
-                        Colors.green,
+                        t.pending,
+                        _stats!.pending,
+                        AppColors.warning,
                       ),
                       _buildStatChip(
-                        'Completed',
+                        t.accepted,
+                        _stats!.accepted,
+                        AppColors.success,
+                      ),
+                      _buildStatChip(
+                        t.completed,
                         _stats!.completed,
-                        Colors.blue,
+                        AppColors.info,
                       ),
                     ],
                   ),
@@ -199,7 +222,7 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                   itemBuilder: (context, index) {
                     final filter = _statusFilters[index];
                     final isSelected = _selectedStatus == filter['value'];
-                    final color = filter['color'] as Color?;
+                    final color = filter['color'] as Color;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
@@ -208,18 +231,22 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                         onSelected: (_) {
                           setState(() {
                             _selectedStatus = filter['value'] as String;
-                            _loadData();
+                            _loadData(context);
                           });
                         },
                         avatar: Icon(
                           filter['icon'] as IconData,
                           size: 16,
-                          color: isSelected ? Colors.black : color,
+                          color: isSelected ? Colors.white : color,
                         ),
-                        backgroundColor: Colors.grey.shade100,
-                        selectedColor: color ?? Colors.blue,
+                        backgroundColor: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade100,
+                        selectedColor: color,
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : Colors.black87,
+                          color: isSelected
+                              ? Colors.white
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
                     );
@@ -232,11 +259,16 @@ class _InterviewsScreenState extends State<InterviewsScreen>
         bottomOpacity: 0,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : _invitations.isEmpty
           ? _buildEmptyState(isClient)
           : RefreshIndicator(
               onRefresh: _refresh,
+              color: theme.colorScheme.primary,
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: _invitations.length,
@@ -250,6 +282,9 @@ class _InterviewsScreenState extends State<InterviewsScreen>
   }
 
   Widget _buildStatChip(String label, int value, Color color) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -269,7 +304,10 @@ class _InterviewsScreenState extends State<InterviewsScreen>
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: 10,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
           ),
         ],
       ),
@@ -277,28 +315,39 @@ class _InterviewsScreenState extends State<InterviewsScreen>
   }
 
   Widget _buildEmptyState(bool isClient) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.interpreter_mode, size: 80, color: Colors.grey.shade300),
+          Icon(
+            Icons.interpreter_mode,
+            size: 80,
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
+          ),
           const SizedBox(height: 16),
           Text(
             isClient
-                ? 'No interview invitations sent'
-                : 'No interview invitations received',
+                ? t.noInterviewInvitationsSent
+                : t.noInterviewInvitationsReceived,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             isClient
-                ? 'Invite freelancers to interview before hiring'
-                : 'When clients invite you for interviews, they will appear here',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                ? t.inviteFreelancersToInterview
+                : t.interviewsWillAppearHere,
+            style: TextStyle(
+              fontSize: 14,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
             textAlign: TextAlign.center,
           ),
           if (isClient)
@@ -309,9 +358,9 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                   Navigator.pushNamed(context, '/client/projects');
                 },
                 icon: const Icon(Icons.work),
-                label: const Text('Browse Your Projects'),
+                label: Text(t.browseYourProjects),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff14A800),
+                  backgroundColor: AppColors.secondary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,
@@ -328,16 +377,21 @@ class _InterviewsScreenState extends State<InterviewsScreen>
   }
 
   Widget _buildInterviewCard(InterviewInvitation invitation) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final project = invitation.project;
     final otherParty = _userRole == 'client'
         ? invitation.freelancer
         : invitation.client;
     final isExpired = invitation.isExpiredByDate;
-    final statusColor = isExpired ? Colors.grey : invitation.statusColor;
+    final statusColor = isExpired ? AppColors.gray : invitation.statusColor;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: theme.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: isDark ? 1 : 2,
       child: InkWell(
         onTap: () => _navigateToDetail(invitation),
         borderRadius: BorderRadius.circular(16),
@@ -366,20 +420,21 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          project?.title ?? 'Project',
-                          style: const TextStyle(
+                          project?.title ?? t.project,
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'with ${otherParty?.name ?? 'User'}',
+                          '${t.with_} ${otherParty?.name ?? t.user}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade600,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],
@@ -395,7 +450,7 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      isExpired ? 'Expired' : invitation.statusText,
+                      isExpired ? t.expired : invitation.statusText,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -412,7 +467,9 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -420,7 +477,7 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                         Icon(
                           Icons.message_outlined,
                           size: 14,
-                          color: Colors.grey.shade600,
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -428,7 +485,9 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                             invitation.message!,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade700,
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.7,
+                              ),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -443,14 +502,17 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                   Icon(
                     Icons.access_time,
                     size: 14,
-                    color: Colors.grey.shade500,
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     invitation.isAccepted && invitation.selectedTime != null
-                        ? 'Scheduled: ${invitation.formattedSelectedTime}'
-                        : 'Expires: ${invitation.formattedExpiryDate}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ? '${t.scheduled}: ${invitation.formattedSelectedTime}'
+                        : '${t.expires}: ${invitation.formattedExpiryDate}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
@@ -459,7 +521,7 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(
                     children: [
-                      Icon(Icons.video_call, size: 14, color: Colors.blue),
+                      Icon(Icons.video_call, size: 14, color: AppColors.info),
                       const SizedBox(width: 4),
                       Expanded(
                         child: GestureDetector(
@@ -473,10 +535,10 @@ class _InterviewsScreenState extends State<InterviewsScreen>
                             }
                           },
                           child: Text(
-                            'Join Meeting',
+                            t.joinMeeting,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.blue,
+                              color: AppColors.info,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../services/skill_test_service.dart';
 import '../../models/skill_test_model.dart';
+import '../../theme/app_theme.dart';
 import 'test_taking_screen.dart';
 import 'test_results_screen.dart';
 
@@ -37,6 +38,12 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     setState(() => _loading = true);
     await Future.wait([_loadTests(), _loadStats()]);
@@ -57,11 +64,13 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Skill Tests'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(100),
@@ -74,9 +83,11 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
               const SizedBox(height: 8),
               TabBar(
                 controller: _tabController,
-                labelColor: const Color(0xff14A800),
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: const Color(0xff14A800),
+                labelColor: theme.colorScheme.secondary,
+                unselectedLabelColor: isDark
+                    ? Colors.grey.shade500
+                    : Colors.grey,
+                indicatorColor: theme.colorScheme.secondary,
                 tabs: const [
                   Tab(text: 'Available Tests'),
                   Tab(text: 'My Results'),
@@ -87,7 +98,11 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : TabBarView(
               controller: _tabController,
               children: [_buildAvailableTestsTab(), _buildResultsTab()],
@@ -96,33 +111,51 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
   }
 
   Widget _buildStatsCard() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_stats == null) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple.shade50, Colors.blue.shade50],
+          colors: isDark
+              ? [Colors.purple.shade900, Colors.blue.shade900]
+              : [Colors.purple.shade50, Colors.blue.shade50],
         ),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatItem('${_stats!.totalTests}', 'Tests Taken', Icons.quiz),
-          Container(width: 1, height: 40, color: Colors.grey.shade300),
+          Container(
+            width: 1,
+            height: 40,
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
           _buildStatItem(
             '${_stats!.passedTests}',
             'Passed',
             Icons.check_circle,
-            color: Colors.green,
+            color: theme.colorScheme.secondary,
           ),
-          Container(width: 1, height: 40, color: Colors.grey.shade300),
+          Container(
+            width: 1,
+            height: 40,
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
           _buildStatItem(
             '${_stats!.averageScore}%',
             'Avg Score',
             Icons.analytics,
           ),
-          Container(width: 1, height: 40, color: Colors.grey.shade300),
+          Container(
+            width: 1,
+            height: 40,
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
           _buildStatItem(
             '${_stats!.passRate}%',
             'Pass Rate',
@@ -139,24 +172,36 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
     IconData icon, {
     Color? color,
   }) {
+    final theme = Theme.of(context);
+    final defaultColor = theme.colorScheme.primary;
+
     return Column(
       children: [
-        Icon(icon, size: 20, color: color ?? Colors.purple),
+        Icon(icon, size: 20, color: color ?? defaultColor),
         const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: color ?? Colors.purple.shade700,
+            color: color ?? defaultColor,
           ),
         ),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildAvailableTestsTab() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       children: [
         Padding(
@@ -177,8 +222,15 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                         _loadTests();
                       });
                     },
-                    backgroundColor: Colors.grey.shade100,
-                    selectedColor: const Color(0xff14A800).withOpacity(0.2),
+                    backgroundColor: isDark
+                        ? AppColors.darkSurface
+                        : Colors.grey.shade100,
+                    selectedColor: theme.colorScheme.secondary.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? theme.colorScheme.secondary
+                          : theme.colorScheme.onSurface,
+                    ),
                   ),
                 );
               }).toList(),
@@ -191,11 +243,21 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.quiz, size: 64, color: Colors.grey.shade300),
+                      Icon(
+                        Icons.quiz,
+                        size: 64,
+                        color: isDark
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade300,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'No tests available',
-                        style: TextStyle(color: Colors.grey.shade600),
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -214,8 +276,12 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
   }
 
   Widget _buildTestCard(SkillTest test) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: theme.cardColor,
       child: InkWell(
         onTap: () async {
           final result = await Navigator.push(
@@ -260,7 +326,7 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade100,
+                        color: theme.colorScheme.secondary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -269,12 +335,15 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                           Icon(
                             Icons.check_circle,
                             size: 12,
-                            color: Colors.green,
+                            color: theme.colorScheme.secondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Passed',
-                            style: TextStyle(fontSize: 11, color: Colors.green),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.secondary,
+                            ),
                           ),
                         ],
                       ),
@@ -284,39 +353,43 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
               const SizedBox(height: 12),
               Text(
                 test.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 test.description ??
                     'Test your knowledge in ${test.skillCategory}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.quiz, size: 14, color: Colors.grey),
+                  Icon(Icons.quiz, size: 14, color: AppColors.gray),
                   const SizedBox(width: 4),
                   Text(
                     '${test.questions.length} questions',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: AppColors.gray),
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.timer, size: 14, color: Colors.grey),
+                  Icon(Icons.timer, size: 14, color: AppColors.gray),
                   const SizedBox(width: 4),
                   Text(
                     '${test.timeLimitMinutes} min',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: AppColors.gray),
                   ),
                   const SizedBox(width: 16),
                   Icon(Icons.star, size: 14, color: Colors.amber),
                   const SizedBox(width: 4),
                   Text(
                     '${test.passingScore}% to pass',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: AppColors.gray),
                   ),
                 ],
               ),
@@ -366,19 +439,19 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: AppColors.warningBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info, size: 14, color: Colors.orange),
+                      Icon(Icons.info, size: 14, color: AppColors.warning),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Attempt ${test.userAttempts}/${test.maxAttempts}. ${test.canRetake ? 'You can retake this test.' : 'No more attempts remaining.'}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.orange.shade800,
+                            color: AppColors.warning,
                           ),
                         ),
                       ),
@@ -394,11 +467,16 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
   }
 
   Widget _buildResultsTab() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return FutureBuilder<List<TestResult>>(
       future: SkillTestService.getUserTestResults(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(color: theme.colorScheme.primary),
+          );
         }
 
         final results = snapshot.data ?? [];
@@ -411,17 +489,22 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                 Icon(
                   Icons.assignment_turned_in,
                   size: 64,
-                  color: Colors.grey.shade300,
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'No test results yet',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  style: TextStyle(
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Take your first skill test to see results here',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                  ),
                 ),
               ],
             ),
@@ -441,8 +524,12 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
   }
 
   Widget _buildResultCard(TestResult result) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: theme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -457,8 +544,8 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                   ),
                   decoration: BoxDecoration(
                     color: result.passed
-                        ? Colors.green.shade100
-                        : Colors.red.shade100,
+                        ? theme.colorScheme.secondary.withOpacity(0.1)
+                        : AppColors.danger.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -467,14 +554,18 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                       Icon(
                         result.passed ? Icons.check_circle : Icons.cancel,
                         size: 12,
-                        color: result.passed ? Colors.green : Colors.red,
+                        color: result.passed
+                            ? theme.colorScheme.secondary
+                            : AppColors.danger,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         result.passed ? 'Passed' : 'Failed',
                         style: TextStyle(
                           fontSize: 11,
-                          color: result.passed ? Colors.green : Colors.red,
+                          color: result.passed
+                              ? theme.colorScheme.secondary
+                              : AppColors.danger,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -484,19 +575,29 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                 const Spacer(),
                 Text(
                   _formatDate(result.completedAt),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               result.testName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               result.skillCategory,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -505,7 +606,9 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -515,10 +618,15 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: result.passed ? Colors.green : Colors.red,
+                            color: result.passed
+                                ? theme.colorScheme.secondary
+                                : AppColors.danger,
                           ),
                         ),
-                        const Text('Score', style: TextStyle(fontSize: 10)),
+                        Text(
+                          'Score',
+                          style: TextStyle(fontSize: 10, color: AppColors.gray),
+                        ),
                       ],
                     ),
                   ),
@@ -528,19 +636,25 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
                       children: [
                         Text(
                           'Attempt ${result.attemptNumber}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        const Text('Attempt', style: TextStyle(fontSize: 10)),
+                        Text(
+                          'Attempt',
+                          style: TextStyle(fontSize: 10, color: AppColors.gray),
+                        ),
                       ],
                     ),
                   ),
@@ -593,7 +707,7 @@ class _SkillTestsScreenState extends State<SkillTestsScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
+                  color: Colors.amber.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(

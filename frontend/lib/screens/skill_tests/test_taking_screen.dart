@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../models/skill_test_model.dart';
 import '../../services/skill_test_service.dart';
+import '../../theme/app_theme.dart';
 
 class TestTakingScreen extends StatefulWidget {
   final SkillTest test;
@@ -29,6 +30,12 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
     super.initState();
     _timeRemaining = widget.test.timeLimitMinutes * 60;
     _startTest();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _startTest() async {
@@ -146,6 +153,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
   }
 
   void _showResultDialog(Map<String, dynamic> result) {
+    final theme = Theme.of(context);
     final passed = result['passed'];
     final percentage = result['percentage'];
 
@@ -153,26 +161,35 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.cardColor,
         title: Row(
           children: [
             Icon(
               passed ? Icons.celebration : Icons.sentiment_dissatisfied,
-              color: passed ? Colors.green : Colors.red,
+              color: passed ? theme.colorScheme.secondary : AppColors.danger,
             ),
             const SizedBox(width: 8),
-            Text(passed ? 'Test Passed!' : 'Test Completed'),
+            Text(
+              passed ? 'Test Passed!' : 'Test Completed',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Your score: $percentage%'),
+            Text(
+              'Your score: $percentage%',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
             const SizedBox(height: 8),
             LinearProgressIndicator(
               value: percentage / 100,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: theme.brightness == Brightness.dark
+                  ? Colors.grey.shade800
+                  : Colors.grey.shade200,
               valueColor: AlwaysStoppedAnimation(
-                passed ? Colors.green : Colors.red,
+                passed ? theme.colorScheme.secondary : AppColors.danger,
               ),
             ),
             const SizedBox(height: 16),
@@ -181,6 +198,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                   ? 'Congratulations! You earned a badge for this skill.'
                   : 'You need ${widget.test.passingScore}% to pass. You can try again later.',
               textAlign: TextAlign.center,
+              style: TextStyle(color: theme.colorScheme.onSurface),
             ),
             if (passed && widget.test.badge != null)
               Padding(
@@ -233,7 +251,10 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
               Navigator.pop(context);
               Navigator.pop(context, true);
             },
-            child: const Text('Close'),
+            child: Text(
+              'Close',
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
           ),
         ],
       ),
@@ -241,27 +262,38 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
   }
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (widget.test.questions.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: Text(widget.test.name)),
-        body: const Center(child: Text('No questions available for this test')),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: Text(
+            widget.test.name,
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          elevation: 0,
+        ),
+        body: Center(
+          child: Text(
+            'No questions available for this test',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+        ),
       );
     }
 
     final question = widget.test.questions[_currentQuestionIndex];
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.test.name),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          widget.test.name,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         elevation: 0,
         actions: [
           Container(
@@ -269,8 +301,8 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _timeRemaining < 60
-                  ? Colors.red.shade100
-                  : Colors.grey.shade100,
+                  ? AppColors.danger.withOpacity(0.1)
+                  : (isDark ? AppColors.darkSurface : Colors.grey.shade100),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -278,7 +310,9 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                 Icon(
                   Icons.timer,
                   size: 16,
-                  color: _timeRemaining < 60 ? Colors.red : Colors.grey,
+                  color: _timeRemaining < 60
+                      ? AppColors.danger
+                      : AppColors.gray,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -286,8 +320,10 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: _timeRemaining < 60
-                        ? Colors.red
-                        : Colors.grey.shade700,
+                        ? AppColors.danger
+                        : (isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade700),
                   ),
                 ),
               ],
@@ -296,7 +332,11 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -305,20 +345,29 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                     value:
                         (_currentQuestionIndex + 1) /
                         widget.test.questions.length,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation(Color(0xff14A800)),
+                    backgroundColor: isDark
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade200,
+                    valueColor: const AlwaysStoppedAnimation(
+                      AppColors.secondary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Question ${_currentQuestionIndex + 1} of ${widget.test.questions.length}',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   Text(
                     question.text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -330,6 +379,9 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
   }
 
   List<Widget> _buildQuestionOptions(Question question) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (question.type == 'multiple_choice') {
       return question.options.map((option) {
         return Padding(
@@ -339,12 +391,19 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
             child: OutlinedButton(
               onPressed: _submitting ? null : () => _submitAnswer(option),
               style: OutlinedButton.styleFrom(
+                side: BorderSide(color: theme.dividerColor),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(option, style: const TextStyle(fontSize: 16)),
+              child: Text(
+                option,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
             ),
           ),
         );
@@ -358,12 +417,19 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
             child: OutlinedButton(
               onPressed: _submitting ? null : () => _submitAnswer(option),
               style: OutlinedButton.styleFrom(
+                side: BorderSide(color: theme.dividerColor),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(option, style: const TextStyle(fontSize: 16)),
+              child: Text(
+                option,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
             ),
           ),
         );

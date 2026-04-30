@@ -1,0 +1,2624 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Arabic (`ar`).
+class AppLocalizationsAr extends AppLocalizations {
+  AppLocalizationsAr([String locale = 'ar']) : super(locale);
+
+  @override
+  String get appTitle => 'منصة المستقلين';
+
+  @override
+  String get home => 'الرئيسية';
+
+  @override
+  String get findWork => 'البحث عن عمل';
+
+  @override
+  String get myProposals => 'عروضي';
+
+  @override
+  String get myProjects => 'مشاريعي';
+
+  @override
+  String get contracts => 'العقود';
+
+  @override
+  String get favorites => 'المفضلة';
+
+  @override
+  String get financial => 'المالية';
+
+  @override
+  String get advancedSearch => 'بحث متقدم';
+
+  @override
+  String get settings => 'الإعدادات';
+
+  @override
+  String get logout => 'تسجيل خروج';
+
+  @override
+  String get profile => 'الملف الشخصي';
+
+  @override
+  String get freelancer => 'مستقل';
+
+  @override
+  String get jobSuccessScore => 'نسبة النجاح';
+
+  @override
+  String get activeProjects => 'المشاريع النشطة';
+
+  @override
+  String get proposals => 'العروض';
+
+  @override
+  String get rating => 'التقييم';
+
+  @override
+  String get profileCompletion => 'اكتمال الملف الشخصي';
+
+  @override
+  String get trendingSkills => 'المهارات الرائجة 🔥';
+
+  @override
+  String get myPortfolio => 'معرض أعمالي 🎨';
+
+  @override
+  String get skillTests => 'اختبارات المهارات 🏆';
+
+  @override
+  String get premium => 'الباقة المميزة';
+
+  @override
+  String get subscribe => 'اشتراك';
+
+  @override
+  String get schedule => 'جدول أعمالك';
+
+  @override
+  String get fullCalendar => 'التقويم الكامل';
+
+  @override
+  String get bestMatches => 'أفضل تطابق';
+
+  @override
+  String get mostRecent => 'الأحدث';
+
+  @override
+  String get savedJobs => 'الوظائف المحفوظة';
+
+  @override
+  String get appearance => 'المظهر';
+
+  @override
+  String get darkMode => 'الوضع الليلي';
+
+  @override
+  String get switchTheme => 'التبديل بين الوضع الفاتح والداكن';
+
+  @override
+  String get useSystemTheme => 'استخدام إعدادات النظام';
+
+  @override
+  String get followSystemTheme => 'متابعة إعدادات النظام';
+
+  @override
+  String get account => 'الحساب';
+
+  @override
+  String get editProfile => 'تعديل الملف الشخصي';
+
+  @override
+  String get updatePersonalInfo => 'تحديث معلوماتك الشخصية';
+
+  @override
+  String get changePassword => 'تغيير كلمة المرور';
+
+  @override
+  String get updatePassword => 'تحديث كلمة المرور';
+
+  @override
+  String get notifications => 'الإشعارات';
+
+  @override
+  String get manageNotifications => 'إدارة تفضيلات الإشعارات';
+
+  @override
+  String get preferences => 'التفضيلات';
+
+  @override
+  String get language => 'اللغة';
+
+  @override
+  String get currency => 'العملة';
+
+  @override
+  String get support => 'الدعم';
+
+  @override
+  String get helpCenter => 'مركز المساعدة';
+
+  @override
+  String get getHelpSupport => 'الحصول على المساعدة والدعم';
+
+  @override
+  String get termsOfService => 'شروط الخدمة';
+
+  @override
+  String get readTerms => 'قراءة الشروط والأحكام';
+
+  @override
+  String get privacyPolicy => 'سياسة الخصوصية';
+
+  @override
+  String get readPrivacy => 'قراءة سياسة الخصوصية';
+
+  @override
+  String get rateUs => 'قيم التطبيق';
+
+  @override
+  String get rateApp => 'قيم التطبيق على المتجر';
+
+  @override
+  String get about => 'عن التطبيق';
+
+  @override
+  String get selectLanguage => 'اختر اللغة';
+
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get logoutConfirmation => 'هل أنت متأكد من تسجيل الخروج؟';
+
+  @override
+  String get upgrade => 'ترقية الباقة';
+
+  @override
+  String get noImage => 'لا توجد صورة';
+
+  @override
+  String get reviews => 'التقييمات';
+
+  @override
+  String get analytics => 'الإحصائيات';
+
+  @override
+  String get noReviewsYet => 'لا توجد تقييمات بعد';
+
+  @override
+  String get reviewsWillAppearHere => 'ستظهر التقييمات هنا عند اكتمال المشاريع';
+
+  @override
+  String get all => 'الكل';
+
+  @override
+  String get positive => 'إيجابي';
+
+  @override
+  String get negative => 'سلبي';
+
+  @override
+  String get user => 'مستخدم';
+
+  @override
+  String get verified => 'موثق';
+
+  @override
+  String get foundThisHelpful => 'وجدوا هذا مفيداً';
+
+  @override
+  String get responseFromSeller => 'رد من البائع:';
+
+  @override
+  String get ratingDistribution => 'توزيع التقييمات';
+
+  @override
+  String get ratingSummary => 'ملخص التقييمات';
+
+  @override
+  String get neutral => 'محايد';
+
+  @override
+  String get withComments => 'مع تعليقات';
+
+  @override
+  String get withReplies => 'مع ردود';
+
+  @override
+  String get average => 'المعدل';
+
+  @override
+  String get reviewDetails => 'تفاصيل التقييم';
+
+  @override
+  String get replyToReview => 'الرد على التقييم';
+
+  @override
+  String get alreadyMarkedHelpful => 'لقد قمت بتحديد هذا كمفيد بالفعل';
+
+  @override
+  String get thanksForFeedback => 'شكراً لملاحظاتك!';
+
+  @override
+  String get replyAddedSuccess => 'تم إضافة الرد بنجاح';
+
+  @override
+  String get project => 'المشروع';
+
+  @override
+  String get sellerResponse => 'رد البائع';
+
+  @override
+  String get outOf5 => 'من 5';
+
+  @override
+  String get quality => 'الجودة';
+
+  @override
+  String get communication => 'التواصل';
+
+  @override
+  String get deadline => 'الموعد النهائي';
+
+  @override
+  String get youFoundThisHelpful => 'لقد وجدت هذا مفيداً';
+
+  @override
+  String get wasThisReviewHelpful => 'هل كان هذا التقييم مفيداً؟';
+
+  @override
+  String get errorLoadingProjects => 'خطأ في تحميل المشاريع';
+
+  @override
+  String get newestFirst => 'الأحدث أولاً';
+
+  @override
+  String get budgetLowToHigh => 'الميزانية: من الأقل إلى الأعلى';
+
+  @override
+  String get budgetHighToLow => 'الميزانية: من الأعلى إلى الأقل';
+
+  @override
+  String get durationShortestFirst => 'المدة: الأقصر أولاً';
+
+  @override
+  String get untitled => 'بدون عنوان';
+
+  @override
+  String get unknownClient => 'عميل غير معروف';
+
+  @override
+  String get noDescription => 'لا يوجد وصف';
+
+  @override
+  String get days => 'يوم';
+
+  @override
+  String get remote => 'عن بعد';
+
+  @override
+  String get apply => 'تطبيق';
+
+  @override
+  String get unknown => 'غير معروف';
+
+  @override
+  String get daysAgo => 'يوم مضت';
+
+  @override
+  String get hoursAgo => 'ساعة مضت';
+
+  @override
+  String get justNow => 'الآن';
+
+  @override
+  String get searchProjects => 'البحث عن مشاريع...';
+
+  @override
+  String get projectsFound => 'مشروع تم العثور عليه';
+
+  @override
+  String get sort => 'ترتيب';
+
+  @override
+  String get noProjectsFound => 'لا توجد مشاريع';
+
+  @override
+  String get search => 'بحث';
+
+  @override
+  String get saved => 'المحفوظة';
+
+  @override
+  String get mobileDevelopment => 'تطوير الجوال';
+
+  @override
+  String get webDevelopment => 'تطوير الويب';
+
+  @override
+  String get backendDevelopment => 'تطوير الخلفية';
+
+  @override
+  String get uiUxDesign => 'تصميم واجهات المستخدم';
+
+  @override
+  String get graphicDesign => 'التصميم الجرافيكي';
+
+  @override
+  String get contentWriting => 'كتابة المحتوى';
+
+  @override
+  String get digitalMarketing => 'التسويق الرقمي';
+
+  @override
+  String get devOps => 'DevOps';
+
+  @override
+  String get database => 'قواعد البيانات';
+
+  @override
+  String get durationLongestFirst => 'المدة: الأطول أولاً';
+
+  @override
+  String get searchError => 'خطأ في البحث';
+
+  @override
+  String get saveSearchFilter => 'حفظ فلتر البحث';
+
+  @override
+  String get filterName => 'اسم الفلتر';
+
+  @override
+  String get filterHint => 'مثال: مشاريع Flutter عالية الميزانية';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
+  String get filterSaved => 'تم حفظ الفلتر بنجاح';
+
+  @override
+  String get errorSavingFilter => 'خطأ في حفظ الفلتر';
+
+  @override
+  String get reset => 'إعادة تعيين';
+
+  @override
+  String get saveThisSearch => 'حفظ هذا البحث';
+
+  @override
+  String get adjustYourFilters => 'عدل فلتر البحث';
+
+  @override
+  String get savedSearches => 'البحوث المحفوظة';
+
+  @override
+  String get projectAlerts => 'تنبيهات المشاريع';
+
+  @override
+  String get createNewAlert => 'إنشاء تنبيه جديد';
+
+  @override
+  String get any => 'أي';
+
+  @override
+  String get budget => 'الميزانية';
+
+  @override
+  String get deleteFilter => 'حذف الفلتر';
+
+  @override
+  String get deleteFilterQuestion => 'حذف';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get filterDeleted => 'تم حذف الفلتر';
+
+  @override
+  String get alertDeleted => 'تم حذف التنبيه';
+
+  @override
+  String get error => 'خطأ';
+
+  @override
+  String get createProjectAlert => 'إنشاء تنبيه مشروع';
+
+  @override
+  String get alertName => 'اسم التنبيه';
+
+  @override
+  String get keywordsCommaSeparated => 'الكلمات المفتاحية (مفصولة بفواصل)';
+
+  @override
+  String get keywordsHint => 'flutter, mobile, app';
+
+  @override
+  String get skillsCommaSeparated => 'المهارات (مفصولة بفواصل)';
+
+  @override
+  String get alertCreated => 'تم إنشاء التنبيه بنجاح';
+
+  @override
+  String get create => 'إنشاء';
+
+  @override
+  String get removedFromFavorites => 'تمت الإزالة من المفضلة';
+
+  @override
+  String get addedToFavorites => 'تمت الإضافة إلى المفضلة!';
+
+  @override
+  String get anyKeywords => 'أي كلمات مفتاحية';
+
+  @override
+  String get avatarUploaded => 'تم رفع الصورة الشخصية بنجاح';
+
+  @override
+  String get errorUploadingAvatar => 'خطأ في رفع الصورة الشخصية';
+
+  @override
+  String get uploadCV => 'رفع السيرة الذاتية';
+
+  @override
+  String get updateCV => 'تحديث السيرة الذاتية';
+
+  @override
+  String get errorUploadingCV => 'خطأ في رفع السيرة الذاتية';
+
+  @override
+  String cvAnalyzed(Object count) {
+    return '✅ تم تحليل السيرة الذاتية! تم العثور على $count مهارة';
+  }
+
+  @override
+  String cvAnalyzed_plural(Object count) {
+    return '✅ تم تحليل السيرة الذاتية! تم العثور على $count مهارة';
+  }
+
+  @override
+  String get locationServicesDisabled => 'خدمات الموقع معطلة';
+
+  @override
+  String get locationPermissionsDenied => 'تم رفض أذونات الموقع';
+
+  @override
+  String get locationPermissionsDeniedForever =>
+      'أذونات الموقع مرفوضة بشكل دائم';
+
+  @override
+  String get locationUpdated => 'تم تحديث الموقع بنجاح';
+
+  @override
+  String get errorGettingLocation => 'خطأ في الحصول على الموقع';
+
+  @override
+  String get errorSavingProfile => 'خطأ في حفظ الملف الشخصي';
+
+  @override
+  String get basicInformation => 'المعلومات الأساسية';
+
+  @override
+  String get fullName => 'الاسم الكامل';
+
+  @override
+  String get tagline => 'الشعار';
+
+  @override
+  String get taglineHint => 'عنوان قصير (يظهر للعملاء)';
+
+  @override
+  String get professionalTitle => 'المسمى المهني';
+
+  @override
+  String get professionalTitleHint => 'مثال: مطور Flutter متقدم';
+
+  @override
+  String get bio => 'السيرة الذاتية';
+
+  @override
+  String get bioHint => 'حدثنا عن نفسك...';
+
+  @override
+  String get location => 'الموقع';
+
+  @override
+  String get address => 'العنوان';
+
+  @override
+  String get mapPreviewUnavailable => 'معاينة الخريطة غير متوفرة';
+
+  @override
+  String get skills => 'المهارات';
+
+  @override
+  String get addSkill => 'أضف مهارة';
+
+  @override
+  String get noSkillsAdded => 'لم تتم إضافة مهارات بعد';
+
+  @override
+  String get languages => 'اللغات';
+
+  @override
+  String get addLanguage => 'أضف لغة';
+
+  @override
+  String get noLanguagesAdded => 'لم تتم إضافة لغات بعد';
+
+  @override
+  String get education => 'التعليم';
+
+  @override
+  String get degree => 'الشهادة';
+
+  @override
+  String get institution => 'المؤسسة التعليمية';
+
+  @override
+  String get year => 'السنة';
+
+  @override
+  String get noEducationAdded => 'لم تتم إضافة تعليم بعد';
+
+  @override
+  String get certifications => 'الشهادات';
+
+  @override
+  String get certificationName => 'اسم الشهادة';
+
+  @override
+  String get issuer => 'الجهة المصدرة';
+
+  @override
+  String get noCertificationsAdded => 'لم تتم إضافة شهادات بعد';
+
+  @override
+  String get socialLinks => 'روابط التواصل والمهنية';
+
+  @override
+  String get portfolioWebsite => 'موقع الأعمال';
+
+  @override
+  String get github => 'GitHub';
+
+  @override
+  String get linkedin => 'LinkedIn';
+
+  @override
+  String get behance => 'Behance / Dribbble';
+
+  @override
+  String get availability => 'التوفر';
+
+  @override
+  String get fullTime => 'دوام كامل';
+
+  @override
+  String get partTime => 'دوام جزئي';
+
+  @override
+  String get asNeeded => 'حسب الحاجة';
+
+  @override
+  String get notAvailable => 'غير متوفر';
+
+  @override
+  String get weeklyHours => 'الساعات الأسبوعية (المتاحة)';
+
+  @override
+  String get yearsOfExperience => 'سنوات الخبرة';
+
+  @override
+  String get years => 'سنوات';
+
+  @override
+  String get hourlyRate => 'السعر بالساعة';
+
+  @override
+  String get saveChanges => 'حفظ التغييرات';
+
+  @override
+  String get aiAnalysisComplete => 'تم تحليل الذكاء الاصطناعي!';
+
+  @override
+  String get extractedFromCV => 'مستخرج من سيرتك الذاتية';
+
+  @override
+  String get skillsCount => 'مهارة';
+
+  @override
+  String get languagesCount => 'لغة';
+
+  @override
+  String get educationCount => 'تعليم';
+
+  @override
+  String get confidence => 'الثقة';
+
+  @override
+  String get myFavorites => 'المفضلة';
+
+  @override
+  String get errorLoadingFavorites => 'خطأ في تحميل المفضلة';
+
+  @override
+  String get removeFromFavorites => 'إزالة من المفضلة';
+
+  @override
+  String removeFromFavoritesConfirmation(String projectTitle) {
+    return 'هل أنت متأكد من إزالة \"$projectTitle\" من المفضلة؟';
+  }
+
+  @override
+  String get noFavoritesYet => 'لا توجد مفضلات بعد';
+
+  @override
+  String get saveProjectsByTappingHeart =>
+      'احفظ المشاريع التي تعجبك بالنقر على أيقونة القلب';
+
+  @override
+  String get browseProjects => 'تصفح المشاريع';
+
+  @override
+  String get added => 'تمت الإضافة';
+
+  @override
+  String get financialDashboard => 'لوحة التحكم المالية';
+
+  @override
+  String get overview => 'نظرة عامة';
+
+  @override
+  String get downloadReport => 'تحميل التقرير';
+
+  @override
+  String get errorLoadingFinancialData => 'خطأ في تحميل البيانات المالية';
+
+  @override
+  String get reportGenerated => 'تم إنشاء التقرير بنجاح';
+
+  @override
+  String get errorGeneratingReport => 'خطأ في إنشاء التقرير';
+
+  @override
+  String get withdrawFunds => 'سحب الأموال';
+
+  @override
+  String get available => 'المتاح';
+
+  @override
+  String get amount => 'المبلغ';
+
+  @override
+  String get withdrawalMethod => 'طريقة السحب';
+
+  @override
+  String get paypal => 'باي بال';
+
+  @override
+  String get bankTransfer => 'تحويل بنكي';
+
+  @override
+  String get stripe => 'سترايب';
+
+  @override
+  String get withdraw => 'سحب';
+
+  @override
+  String get withdrawalRequestSubmitted => '✅ تم تقديم طلب السحب';
+
+  @override
+  String get noFinancialData => 'لا توجد بيانات مالية متاحة';
+
+  @override
+  String get totalEarnings => 'إجمالي الأرباح';
+
+  @override
+  String get allTime => 'كل الوقت';
+
+  @override
+  String get platformFees => 'رسوم المنصة';
+
+  @override
+  String get withdrawn => 'المسحوب';
+
+  @override
+  String get totalWithdrawn => 'إجمالي المسحوب';
+
+  @override
+  String get netEarnings => 'صافي الأرباح';
+
+  @override
+  String get availableToWithdraw => 'متاح للسحب';
+
+  @override
+  String get weekly => 'أسبوعي';
+
+  @override
+  String get monthly => 'شهري';
+
+  @override
+  String get yearly => 'سنوي';
+
+  @override
+  String get noDataForPeriod => 'لا توجد بيانات متاحة لهذه الفترة';
+
+  @override
+  String get earningsOverview => 'نظرة عامة على الأرباح';
+
+  @override
+  String get recentTransactions => 'المعاملات الأخيرة';
+
+  @override
+  String get paymentReceived => 'تم استلام الدفع';
+
+  @override
+  String get paymentSent => 'تم إرسال الدفع';
+
+  @override
+  String get withdrawal => 'سحب';
+
+  @override
+  String get deposit => 'إيداع';
+
+  @override
+  String get platformFee => 'رسوم المنصة';
+
+  @override
+  String get bonus => 'مكافأة';
+
+  @override
+  String get subscription => 'اشتراك';
+
+  @override
+  String get noAnalyticsData => 'لا توجد بيانات تحليلية متاحة';
+
+  @override
+  String get topProjects => 'أفضل المشاريع';
+
+  @override
+  String get earningsByCategory => 'الأرباح حسب الفئة';
+
+  @override
+  String get other => 'أخرى';
+
+  @override
+  String get projectedEarnings => 'الأرباح المتوقعة';
+
+  @override
+  String get projectedEarningsSubtitle =>
+      'الثلاثة أشهر القادمة بناءً على تاريخك';
+
+  @override
+  String get inProgress => 'قيد التنفيذ';
+
+  @override
+  String get completed => 'مكتملة';
+
+  @override
+  String get pending => 'قيد الانتظار';
+
+  @override
+  String get submitWork => 'تقديم العمل';
+
+  @override
+  String get submitWorkConfirmation =>
+      'هل أنت متأكد من رغبتك في تقديم هذا العمل للمراجعة؟';
+
+  @override
+  String get workSubmittedSuccess => 'تم تقديم العمل بنجاح!';
+
+  @override
+  String get submit => 'إرسال';
+
+  @override
+  String get message => 'رسالة إلى';
+
+  @override
+  String get client => 'عميل';
+
+  @override
+  String get typeYourMessage => 'اكتب رسالتك...';
+
+  @override
+  String get messageSent => 'تم إرسال الرسالة!';
+
+  @override
+  String get send => 'إرسال';
+
+  @override
+  String get untitledProject => 'مشروع بدون عنوان';
+
+  @override
+  String get projectProgress => 'تقدم المشروع';
+
+  @override
+  String get openWorkspace => 'فتح مساحة العمل';
+
+  @override
+  String get openContract => 'فتح العقد';
+
+  @override
+  String get viewDetails => 'عرض التفاصيل';
+
+  @override
+  String get refresh => 'تحديث';
+
+  @override
+  String get loadingProjects => 'جاري تحميل مشاريعك...';
+
+  @override
+  String get noProjectsYet => 'لا توجد مشاريع بعد';
+
+  @override
+  String get acceptedProposalsWillAppear => 'ستظهر عروضك المقبولة هنا';
+
+  @override
+  String get viewMyProposals => 'عرض عروضي';
+
+  @override
+  String get errorLoadingProposals => 'خطأ في تحميل العروض';
+
+  @override
+  String get proposalsThisMonth => 'العروض هذا الشهر';
+
+  @override
+  String get proposalLimitReached =>
+      'لقد وصلت إلى حد العروض المسموح بها. قم بترقية حسابك لتقديم المزيد.';
+
+  @override
+  String proposalsRemaining(int count) {
+    return '✨ لديك $count عرض متبقي هذا الشهر.';
+  }
+
+  @override
+  String proposalsRemaining_plural(Object count) {
+    return '✨ لديك $count عروض متبقية هذا الشهر.';
+  }
+
+  @override
+  String get accepted => 'مقبولة';
+
+  @override
+  String get rejected => 'مرفوض';
+
+  @override
+  String get unknownProject => 'مشروع غير معروف';
+
+  @override
+  String get noMessageProvided => 'لا يوجد رسالة';
+
+  @override
+  String get startWorking => 'بدء العمل';
+
+  @override
+  String get noProposalsInCategory => 'لا توجد عروض في هذه الفئة';
+
+  @override
+  String get loadingProposals => 'جاري تحميل العروض...';
+
+  @override
+  String get noProposalsYet => 'لا توجد عروض بعد';
+
+  @override
+  String get browseProjectsAndSubmitProposal => 'تصفح المشاريع وقدم عرضك الأول';
+
+  @override
+  String get findProjects => 'البحث عن مشاريع';
+
+  @override
+  String get projectDetails => 'تفاصيل المشروع';
+
+  @override
+  String get aiAssistant => 'المساعد الذكي';
+
+  @override
+  String get errorLoadingProjectDetails => 'خطأ في تحميل تفاصيل المشروع';
+
+  @override
+  String get projectNotFound => 'المشروع غير موجود';
+
+  @override
+  String get duration => 'المدة';
+
+  @override
+  String get aiSmartPricingAnalysis => 'تحليل التسعير الذكي بالذكاء الاصطناعي';
+
+  @override
+  String get recommendedPrice => 'السعر الموصى به';
+
+  @override
+  String get estHours => 'الساعات المقدرة';
+
+  @override
+  String get hours => 'ساعة';
+
+  @override
+  String get baseRate => 'السعر الأساسي';
+
+  @override
+  String get complexity => 'التعقيد';
+
+  @override
+  String get experience => 'الخبرة';
+
+  @override
+  String get description => 'الوصف';
+
+  @override
+  String get requiredSkills => 'المهارات المطلوبة';
+
+  @override
+  String get noEmail => 'لا يوجد بريد إلكتروني';
+
+  @override
+  String proposalsRemainingThisMonth(int count) {
+    return 'العروض المتبقية هذا الشهر: $count';
+  }
+
+  @override
+  String get upgradeToSendMoreProposals =>
+      'قم بترقية حسابك لإرسال المزيد من العروض';
+
+  @override
+  String get submitProposal => 'تقديم عرض';
+
+  @override
+  String get proposalSubmittedSuccess => 'تم تقديم العرض بنجاح!';
+
+  @override
+  String get alreadySubmittedProposal =>
+      'لقد قمت بالفعل بتقديم عرض لهذا المشروع';
+
+  @override
+  String projectStatus(String status) {
+    return 'هذا المشروع $status';
+  }
+
+  @override
+  String projectStatusWithContract(String status) {
+    return 'هذا المشروع $status. مساحة العمل الخاصة بك في العقد.';
+  }
+
+  @override
+  String get restoredProposalDraft => 'تم استعادة مسودة العرض المحفوظة';
+
+  @override
+  String get aiPriceApplied => 'تم تطبيق السعر الموصى به من الذكاء الاصطناعي!';
+
+  @override
+  String get aiSuggestedMilestones => 'المعالم المقترحة من الذكاء الاصطناعي';
+
+  @override
+  String get aiMilestonesDescription =>
+      'بناءً على تحليل مشروعك، هذه هي المعالم الموصى بها:';
+
+  @override
+  String get applyMilestones => 'تطبيق المعالم';
+
+  @override
+  String get aiMilestonesApplied =>
+      'تم تطبيق معالم الذكاء الاصطناعي! يمكنك تعديلها أدناه.';
+
+  @override
+  String milestoneAmountMismatch(Object price, Object total) {
+    return 'إجمالي مبالغ المعالم (\$$total) لا يتطابق مع سعرك (\$$price)';
+  }
+
+  @override
+  String milestoneAmountMismatch_plural(Object price, Object total) {
+    return 'إجمالي مبالغ المعالم (\$$total) لا يتطابق مع سعرك (\$$price)';
+  }
+
+  @override
+  String get proposalLimitReachedUpgrade =>
+      'لقد وصلت إلى حد العروض المسموح بها. يرجى الترقية لتقديم المزيد من العروض.';
+
+  @override
+  String get errorSubmittingProposal => 'خطأ في تقديم العرض';
+
+  @override
+  String get fillProposalFieldsFirst =>
+      'املأ السعر ووقت التسليم وخطاب التغطية أولاً';
+
+  @override
+  String get couldNotAnalyzeProposal => 'تعذر تحليل العرض';
+
+  @override
+  String get analysisFailed => 'فشل التحليل';
+
+  @override
+  String get draftSaved => 'تم حفظ المسودة';
+
+  @override
+  String get proposalAutosaveMessage =>
+      'يتم حفظ العرض تلقائياً على هذا الجهاز أثناء التحرير.';
+
+  @override
+  String get youAreApplyingFor => 'أنت تتقدم لـ:';
+
+  @override
+  String get yourProposal => 'عرضك';
+
+  @override
+  String get fillProposalDetails => 'املأ التفاصيل أدناه لتقديم عرضك';
+
+  @override
+  String get yourPrice => 'سعرك (\$)';
+
+  @override
+  String get enterYourPrice => 'أدخل السعر المقترح';
+
+  @override
+  String get pleaseEnterPrice => 'الرجاء إدخال سعرك';
+
+  @override
+  String get invalidPrice => 'سعر غير صالح';
+
+  @override
+  String get priceGreaterThanZero => 'يجب أن يكون السعر أكبر من 0';
+
+  @override
+  String get deliveryTimeDays => 'وقت التسليم (أيام)';
+
+  @override
+  String get howManyDays => 'كم يوماً تحتاج؟';
+
+  @override
+  String get pleaseEnterDeliveryTime => 'الرجاء إدخال وقت التسليم';
+
+  @override
+  String get invalidNumber => 'رقم غير صالح';
+
+  @override
+  String get deliveryTimeGreaterThanZero => 'يجب أن يكون وقت التسليم أكبر من 0';
+
+  @override
+  String get paymentMilestones => 'مراحل الدفع';
+
+  @override
+  String get aiGenerated => 'تم إنشاؤه بالذكاء الاصطناعي';
+
+  @override
+  String get defineMilestones => 'حدد مراحل المشروع وجدول الدفع';
+
+  @override
+  String get coverLetter => 'خطاب التغطية';
+
+  @override
+  String get coverLetterHint =>
+      'اشرح لماذا أنت المرشح الأفضل لهذا المشروع...\n- خبرتك ذات الصلة\n- كيف ستتعامل مع المشروع\n- أي أسئلة لديك';
+
+  @override
+  String get pleaseWriteCoverLetter => 'الرجاء كتابة خطاب تغطية';
+
+  @override
+  String get coverLetterMinLength =>
+      'يجب أن يكون خطاب التغطية 50 حرفاً على الأقل';
+
+  @override
+  String get analyzingProposal => 'جاري تحليل العرض...';
+
+  @override
+  String get analyzeProposalQuality => 'تحليل جودة العرض (الذكاء الاصطناعي)';
+
+  @override
+  String get proposalScore => 'درجة العرض';
+
+  @override
+  String get strengths => 'نقاط القوة';
+
+  @override
+  String get improve => 'للتحسين';
+
+  @override
+  String get priceWithinBudget => 'سعرك ضمن ميزانية المشروع';
+
+  @override
+  String get priceAboveBudget =>
+      'سعرك أعلى من ميزانية المشروع. تأكد من تبرير ذلك في خطاب التغطية.';
+
+  @override
+  String get paymentScheduleSummary => 'ملخص جدول الدفع';
+
+  @override
+  String get total => 'الإجمالي';
+
+  @override
+  String get agreeToTerms => 'بتقديمك، فإنك توافق على شروط الخدمة الخاصة بنا';
+
+  @override
+  String get aiSmartPricing => 'التسعير الذكي بالذكاء الاصطناعي';
+
+  @override
+  String get useRecommendedPrice => 'استخدم السعر الموصى به';
+
+  @override
+  String get aiMilestoneSuggestions => 'اقتراحات المعالم بالذكاء الاصطناعي';
+
+  @override
+  String get viewAndApplyMilestones => 'عرض وتطبيق معالم الذكاء الاصطناعي';
+
+  @override
+  String plusMoreMilestones(int count) {
+    return '+ $count معالم إضافية';
+  }
+
+  @override
+  String submittingWorkFor(String projectTitle) {
+    return 'تقديم عمل لـ: $projectTitle';
+  }
+
+  @override
+  String get submissionTitle => 'عنوان التسليم';
+
+  @override
+  String get pleaseEnterTitle => 'الرجاء إدخال عنوان';
+
+  @override
+  String get describeYourWork => 'صف ما قمت بإنجازه...';
+
+  @override
+  String get files => 'الملفات';
+
+  @override
+  String get addFiles => 'إضافة ملفات';
+
+  @override
+  String get links => 'الروابط';
+
+  @override
+  String get pleaseAddAtLeastOneFileOrLink =>
+      'الرجاء إضافة ملف أو رابط على الأقل';
+
+  @override
+  String get errorSubmittingWork => 'خطأ في تقديم العمل';
+
+  @override
+  String get boostYourProfile => 'عزز ملفك الشخصي';
+
+  @override
+  String get errorLoadingPrices => 'خطأ في تحميل الأسعار';
+
+  @override
+  String get featurePurchasedSuccess => '✅ تم شراء الميزة بنجاح!';
+
+  @override
+  String get purchaseFailed => 'فشل الشراء';
+
+  @override
+  String get noProjectsToHighlight => 'ليس لديك مشاريع لتمييزها';
+
+  @override
+  String get selectProject => 'اختر مشروعاً';
+
+  @override
+  String get featureYourProfile => 'تمييز ملفك الشخصي';
+
+  @override
+  String get featureYourProfileDesc => 'اظهر في أعلى نتائج البحث لمدة 7 أيام';
+
+  @override
+  String get highlightYourProject => 'تمييز مشروعك';
+
+  @override
+  String get highlightYourProjectDesc => 'اجعل مشروعك مميزاً بشارة تمييز';
+
+  @override
+  String get skillCertificate => 'شهادة مهارة';
+
+  @override
+  String get skillCertificateDesc => 'احصل على شهادة وشارة موثقة';
+
+  @override
+  String get aiResumeReview => 'مراجعة السيرة الذاتية بالذكاء الاصطناعي';
+
+  @override
+  String get aiResumeReviewDesc =>
+      'احصل على ملاحظات احترافية على سيرتك الذاتية';
+
+  @override
+  String get buyNow => 'اشتر الآن';
+
+  @override
+  String get contractProgress => 'تقدم العقد';
+
+  @override
+  String get couldNotLoadProgress => 'تعذر تحميل التقدم';
+
+  @override
+  String get milestoneUpdated => 'تم تحديث المرحلة';
+
+  @override
+  String get couldNotApproveMilestone => 'تعذر الموافقة على المرحلة';
+
+  @override
+  String get workApproved => 'تمت الموافقة على العمل';
+
+  @override
+  String get approvalFailed => 'فشلت الموافقة';
+
+  @override
+  String get requestRevision => 'طلب مراجعة';
+
+  @override
+  String get whatShouldBeChanged => 'ما الذي يجب تغييره؟';
+
+  @override
+  String get revisionRequested => 'تم طلب المراجعة';
+
+  @override
+  String get requestFailed => 'فشل الطلب';
+
+  @override
+  String get addedToPortfolio => 'تمت الإضافة إلى المحفظة';
+
+  @override
+  String get couldNotAddToPortfolio => 'تعذرت الإضافة إلى المحفظة';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String contractNumber(int id) {
+    return 'العقد #$id';
+  }
+
+  @override
+  String get you => 'أنت';
+
+  @override
+  String get escrow => 'الحساب الضماني';
+
+  @override
+  String get pool => 'المجموع';
+
+  @override
+  String get coupon => 'قسيمة';
+
+  @override
+  String get dollar => '\$';
+
+  @override
+  String get commissionPreview => 'معاينة العمولة';
+
+  @override
+  String get planRateIndicative => 'نسبة الخطة (إرشادية)';
+
+  @override
+  String get estPlatformFeeOnRelease => 'رسوم المنصة المقدرة عند الإفراج';
+
+  @override
+  String get noPendingSteps => 'لا توجد خطوات معلقة';
+
+  @override
+  String get upToDateOnMilestones => 'أنت على اطلاع دائم بالمراحل والتسليمات.';
+
+  @override
+  String get yourNextSteps => 'خطواتك التالية';
+
+  @override
+  String get approveMilestone => 'الموافقة على المرحلة';
+
+  @override
+  String get reviewSubmission => 'مراجعة التسليم';
+
+  @override
+  String get submitDeliverable => 'تقديم التسليم';
+
+  @override
+  String get approveAndRelease => 'موافقة وإطلاق';
+
+  @override
+  String get approveWork => 'الموافقة على العمل';
+
+  @override
+  String get milestones => 'المراحل';
+
+  @override
+  String get milestone => 'مرحلة';
+
+  @override
+  String get deliverables => 'التسليمات';
+
+  @override
+  String get submission => 'تسليم';
+
+  @override
+  String get addToPortfolio => 'إضافة إلى المحفظة';
+
+  @override
+  String get recentActivity => 'النشاط الأخير';
+
+  @override
+  String get contractAgreement => 'اتفاقية العقد';
+
+  @override
+  String get progress => 'التقدم';
+
+  @override
+  String get calendar => 'التقويم';
+
+  @override
+  String get contractNotFound => 'العقد غير موجود';
+
+  @override
+  String get signedOn => 'تم التوقيع في';
+
+  @override
+  String get contractAmount => 'قيمة العقد';
+
+  @override
+  String get aiOptimized => 'محسن بالذكاء الاصطناعي';
+
+  @override
+  String get noMilestonesFound => 'لا توجد مراحل دفع لهذا العقد';
+
+  @override
+  String get githubIntegration => 'تكامل GitHub';
+
+  @override
+  String get connectGithubRepository => 'ربط مستودع GitHub';
+
+  @override
+  String get trackProgressAndShowWork => 'تتبع تقدمك وأظهر عملك';
+
+  @override
+  String get connectRepository => 'ربط المستودع';
+
+  @override
+  String get recentCommits => 'الالتزامات الأخيرة';
+
+  @override
+  String get commits => 'التزام';
+
+  @override
+  String get contractDocument => 'وثيقة العقد';
+
+  @override
+  String get contractDocumentNotAvailable => 'وثيقة العقد غير متوفرة';
+
+  @override
+  String get clientSignature => 'توقيع العميل';
+
+  @override
+  String get freelancerSignature => 'توقيع المستقل';
+
+  @override
+  String get enterCouponCode => 'أدخل رمز القسيمة';
+
+  @override
+  String get couponApplied => 'تم تطبيق القسيمة';
+
+  @override
+  String get couldNotApplyCoupon => 'تعذر تطبيق القسيمة';
+
+  @override
+  String get couponRemoved => 'تم إزالة القسيمة';
+
+  @override
+  String get couldNotRemoveCoupon => 'تعذر إزالة القسيمة';
+
+  @override
+  String get errorLoadingContract => 'خطأ في تحميل العقد';
+
+  @override
+  String get errorCreatingPayment => 'خطأ في إنشاء الدفع';
+
+  @override
+  String get contractSignedSuccess => '✅ تم توقيع العقد بنجاح';
+
+  @override
+  String get errorSigningContract => 'خطأ في توقيع العقد';
+
+  @override
+  String get awaitingSignatures => 'بانتظار التوقيعات';
+
+  @override
+  String get waitingForClientSignature => 'بانتظار توقيع العميل';
+
+  @override
+  String get waitingForFreelancerSignature => 'بانتظار توقيع المستقل';
+
+  @override
+  String get contractActive => 'العقد نشط';
+
+  @override
+  String get contractCompleted => 'العقد مكتمل';
+
+  @override
+  String get contractCancelled => 'العقد ملغي';
+
+  @override
+  String get connectGithub => 'ربط GitHub';
+
+  @override
+  String get connectGithubDescription =>
+      'قم بربط مستودع GitHub الخاص بك لتتبع الالتزامات وإظهار تقدمك للعميل.';
+
+  @override
+  String get connect => 'ربط';
+
+  @override
+  String get escrowFunded => '✅ الضمان ممول';
+
+  @override
+  String get paymentRequired => '💰 الدفع مطلوب';
+
+  @override
+  String get escrowFundedDescription =>
+      'الدفع مؤمن في الضمان. سيتم إطلاق دفعات المراحل بعد الموافقة.';
+
+  @override
+  String get paymentRequiredDescription =>
+      'لتفعيل هذا العقد وبدء العمل، يرجى إيداع مبلغ العقد في الضمان.';
+
+  @override
+  String get contractCouponEscrow => 'قسيمة العقد (الضمان)';
+
+  @override
+  String get applyBeforePaying => 'طبق قبل الدفع';
+
+  @override
+  String get remove => 'إزالة';
+
+  @override
+  String get amountDueNow => 'المبلغ المستحق الآن';
+
+  @override
+  String get afterCoupon => 'بعد القسيمة';
+
+  @override
+  String get processing => 'جاري المعالجة...';
+
+  @override
+  String get pay => 'ادفع';
+
+  @override
+  String get paymentSecured => 'الدفع مؤمن';
+
+  @override
+  String get inEscrow => 'في الضمان';
+
+  @override
+  String get thankYouForRating => '✅ شكراً لتقييمك!';
+
+  @override
+  String get rateThisExperience => 'قيم هذه التجربة';
+
+  @override
+  String get waitingForOtherParty => 'بانتظار الطرف الآخر';
+
+  @override
+  String get signContract => 'توقيع العقد';
+
+  @override
+  String get contractActiveMessage => 'العقد نشط. يمكنك البدء في العمل الآن!';
+
+  @override
+  String get paid => 'مدفوع ✓';
+
+  @override
+  String get completedAwaitingApproval => 'مكتمل - بانتظار الموافقة';
+
+  @override
+  String get notStarted => 'لم يبدأ';
+
+  @override
+  String get due => 'مستحق';
+
+  @override
+  String get markAsCompleted => 'تحديد كمكتملة';
+
+  @override
+  String get updateProgress => 'تحديث التقدم';
+
+  @override
+  String get requestChanges => 'طلب تغييرات';
+
+  @override
+  String get paymentReleasedOn => 'تم إطلاق الدفع في';
+
+  @override
+  String get milestoneMarkedCompleted => '✅ تم تحديد المرحلة كمكتملة';
+
+  @override
+  String get errorCompletingMilestone => 'خطأ في إكمال المرحلة';
+
+  @override
+  String approveMilestoneConfirmation(String title) {
+    return 'هل أنت متأكد من رغبتك في الموافقة على \"$title\"؟';
+  }
+
+  @override
+  String amountWillBeReleased(String amount) {
+    return 'سيتم إطلاق \$$amount للمستقل';
+  }
+
+  @override
+  String get thisActionCannotBeUndone => 'لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get milestoneApprovedPaymentReleased =>
+      '✅ تمت الموافقة على المرحلة وتم إطلاق الدفع';
+
+  @override
+  String get errorApprovingMilestone => 'خطأ في الموافقة على المرحلة';
+
+  @override
+  String get explainWhatNeedsToBeChanged => 'الرجاء توضيح ما يحتاج إلى تغيير:';
+
+  @override
+  String get describeChangesNeeded => 'صف التغييرات المطلوبة...';
+
+  @override
+  String get sendRequest => 'إرسال الطلب';
+
+  @override
+  String get revisionRequestSent => 'تم إرسال طلب المراجعة إلى المستقل';
+
+  @override
+  String get notSigned => 'غير موقع';
+
+  @override
+  String get previewSOW => 'معاينة نطاق العمل';
+
+  @override
+  String get verificationCodeSent => '✅ تم إرسال رمز التحقق';
+
+  @override
+  String get codeMustBe6Digits => '❌ يجب أن يكون الرمز مكوناً من 6 أرقام';
+
+  @override
+  String get invalidCode => '❌ رمز غير صالح';
+
+  @override
+  String get maxAttemptsReached =>
+      '❌ تم الوصول للحد الأقصى للمحاولات. اطلب رمزاً جديداً';
+
+  @override
+  String get errorGeneratingPDF => 'خطأ في إنشاء PDF';
+
+  @override
+  String get viewPDF => 'عرض PDF';
+
+  @override
+  String get downloadPDF => 'تحميل PDF';
+
+  @override
+  String get sharePDF => 'مشاركة PDF';
+
+  @override
+  String get downloadingPDF => 'جاري تحميل PDF...';
+
+  @override
+  String get errorDownloadingPDF => 'خطأ في تحميل PDF';
+
+  @override
+  String get errorSharing => 'خطأ في المشاركة';
+
+  @override
+  String get contractSignedSuccessViewSOW =>
+      'تم توقيع العقد بنجاح! عرض وثيقة نطاق العمل:';
+
+  @override
+  String get contractSOWDocument => 'وثيقة نطاق عمل العقد';
+
+  @override
+  String get electronicContractSigning => 'التوقيع الإلكتروني للعقد';
+
+  @override
+  String get verificationCodeSentToEmail =>
+      'تم إرسال رمز التحقق إلى بريدك الإلكتروني';
+
+  @override
+  String get codeValidFor => 'الرمز صالح لمدة';
+
+  @override
+  String get generatingPDFDocument => 'جاري إنشاء مستند PDF...';
+
+  @override
+  String get confirmSignature => 'تأكيد التوقيع';
+
+  @override
+  String waitSecondsToResend(int seconds) {
+    return 'انتظر $seconds ثانية لإعادة الإرسال';
+  }
+
+  @override
+  String get resendCode => 'إعادة إرسال الرمز';
+
+  @override
+  String get aiGeneratedSOW => 'نطاق عمل تم إنشاؤه بالذكاء الاصطناعي';
+
+  @override
+  String get aiGeneratedSOWDescription =>
+      'تم إنشاء هذا المستند بواسطة الذكاء الاصطناعي وهو ملزم قانوناً';
+
+  @override
+  String get statementOfWorkPreview => 'معاينة نطاق العمل';
+
+  @override
+  String get reviewBeforeSigning => 'يرجى مراجعة المستند قبل التوقيع';
+
+  @override
+  String get sowContentWillAppearHere =>
+      'سيظهر محتوى نطاق العمل هنا\n(عرض HTML)';
+
+  @override
+  String get myContracts => 'عقودي';
+
+  @override
+  String get noContractsYet => 'لا توجد عقود بعد';
+
+  @override
+  String get submitFinalWork => 'تقديم العمل النهائي';
+
+  @override
+  String get submitWorkForMilestones => 'تقديم عمل للمراحل:';
+
+  @override
+  String get signed => 'تم التوقيع ✓';
+
+  @override
+  String get waitingForFreelancer => 'بانتظار المستقل';
+
+  @override
+  String get waitingForClient => 'بانتظار العميل';
+
+  @override
+  String get signNow => 'وقع الآن';
+
+  @override
+  String get setReminder => 'تعيين تذكير';
+
+  @override
+  String get reminderTitle => 'عنوان التذكير';
+
+  @override
+  String get reminderTitleHint => 'مثال: تقديم المرحلة 1';
+
+  @override
+  String get descriptionOptional => 'الوصف (اختياري)';
+
+  @override
+  String get additionalDetails => 'تفاصيل إضافية...';
+
+  @override
+  String get dueDate => 'تاريخ الاستحقاق';
+
+  @override
+  String get selectDate => 'اختر التاريخ';
+
+  @override
+  String get selectTime => 'اختر الوقت';
+
+  @override
+  String get reminderSet => '✅ تم تعيين التذكير';
+
+  @override
+  String get ok => 'موافق';
+
+  @override
+  String get calendarAndDeadlines => 'التقويم والمواعيد النهائية';
+
+  @override
+  String get noActiveContractsToAddReminder => 'لا توجد عقود نشطة لإضافة تذكير';
+
+  @override
+  String get weekDays => 'ن,ث,ر,خ,ج,س,ح';
+
+  @override
+  String get months =>
+      'يناير,فبراير,مارس,أبريل,مايو,يونيو,يوليو,أغسطس,سبتمبر,أكتوبر,نوفمبر,ديسمبر';
+
+  @override
+  String get responseTimeRanges =>
+      '<1 ساعة,1-6 ساعات,6-12 ساعة,12-24 ساعة,>24 ساعة';
+
+  @override
+  String get events => 'حدث';
+
+  @override
+  String get noEventsForThisDay => 'لا توجد أحداث لهذا اليوم';
+
+  @override
+  String get upcomingNext7Days => 'القادمة (الأيام السبعة القادمة)';
+
+  @override
+  String get overdue => 'متأخر';
+
+  @override
+  String get today => 'اليوم';
+
+  @override
+  String get tomorrow => 'غداً';
+
+  @override
+  String daysLeft(int count) {
+    return 'تبقى $count يوم';
+  }
+
+  @override
+  String get repositoryUrl => 'رابط المستودع';
+
+  @override
+  String get repositoryUrlExample => 'مثال: https://github.com/flutter/flutter';
+
+  @override
+  String get branchOptional => 'الفرع (اختياري)';
+
+  @override
+  String get pleaseEnterRepositoryUrl => 'الرجاء إدخال رابط المستودع';
+
+  @override
+  String get pleaseEnterValidGithubUrl => 'الرجاء إدخال رابط GitHub صالح';
+
+  @override
+  String get repositoryConnected => '✅ تم ربط المستودع';
+
+  @override
+  String get projectWorkspace => 'مساحة عمل المشروع';
+
+  @override
+  String get chat => 'المحادثة';
+
+  @override
+  String get filesSectionComingSoon => 'قسم الملفات قريباً...';
+
+  @override
+  String get chatSectionComingSoon => 'قسم المحادثة قريباً...';
+
+  @override
+  String get myWallet => 'محفظتي';
+
+  @override
+  String get errorLoadingWallet => 'خطأ في تحميل المحفظة';
+
+  @override
+  String get availableBalance => 'الرصيد المتاح';
+
+  @override
+  String get pleaseEnterAmount => 'الرجاء إدخال المبلغ';
+
+  @override
+  String get invalidAmount => 'مبلغ غير صالح';
+
+  @override
+  String get insufficientBalance => 'رصيد غير كاف';
+
+  @override
+  String get completeStripeAccountSetup => 'الرجاء إكمال إعداد حساب Stripe';
+
+  @override
+  String get minutesAgo => 'دقيقة مضت';
+
+  @override
+  String get noWalletFound => 'لم يتم العثور على محفظة';
+
+  @override
+  String get boost => 'ترقية';
+
+  @override
+  String get history => 'السجل';
+
+  @override
+  String get totalBalance => 'إجمالي الرصيد';
+
+  @override
+  String get earned => 'المكتسب';
+
+  @override
+  String get noTransactionsYet => 'لا توجد معاملات بعد';
+
+  @override
+  String get viewAll => 'عرض الكل';
+
+  @override
+  String get markAllAsRead => 'تحديد الكل كمقروء';
+
+  @override
+  String get errorLoadingNotifications => 'خطأ في تحميل الإشعارات';
+
+  @override
+  String get allNotificationsMarkedAsRead => 'تم تحديد جميع الإشعارات كمقروءة';
+
+  @override
+  String get noNotificationsYet => 'لا توجد إشعارات بعد';
+
+  @override
+  String get notificationsWillAppearHere => 'عندما تستلم إشعارات، ستظهر هنا';
+
+  @override
+  String get clearChat => 'مسح المحادثة';
+
+  @override
+  String get clearChatConfirmation =>
+      'هل أنت متأكد من رغبتك في مسح سجل المحادثة؟';
+
+  @override
+  String get clear => 'مسح';
+
+  @override
+  String get chatHistoryCleared => 'تم مسح سجل المحادثة';
+
+  @override
+  String get askMeAnything => 'اسألني أي شيء...';
+
+  @override
+  String get opening => 'جاري فتح';
+
+  @override
+  String get referAndEarn => 'إحالة وكسب';
+
+  @override
+  String get errorLoadingData => 'خطأ في تحميل البيانات';
+
+  @override
+  String get shareReferralMessage =>
+      'انضم إلي في منصة المستقلين واحصل على مزايا! استخدم الكود الخاص بي:';
+
+  @override
+  String get yourReferralCode => 'رمز الإحالة الخاص بك';
+
+  @override
+  String get loading => 'جاري التحميل...';
+
+  @override
+  String get shareCode => 'مشاركة الرمز';
+
+  @override
+  String get referredFriends => 'الأصدقاء المحالون';
+
+  @override
+  String get rateYourExperience => 'قيم تجربتك';
+
+  @override
+  String get youAreRating => 'أنت تقيم';
+
+  @override
+  String get yourRating => 'تقييمك';
+
+  @override
+  String get yourReviewOptional => 'مراجعتك (اختياري)';
+
+  @override
+  String get shareYourExperience => 'شارك تجربتك';
+
+  @override
+  String get pleaseSelectRating => 'الرجاء اختيار تقييم';
+
+  @override
+  String get submitRating => 'إرسال التقييم';
+
+  @override
+  String get maybeLater => 'ربما لاحقاً';
+
+  @override
+  String get errorSubmittingRating => 'خطأ في إرسال التقييم';
+
+  @override
+  String get post => 'نشر';
+
+  @override
+  String get replyVisibilityMessage =>
+      'سيكون ردك مرئياً للجميع. كن محترفاً ومهذباً.';
+
+  @override
+  String get yourReply => 'ردك';
+
+  @override
+  String get replyHint =>
+      'اكتب ردك على هذا التقييم...\n\nمثال: \"شكراً على ملاحظاتك! نقدر تعاملك معنا وسنعمل على التحسين.\"';
+
+  @override
+  String get tipsForGoodReply => 'نصائح لرد جيد';
+
+  @override
+  String get beProfessionalAndPolite => '• كن محترفاً ومهذباً';
+
+  @override
+  String get addressSpecificConcerns => '• تناول المخاوف المحددة';
+
+  @override
+  String get thankReviewerForFeedback => '• اشكر المراجع على ملاحظاته';
+
+  @override
+  String get showWillingnessToImprove => '• أظهر الرغبة في التحسين';
+
+  @override
+  String get preview => 'معاينة';
+
+  @override
+  String get pleaseEnterReply => 'الرجاء إدخال رد';
+
+  @override
+  String get replyMinLength => 'يجب أن يكون الرد 10 أحرف على الأقل';
+
+  @override
+  String get replyPostedSuccess => '✅ تم نشر الرد بنجاح';
+
+  @override
+  String get errorPostingReply => 'خطأ في نشر الرد';
+
+  @override
+  String get averageRating => 'متوسط التقييم';
+
+  @override
+  String get totalReviews => 'إجمالي المراجعات';
+
+  @override
+  String get positiveRate => 'نسبة الإيجابية';
+
+  @override
+  String get categoryAverages => 'متوسطات الفئات';
+
+  @override
+  String get interviewCalendar => 'تقويم المقابلات';
+
+  @override
+  String get addInterview => 'إضافة مقابلة';
+
+  @override
+  String get selectDayToViewInterviews => 'اختر يوماً لعرض المقابلات';
+
+  @override
+  String get noInterviewsScheduledForThisDay =>
+      'لا توجد مقابلات مجدولة لهذا اليوم';
+
+  @override
+  String get noLink => 'لا يوجد رابط';
+
+  @override
+  String get past => 'سابقة';
+
+  @override
+  String get upcoming => 'قادمة';
+
+  @override
+  String get interviewDetails => 'تفاصيل المقابلة';
+
+  @override
+  String get googleCalendar => 'تقويم جوجل';
+
+  @override
+  String get downloadIcsFile => 'تحميل ملف .ics';
+
+  @override
+  String get sendReminder => 'إرسال تذكير';
+
+  @override
+  String get reschedule => 'إعادة جدولة';
+
+  @override
+  String get addFeedback => 'إضافة ملاحظات';
+
+  @override
+  String get expired => 'منتهية';
+
+  @override
+  String get invitationExpired => 'هذه الدعوة انتهت صلاحيتها';
+
+  @override
+  String get scheduledFor => 'مجدولة في';
+
+  @override
+  String get waitingForResponse => 'بانتظار الرد';
+
+  @override
+  String get interviewCompleted => 'المقابلة مكتملة';
+
+  @override
+  String get interviewDeclined => 'المقابلة مرفوضة';
+
+  @override
+  String get messageFrom => 'رسالة من';
+
+  @override
+  String get timeline => 'الجدول الزمني';
+
+  @override
+  String get invitationSent => 'تم إرسال الدعوة';
+
+  @override
+  String get declined => 'مرفوضة';
+
+  @override
+  String get interviewScheduled => 'تم جدولة المقابلة';
+
+  @override
+  String get rescheduled => 'تمت إعادة الجدولة';
+
+  @override
+  String get reason => 'السبب';
+
+  @override
+  String get expires => 'تنتهي';
+
+  @override
+  String get joinInterview => 'انضم إلى المقابلة';
+
+  @override
+  String get joinInterviewDescription =>
+      'انقر على الزر أدناه للانضمام إلى مقابلة الفيديو.';
+
+  @override
+  String get joinMeeting => 'انضم للاجتماع';
+
+  @override
+  String get interviewInvitation => 'دعوة المقابلة';
+
+  @override
+  String get proposedTime => 'الوقت المقترح:';
+
+  @override
+  String get availableTimes => 'الأوقات المتاحة:';
+
+  @override
+  String get addMessageOptional => 'أضف رسالة (اختياري)';
+
+  @override
+  String get decline => 'رفض';
+
+  @override
+  String get acceptAndConfirm => 'قبول وتأكيد';
+
+  @override
+  String get acceptSelectedTime => 'قبول الوقت المحدد';
+
+  @override
+  String get pleaseSelectTime => 'الرجاء اختيار الوقت';
+
+  @override
+  String get completeInterview => 'إكمال المقابلة';
+
+  @override
+  String get completeInterviewDescription =>
+      'بعد المقابلة، أضف ملاحظاتك وتقييمك.';
+
+  @override
+  String get meetingNotes => 'ملاحظات الاجتماع';
+
+  @override
+  String get feedback => 'تقييم';
+
+  @override
+  String get declineInterview => 'رفض المقابلة';
+
+  @override
+  String get declineInterviewConfirmation =>
+      'هل أنت متأكد من رغبتك في رفض دعوة المقابلة؟';
+
+  @override
+  String get interviewAccepted => 'تم قبول المقابلة!';
+
+  @override
+  String get errorAcceptingInterview => 'خطأ في قبول المقابلة';
+
+  @override
+  String get interviewDeclinedMsg => 'تم رفض المقابلة';
+
+  @override
+  String get errorDecliningInterview => 'خطأ في رفض المقابلة';
+
+  @override
+  String get reasonForRescheduling => 'سبب إعادة الجدولة؟';
+
+  @override
+  String get interviewRescheduled => 'تمت إعادة جدولة المقابلة';
+
+  @override
+  String get errorRescheduling => 'خطأ في إعادة الجدولة';
+
+  @override
+  String get reasonForCancellation => 'سبب الإلغاء؟';
+
+  @override
+  String get interviewCancelled => 'تم إلغاء المقابلة';
+
+  @override
+  String get errorCancelling => 'خطأ في الإلغاء';
+
+  @override
+  String get pleaseProvideReason => 'الرجاء تقديم سبب...';
+
+  @override
+  String get addNotesAboutInterview => 'أضف ملاحظات حول المقابلة:';
+
+  @override
+  String get meetingNotesHint => 'ملاحظات الاجتماع...';
+
+  @override
+  String get feedbackOptional => 'تقييم (اختياري)';
+
+  @override
+  String get additionalFeedbackHint => 'أي ملاحظات إضافية...';
+
+  @override
+  String get complete => 'إكمال';
+
+  @override
+  String get errorCompletingInterview => 'خطأ في إكمال المقابلة';
+
+  @override
+  String get calendarFileDownloaded => 'تم تحميل ملف التقويم';
+
+  @override
+  String get addedToCalendar => 'تمت الإضافة إلى التقويم بنجاح!';
+
+  @override
+  String get errorAddingToCalendar => 'خطأ في الإضافة إلى التقويم';
+
+  @override
+  String get reminderSent => 'تم إرسال التذكير بنجاح!';
+
+  @override
+  String get errorSendingReminder => 'خطأ في إرسال التذكير';
+
+  @override
+  String get interviewAnalytics => 'تحليلات المقابلات';
+
+  @override
+  String get performance => 'الأداء';
+
+  @override
+  String get insights => 'رؤى';
+
+  @override
+  String get totalInterviews => 'إجمالي المقابلات';
+
+  @override
+  String get acceptanceRate => 'نسبة القبول';
+
+  @override
+  String get completionRate => 'نسبة الإكمال';
+
+  @override
+  String get avgResponse => 'متوسط الرد';
+
+  @override
+  String get interviewStatusDistribution => 'توزيع حالة المقابلات';
+
+  @override
+  String get avgResponseTime => 'متوسط وقت الرد';
+
+  @override
+  String get fromInvitationSent => 'من إرسال الدعوة';
+
+  @override
+  String get monthlyTrends => 'الاتجاهات الشهرية';
+
+  @override
+  String get upcomingInterviews => 'المقابلات القادمة';
+
+  @override
+  String get noUpcomingInterviews => 'لا توجد مقابلات قادمة مجدولة';
+
+  @override
+  String get interviews => 'المقابلات';
+
+  @override
+  String inDays(int count) {
+    return 'بعد $count أيام';
+  }
+
+  @override
+  String get onTimeRate => 'نسبة الالتزام بالوقت';
+
+  @override
+  String get ofCompleted => 'من المكتملة';
+
+  @override
+  String get avgRating => 'متوسط التقييم';
+
+  @override
+  String get successRate => 'نسبة النجاح';
+
+  @override
+  String get acceptedToCompleted => 'مقبولة → مكتملة';
+
+  @override
+  String get responseTimeDistribution => 'توزيع وقت الرد';
+
+  @override
+  String get interviewRatings => 'تقييمات المقابلات';
+
+  @override
+  String get topPerformers => 'أفضل المؤدين';
+
+  @override
+  String get interviewsCompleted => 'مقابلة مكتملة';
+
+  @override
+  String get aiInsights => 'رؤى الذكاء الاصطناعي';
+
+  @override
+  String get bestTimeToInterview => 'أفضل وقت للمقابلة';
+
+  @override
+  String get bestTimeToInterviewClient =>
+      'بناءً على تاريخك، المستقلون أكثر استجابة بين الساعة 10 صباحاً - 2 ظهراً في أيام الأسبوع.';
+
+  @override
+  String get bestTimeToInterviewFreelancer =>
+      'أنت ترد على دعوات المقابلة بشكل أسرع خلال ساعتين من استلامها.';
+
+  @override
+  String successRateClient(int rate) {
+    return 'نسبة تحويل المقابلة إلى توظيف لديك هي $rate%. استمر في العمل الجيد!';
+  }
+
+  @override
+  String successRateFreelancer(int rate) {
+    return 'نسبة قبول المقابلة لديك هي $rate%. حاول الرد بشكل أسرع للتحسين.';
+  }
+
+  @override
+  String get optimalSchedule => 'الجدول الأمثل';
+
+  @override
+  String get optimalScheduleClient =>
+      'يومي الثلاثاء والأربعاء لديهما أعلى معدلات قبول لدعوات المقابلة.';
+
+  @override
+  String get optimalScheduleFreelancer =>
+      'المقابلات المجدولة يوم الخميس لديها أعلى نسبة إكمال.';
+
+  @override
+  String get recommendations => 'توصيات';
+
+  @override
+  String get recommendationClient1 =>
+      'معدل ردك 85%. حاول الرد خلال 24 ساعة للحصول على نتائج أفضل.';
+
+  @override
+  String get recommendationClient2 =>
+      'حدد المقابلات بين الساعة 10 صباحاً - 2 ظهراً لمعدلات قبول أعلى.';
+
+  @override
+  String get recommendationClient3 =>
+      'أرسل تذكيراً قبل ساعة من المقابلة لتقليل حالات الغياب.';
+
+  @override
+  String get recommendationFreelancer1 =>
+      'أنت ترد خلال 4 ساعات في المتوسط. استمر في العمل الجيد!';
+
+  @override
+  String get recommendationFreelancer2 =>
+      'نسبة قبولك 75%. حاول الرد على جميع الدعوات.';
+
+  @override
+  String get recommendationFreelancer3 =>
+      'حضر أسئلة قبل المقابلة لترك انطباع أفضل.';
+
+  @override
+  String get proTips => 'نصائح احترافية';
+
+  @override
+  String get proTipsContent =>
+      '• أرسل دعوات المقابلة خلال 24 ساعة من استلام الاقتراح\n• قم دائماً بتأكيد وقت المقابلة قبل يوم واحد\n• حضر أسئلة محددة قبل المقابلة\n• دوّن ملاحظات أثناء المقابلة لتقييم أفضل\n• تابع خلال 48 ساعة بعد المقابلة';
+
+  @override
+  String get todayAt => 'اليوم الساعة';
+
+  @override
+  String get yesterdayAt => 'أمس الساعة';
+
+  @override
+  String get at => 'الساعة';
+
+  @override
+  String get statistics => 'الإحصائيات';
+
+  @override
+  String get errorLoadingInterviews => 'خطأ في تحميل المقابلات';
+
+  @override
+  String get noInterviewInvitationsSent => 'لم يتم إرسال دعوات مقابلة';
+
+  @override
+  String get noInterviewInvitationsReceived => 'لم يتم استلام دعوات مقابلة';
+
+  @override
+  String get inviteFreelancersToInterview =>
+      'قم بدعوة المستقلين للمقابلة قبل التوظيف';
+
+  @override
+  String get interviewsWillAppearHere =>
+      'عندما يدعوك العملاء للمقابلات، ستظهر هنا';
+
+  @override
+  String get browseYourProjects => 'تصفح مشاريعك';
+
+  @override
+  String get with_ => 'مع';
+
+  @override
+  String get scheduled => 'مجدولة';
+
+  @override
+  String get interviewFeedback => 'تقييم المقابلة';
+
+  @override
+  String feedbackDescription(String name) {
+    return 'تساعد ملاحظاتك $name على التحسين وتساعد العملاء الآخرين على اتخاذ قرارات مستنيرة.';
+  }
+
+  @override
+  String get overallRating => 'التقييم العام';
+
+  @override
+  String get excellent => 'ممتاز! 🌟';
+
+  @override
+  String get veryGood => 'جيد جداً! 👍';
+
+  @override
+  String get good => 'جيد 👌';
+
+  @override
+  String get fair => 'مقبول 😐';
+
+  @override
+  String get poor => 'ضعيف 😞';
+
+  @override
+  String get detailedRatings => 'التقييمات التفصيلية';
+
+  @override
+  String get professionalism => 'الاحترافية';
+
+  @override
+  String get technicalSkills => 'المهارات التقنية';
+
+  @override
+  String get punctuality => 'الالتزام بالمواعيد';
+
+  @override
+  String get ratingLabelProfessionalism => 'الاحترافية';
+
+  @override
+  String get ratingLabelCommunication => 'التواصل';
+
+  @override
+  String get ratingLabelTechnicalSkills => 'المهارات التقنية';
+
+  @override
+  String get ratingLabelPunctuality => 'الالتزام بالمواعيد';
+
+  @override
+  String get whatWentWell => 'ما الذي كان جيداً؟';
+
+  @override
+  String get whatWentWellHint => 'شارك ما أعجبك في المقابلة...';
+
+  @override
+  String get whatCouldBeImproved => 'ما الذي يمكن تحسينه؟';
+
+  @override
+  String get whatCouldBeImprovedHint => 'ملاحظات بناءة للتحسين...';
+
+  @override
+  String get wouldYouHireAgain => 'هل ستوظف هذا المستقل مرة أخرى؟';
+
+  @override
+  String get yes => 'نعم';
+
+  @override
+  String get no => 'لا';
+
+  @override
+  String get submitFeedback => 'إرسال التقييم';
+
+  @override
+  String get thankYouForFeedback => 'شكراً على ملاحظاتك!';
+
+  @override
+  String get errorSubmittingFeedback => 'خطأ في إرسال التقييم';
+
+  @override
+  String get interviewQuestionLibrary => 'مكتبة أسئلة المقابلات';
+
+  @override
+  String get technicalQuestions => 'أسئلة تقنية';
+
+  @override
+  String get portfolioReview => 'مراجعة الأعمال';
+
+  @override
+  String get softSkills => 'المهارات الشخصية';
+
+  @override
+  String get culturalFit => 'التوافق الثقافي';
+
+  @override
+  String get easy => 'سهل';
+
+  @override
+  String get medium => 'متوسط';
+
+  @override
+  String get hard => 'صعب';
+
+  @override
+  String get tipStarMethod =>
+      'استخدم طريقة STAR (الموقف، المهمة، الإجراء، النتيجة) لتنظيم إجابتك.';
+
+  @override
+  String get tipChallenge => 'ركز على عملية حل المشكلات وما تعلمته.';
+
+  @override
+  String get tipDeadline =>
+      'أظهر مهاراتك في إدارة الوقت والقدرة على تحديد الأولويات.';
+
+  @override
+  String get tipGeneral => 'كن صادقاً وقدم أمثلة محددة من تجربتك.';
+
+  @override
+  String get questionCopiedToClipboard => 'تم نسخ السؤال إلى الحافظة!';
+
+  @override
+  String get shareFeatureComingSoon => 'ميزة المشاركة قريباً!';
+
+  @override
+  String get searchQuestions => 'البحث عن أسئلة';
+
+  @override
+  String get searchByKeyword => 'البحث بكلمة مفتاحية...';
+
+  @override
+  String get randomQuestionForYou => 'سؤال عشوائي لك';
+
+  @override
+  String get copy => 'نسخ';
+
+  @override
+  String get close => 'إغلاق';
+
+  @override
+  String get randomQuestion => 'سؤال عشوائي';
+
+  @override
+  String get noQuestionsFound => 'لم يتم العثور على أسئلة';
+
+  @override
+  String get tipsForAnswering => '💡 نصائح للإجابة:';
+
+  @override
+  String get copyQuestion => 'نسخ السؤال';
+
+  @override
+  String get saveToFavorites => 'حفظ في المفضلة';
+
+  @override
+  String get share => 'مشاركة';
+
+  @override
+  String get completePayment => 'إكمال الدفع';
+
+  @override
+  String get securePayment => 'دفع آمن';
+
+  @override
+  String get paymentHeldInEscrow =>
+      'سيتم الاحتفاظ بدفعتك في الضمان حتى اكتمال المشروع.';
+
+  @override
+  String get contractTotal => 'إجمالي العقد';
+
+  @override
+  String get couponDiscount => 'خصم القسيمة';
+
+  @override
+  String get chargedNowEscrow => 'المبلغ المدفوع الآن (الضمان)';
+
+  @override
+  String get commissionOnRelease => 'العمولة (عند الإفراج)';
+
+  @override
+  String get estFee => 'الرسوم المقدرة';
+
+  @override
+  String get paymentSecureDescription =>
+      'دفعتك آمنة ولن يتم إطلاقها إلا عند موافقتك على كل مرحلة.';
+
+  @override
+  String get stripeWebRedirect =>
+      'سيتم إعادة توجيهك إلى صفحة الدفع الآمن من Stripe.';
+
+  @override
+  String get stripeInAppPayment => 'دفع آمن داخل التطبيق عبر Stripe.';
+
+  @override
+  String get payWithStripe => 'ادفع عبر Stripe';
+
+  @override
+  String get payNow => 'ادفع الآن';
+
+  @override
+  String get confirmPaymentManual => 'تأكيد الدفع (يدوي)';
+
+  @override
+  String get agreeToTermsByPaying =>
+      'بالدفع، فإنك توافق على شروط الخدمة الخاصة بنا';
+
+  @override
+  String get paymentConfirmed => '✅ تم تأكيد الدفع!';
+
+  @override
+  String get failedToConfirmPayment => 'فشل تأكيد الدفع';
+
+  @override
+  String get paymentSuccessful => '✅ الدفع ناجح!';
+
+  @override
+  String get paymentFailed => 'فشل الدفع';
+
+  @override
+  String get completePaymentInNewTab => 'أكمل الدفع في علامة التبويب الجديدة';
+
+  @override
+  String get completeSubscriptionPayment => 'إكمال دفع الاشتراك';
+
+  @override
+  String get subscriptionPayment => 'دفع الاشتراك';
+
+  @override
+  String get subscriptionActivatedImmediately =>
+      'سيتم تفعيل اشتراكك فوراً بعد الدفع.';
+
+  @override
+  String get subscriptionPrice => 'سعر الاشتراك';
+
+  @override
+  String get subscriptionSecureDescription =>
+      'دفعتك آمنة وستمنحك وصولاً فورياً إلى جميع الميزات المميزة.';
+
+  @override
+  String get subscribeNow => 'اشترك الآن';
+
+  @override
+  String get subscriptionPaymentConfirmed => '✅ تم تأكيد دفع الاشتراك!';
+
+  @override
+  String get failedToConfirmSubscriptionPayment => 'فشل تأكيد دفع الاشتراك';
+
+  @override
+  String get subscriptionPaymentSuccessful => '✅ دفع الاشتراك ناجح!';
+
+  @override
+  String get subscriptionPaymentFailed => 'فشل دفع الاشتراك';
+
+  @override
+  String get agreeToTermsBySubscribing =>
+      'بالاشتراك، فإنك توافق على شروط الخدمة وسياسة الخصوصية الخاصة بنا';
+
+  @override
+  String get yesterday => 'أمس';
+
+  @override
+  String get category => 'التصنيف';
+
+  @override
+  String get minBudget => 'الحد الأدنى للميزانية';
+
+  @override
+  String get maxBudget => 'الحد الأقصى للميزانية';
+
+  @override
+  String get minDuration => 'الحد الأدنى للمدة';
+
+  @override
+  String get maxDuration => 'الحد الأقصى للمدة';
+
+  @override
+  String get sortBy => 'ترتيب حسب';
+}

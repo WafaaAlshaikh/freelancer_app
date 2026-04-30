@@ -1,21 +1,12 @@
 // screens/freelancer/my_projects_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:freelancer_platform/screens/freelancer/project_details_screen.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/project_model.dart';
 import '../../services/api_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
-class AppColors {
-  static const sidebarBg = Color(0xFF2D2B55);
-  static const sidebarText = Color(0xFFC8C6E8);
-  static const sidebarActive = Color(0xFF5B58E2);
-  static const accent = Color(0xFF6C63FF);
-  static const accentLight = Color(0xFFA78BFA);
-  static const green = Color(0xFF14A800);
-  static const pageBg = Color(0xFFF5F6F8);
-  static const cardBg = Colors.white;
-}
+import '../../theme/app_theme.dart';
+import 'project_details_screen.dart';
 
 class MyProjectsScreen extends StatefulWidget {
   const MyProjectsScreen({super.key});
@@ -31,46 +22,56 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
   @override
   void initState() {
     super.initState();
-    fetchMyProjects();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        fetchMyProjects(context);
+      }
+    });
   }
 
-  Future<void> fetchMyProjects() async {
+  Future<void> fetchMyProjects(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+
     setState(() => loading = true);
 
     try {
       final data = await ApiService.getMyProjects();
+
+      if (!mounted) return;
 
       setState(() {
         projects = data.map((json) => Project.fromJson(json)).toList();
         loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => loading = false);
-      Fluttertoast.showToast(msg: "Error loading projects");
+      Fluttertoast.showToast(msg: t.errorLoadingProjects);
     }
   }
 
-  String _getStatusText(String? status) {
+  String _getStatusText(String? status, AppLocalizations t) {
     switch (status) {
       case 'in_progress':
-        return 'In Progress';
+        return t.inProgress;
       case 'completed':
-        return 'Completed';
+        return t.completed;
       case 'pending':
-        return 'Pending';
+        return t.pending;
       default:
-        return status ?? 'Unknown';
+        return status ?? t.unknown;
     }
   }
 
   Color _getStatusColor(String? status) {
     switch (status) {
       case 'in_progress':
-        return Colors.orange;
+        return AppColors.warning;
       case 'completed':
-        return AppColors.green;
+        return AppColors.success;
       case 'pending':
-        return Colors.blue;
+        return AppColors.info;
       default:
         return Colors.grey;
     }
@@ -83,51 +84,60 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
   }
 
   void _showSubmitWorkDialog(Project project) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.green.withOpacity(0.1),
+                color: AppColors.secondary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.check_circle, color: AppColors.green),
+              child: Icon(Icons.check_circle, color: AppColors.secondary),
             ),
             const SizedBox(width: 12),
-            const Text('Submit Work'),
+            Text(
+              t.submitWork,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ],
         ),
-        content: const Text(
-          'Are you sure you want to submit this work for review?',
+        content: Text(
+          t.submitWorkConfirmation,
+          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
-            child: const Text('Cancel'),
+            child: Text(
+              t.cancel,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
-              // TODO: Call API to submit work
               Navigator.pop(context);
               Fluttertoast.showToast(
-                msg: 'Work submitted successfully!',
-                backgroundColor: AppColors.green,
+                msg: t.workSubmittedSuccess,
+                backgroundColor: AppColors.secondary,
                 textColor: Colors.white,
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.green,
+              backgroundColor: AppColors.secondary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Submit'),
+            child: Text(t.submit),
           ),
         ],
       ),
@@ -135,54 +145,75 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
   }
 
   void _showMessageDialog(Project project) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: AppColors.accent.withOpacity(0.1),
-              child: Icon(Icons.chat, color: AppColors.accent, size: 20),
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              child: Icon(
+                Icons.chat,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
-            Text('Message ${project.client?.name ?? 'Client'}'),
+            Text(
+              '${t.message} ${project.client?.name ?? t.client}',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ],
         ),
         content: TextField(
           maxLines: 4,
           decoration: InputDecoration(
-            hintText: 'Type your message...',
+            hintText: t.typeYourMessage,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(
+                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accent, width: 2),
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary,
+                width: 2,
+              ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
           ),
+          style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              t.cancel,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Fluttertoast.showToast(msg: 'Message sent!');
+              Fluttertoast.showToast(msg: t.messageSent);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
+              backgroundColor: theme.colorScheme.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Send'),
+            child: Text(t.send),
           ),
         ],
       ),
@@ -190,19 +221,22 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
   }
 
   Widget _buildProjectCard(Project project) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final progress = _calculateProgress(project);
     final statusColor = _getStatusColor(project.status);
-    final statusText = _getStatusText(project.status);
+    final statusText = _getStatusText(project.status, t);
     final hasContract = project.contractId != null && project.contractId! > 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -273,7 +307,7 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.green.withOpacity(0.1),
+                          color: AppColors.secondary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -282,14 +316,14 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                             Icon(
                               Icons.attach_money,
                               size: 14,
-                              color: AppColors.green,
+                              color: AppColors.secondary,
                             ),
                             Text(
                               project.budget!.toStringAsFixed(0),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
-                                color: AppColors.green,
+                                color: AppColors.secondary,
                               ),
                             ),
                           ],
@@ -297,20 +331,14 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                       ),
                   ],
                 ),
-
                 const SizedBox(height: 14),
-
                 Text(
-                  project.title ?? 'Untitled Project',
-                  style: const TextStyle(
-                    fontSize: 18,
+                  project.title ?? t.untitledProject,
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D2B55),
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 Row(
                   children: [
                     Container(
@@ -319,7 +347,10 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: [AppColors.accent, AppColors.accentLight],
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withOpacity(0.7),
+                          ],
                         ),
                       ),
                       child: CircleAvatar(
@@ -334,7 +365,8 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                             project.client?.avatar == null ||
                                 project.client!.avatar!.isEmpty
                             ? Text(
-                                project.client?.name?[0].toUpperCase() ?? 'C',
+                                project.client?.name?[0].toUpperCase() ??
+                                    t.client[0],
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -350,10 +382,9 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            project.client?.name ?? 'Unknown Client',
-                            style: const TextStyle(
+                            project.client?.name ?? t.unknownClient,
+                            style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
                             ),
                           ),
                           Row(
@@ -361,14 +392,17 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                               Icon(
                                 Icons.business_center,
                                 size: 12,
-                                color: Colors.grey.shade500,
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.5,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Client',
-                                style: TextStyle(
+                                t.client,
+                                style: theme.textTheme.bodySmall?.copyWith(
                                   fontSize: 11,
-                                  color: Colors.grey.shade500,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.5),
                                 ),
                               ),
                             ],
@@ -382,7 +416,9 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -391,14 +427,16 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                           Icon(
                             Icons.access_time,
                             size: 12,
-                            color: Colors.grey.shade600,
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${project.duration} days',
-                            style: TextStyle(
+                            '${project.duration} ${t.days}',
+                            style: theme.textTheme.bodySmall?.copyWith(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.5,
+                              ),
                             ),
                           ),
                         ],
@@ -406,9 +444,7 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 16),
-
                 if (project.skills != null && project.skills!.isNotEmpty)
                   Wrap(
                     spacing: 6,
@@ -420,22 +456,20 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withOpacity(0.08),
+                          color: theme.colorScheme.primary.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           skill,
                           style: TextStyle(
                             fontSize: 10,
-                            color: AppColors.accent,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       );
                     }).toList(),
                   ),
-
                 const SizedBox(height: 16),
-
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -443,21 +477,19 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Project Progress',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
+                          t.projectProgress,
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                         Text(
                           '$progress%',
-                          style: TextStyle(
+                          style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 13,
                             color: progress == 100
-                                ? AppColors.green
-                                : AppColors.accent,
+                                ? AppColors.secondary
+                                : theme.colorScheme.primary,
                           ),
                         ),
                       ],
@@ -467,18 +499,20 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: progress / 100,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          progress == 100 ? AppColors.green : AppColors.accent,
+                          progress == 100
+                              ? AppColors.secondary
+                              : theme.colorScheme.primary,
                         ),
                         minHeight: 6,
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Expanded(
@@ -487,16 +521,16 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                         icon: Icon(
                           Icons.chat_outlined,
                           size: 18,
-                          color: AppColors.accent,
+                          color: theme.colorScheme.primary,
                         ),
                         label: Text(
-                          "Message",
-                          style: TextStyle(color: AppColors.accent),
+                          t.message,
+                          style: TextStyle(color: theme.colorScheme.primary),
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.accent,
+                          foregroundColor: theme.colorScheme.primary,
                           side: BorderSide(
-                            color: AppColors.accent.withOpacity(0.5),
+                            color: theme.colorScheme.primary.withOpacity(0.5),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -551,19 +585,19 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                           hasContract
                               ? ((project.contractStatus == 'active' ||
                                         project.status == 'in_progress')
-                                    ? 'Open Workspace'
-                                    : 'Open Contract')
+                                    ? t.openWorkspace
+                                    : t.openContract)
                               : project.status == 'completed'
-                              ? "View Details"
-                              : "Submit Work",
+                              ? t.viewDetails
+                              : t.submitWork,
                           style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: hasContract
-                              ? AppColors.accent
+                              ? theme.colorScheme.primary
                               : project.status == 'completed'
-                              ? AppColors.accent
-                              : AppColors.green,
+                              ? theme.colorScheme.primary
+                              : AppColors.secondary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -584,34 +618,34 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          "My Projects",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D2B55),
-          ),
+        title: Text(
+          t.myProjects,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.cardBg,
         elevation: 0,
-        foregroundColor: Colors.black,
         centerTitle: false,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: IconButton(
-              onPressed: fetchMyProjects,
-              icon: const Icon(Icons.refresh, color: AppColors.accent),
-              tooltip: 'Refresh',
+              onPressed: () => fetchMyProjects(context),
+              icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
+              tooltip: t.refresh,
             ),
           ),
         ],
       ),
       body: loading
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -620,13 +654,15 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                     height: 40,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
-                      color: AppColors.accent,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    "Loading your projects...",
-                    style: TextStyle(color: Colors.grey),
+                    t.loadingProjects,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
@@ -640,28 +676,29 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.08),
+                      color: theme.colorScheme.primary.withOpacity(0.08),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.folder_open_outlined,
                       size: 50,
-                      color: AppColors.accent.withOpacity(0.5),
+                      color: theme.colorScheme.primary.withOpacity(0.5),
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    "No Projects Yet",
-                    style: TextStyle(
-                      fontSize: 20,
+                    t.noProjectsYet,
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D2B55),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Your accepted proposals will appear here",
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    t.acceptedProposalsWillAppear,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
@@ -669,9 +706,9 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                       Navigator.pushNamed(context, '/freelancer/my-proposals');
                     },
                     icon: const Icon(Icons.send_outlined, size: 18),
-                    label: const Text("View My Proposals"),
+                    label: Text(t.viewMyProposals),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
+                      backgroundColor: theme.colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 28,
@@ -687,8 +724,8 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
               ),
             )
           : RefreshIndicator(
-              onRefresh: fetchMyProjects,
-              color: AppColors.accent,
+              onRefresh: () => fetchMyProjects(context),
+              color: theme.colorScheme.primary,
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: projects.length,

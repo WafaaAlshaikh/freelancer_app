@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:freelancer_platform/l10n/app_localizations.dart';
 import 'package:freelancer_platform/screens/affiliate/affiliate_screen.dart';
 import 'package:freelancer_platform/screens/chat/chats_list_screen.dart';
 import 'package:freelancer_platform/screens/contract/my_contracts_screen.dart';
@@ -18,6 +19,7 @@ import 'package:freelancer_platform/screens/skill_tests/skill_tests_screen.dart'
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import '../../theme/app_theme.dart' as AppTheme;
 
 import '../../models/calendar_event.dart';
 import '../../models/contract_model.dart';
@@ -36,17 +38,6 @@ import 'projects_tab.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-class AppColors {
-  static const sidebarBg = Color(0xFF2D2B55);
-  static const sidebarText = Color(0xFFC8C6E8);
-  static const sidebarActive = Color(0xFF5B58E2);
-  static const accent = Color(0xFF6C63FF);
-  static const accentLight = Color(0xFFA78BFA);
-  static const green = Color(0xFF14A800);
-  static const pageBg = Color(0xFFF5F6F8);
-  static const cardBg = Colors.white;
-}
-
 enum ProjectFilter { bestMatches, mostRecent, saved }
 
 class RatingStars extends StatelessWidget {
@@ -63,6 +54,7 @@ class RatingStars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -130,6 +122,8 @@ class PortfolioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final images = _parseImages(item['images']);
     final technologies = _parseTechnologies(item['technologies']);
 
@@ -138,7 +132,7 @@ class PortfolioCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: AppColors.cardBg,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -195,7 +189,7 @@ class PortfolioCard extends StatelessWidget {
               Container(
                 height: 120,
                 width: double.infinity,
-                color: AppColors.accent.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -203,14 +197,14 @@ class PortfolioCard extends StatelessWidget {
                       Icon(
                         Icons.image_outlined,
                         size: 40,
-                        color: AppColors.accent.withOpacity(0.5),
+                        color: theme.colorScheme.primary.withOpacity(0.5),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'No image',
+                        t?.noImage ?? 'No image',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.accent.withOpacity(0.5),
+                          color: theme.colorScheme.primary.withOpacity(0.5),
                         ),
                       ),
                     ],
@@ -249,14 +243,16 @@ class PortfolioCard extends StatelessWidget {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.accent.withOpacity(0.1),
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 tech,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.accent,
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
                             ),
@@ -276,13 +272,13 @@ class PortfolioCard extends StatelessWidget {
 
 class _SidebarItem {
   final IconData icon;
-  final String label;
+  final String labelKey;
   final int? badge;
   final bool badgeGreen;
 
   const _SidebarItem({
     required this.icon,
-    required this.label,
+    required this.labelKey,
     this.badge,
     this.badgeGreen = false,
   });
@@ -304,41 +300,55 @@ class _Sidebar extends StatelessWidget {
   });
 
   static const _items = [
-    _SidebarItem(icon: Icons.person_outline, label: 'Home'),
-    _SidebarItem(icon: Icons.search, label: 'Find Work'),
-    _SidebarItem(icon: Icons.send_outlined, label: 'My Proposals', badge: 3),
-    _SidebarItem(icon: Icons.work_outline, label: 'My Projects'),
+    _SidebarItem(icon: Icons.person_outline, labelKey: 'home'),
+    _SidebarItem(icon: Icons.search, labelKey: 'findWork'),
+    _SidebarItem(icon: Icons.send_outlined, labelKey: 'myProposals', badge: 3),
+    _SidebarItem(icon: Icons.work_outline, labelKey: 'myProjects'),
     _SidebarItem(
       icon: Icons.description_outlined,
-      label: 'Contracts',
+      labelKey: 'contracts',
       badge: 2,
       badgeGreen: true,
     ),
-    _SidebarItem(icon: Icons.favorite_border, label: 'Favorites'),
-    _SidebarItem(icon: Icons.attach_money, label: 'Financial'),
-    _SidebarItem(icon: Icons.filter_alt, label: 'Advanced Search'),
-    _SidebarItem(icon: Icons.chat_bubble_outline, label: 'Messages', badge: 1),
-    _SidebarItem(icon: Icons.quiz_outlined, label: 'Skill Tests'),
+    _SidebarItem(icon: Icons.favorite_border, labelKey: 'favorites'),
+    _SidebarItem(icon: Icons.attach_money, labelKey: 'financial'),
+    _SidebarItem(icon: Icons.filter_alt, labelKey: 'advancedSearch'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final sidebarColor = isDark
+        ? AppTheme.AppColors.darkSidebar
+        : AppTheme.AppColors.lightSidebar;
+    final sidebarTextColor = isDark
+        ? AppTheme.AppColors.darkTextSecondary
+        : AppTheme.AppColors.lightTextSecondary;
+
     return Container(
       width: 220,
-      color: AppColors.sidebarBg,
+      color: sidebarColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 24, 20, 20),
-            child: Text(
-              'FREELANCER',
-              style: TextStyle(
-                color: AppColors.accentLight,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            child: Row(
+              children: [
+                Image.asset('assets/images/logo.png', height: 32, width: 32),
+                const SizedBox(width: 8),
+                Text(
+                  'IPAL',
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -358,7 +368,7 @@ class _Sidebar extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppColors.accentLight,
+                    backgroundColor: theme.colorScheme.primary,
                     backgroundImage: avatarUrl.isNotEmpty
                         ? NetworkImage(avatarUrl)
                         : null,
@@ -381,7 +391,7 @@ class _Sidebar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          profile?.name ?? 'Freelancer',
+                          profile?.name ?? t!.freelancer ?? 'Freelancer',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
@@ -392,8 +402,8 @@ class _Sidebar extends StatelessWidget {
                         ),
                         Text(
                           profile?.title ?? 'Developer',
-                          style: const TextStyle(
-                            color: AppColors.accentLight,
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
                             fontSize: 11,
                           ),
                           maxLines: 1,
@@ -416,6 +426,7 @@ class _Sidebar extends StatelessWidget {
               itemBuilder: (_, i) {
                 final item = _items[i];
                 final isActive = selectedIndex == i;
+                final label = _getLabel(t!, item.labelKey);
                 return GestureDetector(
                   onTap: () => onItemTap(i),
                   child: Container(
@@ -429,13 +440,13 @@ class _Sidebar extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? AppColors.accent.withOpacity(0.25)
+                          ? theme.colorScheme.primary.withOpacity(0.25)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: isActive
                           ? Border(
-                              left: const BorderSide(
-                                color: AppColors.accent,
+                              left: BorderSide(
+                                color: theme.colorScheme.primary,
                                 width: 3,
                               ),
                             )
@@ -446,19 +457,15 @@ class _Sidebar extends StatelessWidget {
                         Icon(
                           item.icon,
                           size: 18,
-                          color: isActive
-                              ? Colors.white
-                              : AppColors.sidebarText,
+                          color: isActive ? Colors.white : sidebarTextColor,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            item.label,
+                            label,
                             style: TextStyle(
                               fontSize: 13,
-                              color: isActive
-                                  ? Colors.white
-                                  : AppColors.sidebarText,
+                              color: isActive ? Colors.white : sidebarTextColor,
                               fontWeight: isActive
                                   ? FontWeight.w500
                                   : FontWeight.normal,
@@ -473,8 +480,8 @@ class _Sidebar extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: item.badgeGreen
-                                  ? AppColors.green
-                                  : AppColors.accent,
+                                  ? theme.colorScheme.secondary
+                                  : theme.colorScheme.primary,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -497,11 +504,12 @@ class _Sidebar extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _sidebarActionBtn(Icons.settings_outlined, 'Settings'),
+                _sidebarActionBtn(context, Icons.settings_outlined, 'settings'),
                 const SizedBox(height: 6),
                 _sidebarActionBtn(
+                  context,
                   Icons.logout,
-                  'Logout',
+                  'logout',
                   color: Colors.red.shade300,
                 ),
               ],
@@ -512,16 +520,51 @@ class _Sidebar extends StatelessWidget {
     );
   }
 
+  String _getLabel(AppLocalizations t, String key) {
+    switch (key) {
+      case 'home':
+        return t.home;
+      case 'findWork':
+        return t.findWork;
+      case 'myProposals':
+        return t.myProposals;
+      case 'myProjects':
+        return t.myProjects;
+      case 'contracts':
+        return t.contracts;
+      case 'favorites':
+        return t.favorites;
+      case 'financial':
+        return t.financial;
+      case 'advancedSearch':
+        return t.advancedSearch;
+      default:
+        return key;
+    }
+  }
+
   Widget _sidebarActionBtn(
+    BuildContext context,
     IconData icon,
-    String label, {
-    Color color = AppColors.sidebarText,
+    String labelKey, {
+    Color? color,
   }) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final defaultColor = isDark
+        ? AppTheme.AppColors.darkTextSecondary
+        : AppTheme.AppColors.lightTextSecondary;
+    final label = labelKey == 'settings' ? t!.settings : t!.logout;
+
     return Row(
       children: [
-        Icon(icon, size: 16, color: color),
+        Icon(icon, size: 16, color: color ?? defaultColor),
         const SizedBox(width: 8),
-        Text(label, style: TextStyle(fontSize: 12, color: color)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: color ?? defaultColor),
+        ),
       ],
     );
   }
@@ -530,18 +573,37 @@ class _Sidebar extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String value;
-  final String label;
+  final String labelKey;
   final Color color;
 
   const _StatCard({
     required this.icon,
     required this.value,
-    required this.label,
+    required this.labelKey,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
+    String label;
+    switch (labelKey) {
+      case 'active':
+        label = t!.activeProjects;
+        break;
+      case 'proposals':
+        label = t!.proposals;
+        break;
+      case 'rating':
+        label = t!.rating;
+        break;
+      case 'jss':
+        label = t!.jobSuccessScore;
+        break;
+      default:
+        label = labelKey;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
@@ -692,12 +754,14 @@ class _FreelancerHomeScheduleCardState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final dayItems = _itemsForSelectedDay();
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -712,12 +776,19 @@ class _FreelancerHomeScheduleCardState
         children: [
           Row(
             children: [
-              Icon(Icons.calendar_month, size: 18, color: AppColors.accent),
+              Icon(
+                Icons.calendar_month,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Your schedule',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  t!.schedule,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               if (_loading)
@@ -782,15 +853,15 @@ class _FreelancerHomeScheduleCardState
               cellMargin: const EdgeInsets.all(2),
               markersMaxCount: 3,
               markerDecoration: BoxDecoration(
-                color: AppColors.accent,
+                color: theme.colorScheme.primary,
                 shape: BoxShape.circle,
               ),
               todayDecoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.2),
+                color: theme.colorScheme.primary.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               selectedDecoration: BoxDecoration(
-                color: AppColors.accent,
+                color: theme.colorScheme.primary,
                 shape: BoxShape.circle,
               ),
               defaultTextStyle: const TextStyle(fontSize: 11),
@@ -885,14 +956,20 @@ class _FreelancerHomeScheduleCardState
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => Navigator.pushNamed(context, '/calendar'),
-              icon: const Icon(Icons.open_in_new, size: 14),
-              label: const Text(
-                'Full calendar',
-                style: TextStyle(fontSize: 11),
+              icon: Icon(
+                Icons.open_in_new,
+                size: 14,
+                color: theme.colorScheme.primary,
+              ),
+              label: Text(
+                t.fullCalendar,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.primary,
+                ),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.accent,
-                side: const BorderSide(color: AppColors.accent),
+                side: BorderSide(color: theme.colorScheme.primary),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -929,27 +1006,34 @@ class _PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark
+        ? AppTheme.AppColors.darkSurface
+        : AppTheme.AppColors.lightSidebar;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.sidebarBg,
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Freelancer Premium',
+          Text(
+            t!.premium,
             style: TextStyle(
-              color: Colors.white,
+              color: isDark ? Colors.white : Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Individual subscription',
-            style: TextStyle(color: AppColors.accentLight, fontSize: 11),
+            style: TextStyle(color: theme.colorScheme.primary, fontSize: 11),
           ),
           const SizedBox(height: 12),
           ...[
@@ -962,17 +1046,15 @@ class _PremiumCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.check,
-                    color: AppColors.accentLight,
-                    size: 14,
-                  ),
+                  Icon(Icons.check, color: theme.colorScheme.primary, size: 14),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       item,
-                      style: const TextStyle(
-                        color: AppColors.sidebarText,
+                      style: TextStyle(
+                        color: isDark
+                            ? AppTheme.AppColors.darkTextSecondary
+                            : AppTheme.AppColors.lightTextSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -988,16 +1070,16 @@ class _PremiumCard extends StatelessWidget {
               onPressed: onSubscribe,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: AppColors.sidebarBg,
+                foregroundColor: bgColor,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                'Subscribe',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                t.subscribe,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1018,6 +1100,7 @@ class _FreelancerProposalUsageBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final rem = usage.remainingProposals;
     final lim = usage.proposalsLimit;
     if (lim == null || rem < 0) return const SizedBox.shrink();
@@ -1068,7 +1151,7 @@ class _FreelancerProposalUsageBanner extends StatelessWidget {
             TextButton(
               onPressed: onUpgrade,
               style: TextButton.styleFrom(foregroundColor: fg),
-              child: const Text('Upgrade'),
+              child: Text(t?.upgrade ?? 'Upgrade'),
             ),
         ],
       ),
@@ -1177,33 +1260,35 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     }
   }
 
-  String get _filterTitle {
+  String _getFilterTitle(AppLocalizations t) {
     switch (_projectFilter) {
       case ProjectFilter.bestMatches:
-        return "Best Matches";
+        return t.bestMatches;
       case ProjectFilter.mostRecent:
-        return "Most Recent";
+        return t.mostRecent;
       case ProjectFilter.saved:
-        return "Saved Jobs";
+        return t.savedJobs;
     }
   }
 
   Widget _buildProjectFilterTabs() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
         children: [
-          _buildFilterTab(ProjectFilter.bestMatches, "Best Matches"),
+          _buildFilterTab(theme, ProjectFilter.bestMatches, t!.bestMatches),
           const SizedBox(width: 16),
-          _buildFilterTab(ProjectFilter.mostRecent, "Most Recent"),
+          _buildFilterTab(theme, ProjectFilter.mostRecent, t!.mostRecent),
           const SizedBox(width: 16),
-          _buildFilterTab(ProjectFilter.saved, "Saved Jobs"),
+          _buildFilterTab(theme, ProjectFilter.saved, t!.savedJobs),
         ],
       ),
     );
   }
 
-  Widget _buildFilterTab(ProjectFilter filter, String label) {
+  Widget _buildFilterTab(ThemeData theme, ProjectFilter filter, String label) {
     final isSelected = _projectFilter == filter;
     return GestureDetector(
       onTap: () {
@@ -1220,7 +1305,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               fontSize: 14,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               color: isSelected
-                  ? const Color(0xff14A800)
+                  ? theme.colorScheme.secondary
                   : Colors.grey.shade600,
             ),
           ),
@@ -1228,7 +1313,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
           Container(
             height: 2,
             width: 40,
-            color: isSelected ? const Color(0xff14A800) : Colors.transparent,
+            color: isSelected
+                ? theme.colorScheme.secondary
+                : Colors.transparent,
           ),
         ],
       ),
@@ -1236,6 +1323,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildProjectsSection() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final projects = _filteredProjects;
 
     if (_projectFilter == ProjectFilter.saved &&
@@ -1277,7 +1366,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               TextButton(
                 onPressed: () =>
                     setState(() => _projectFilter = ProjectFilter.bestMatches),
-                child: const Text('Browse projects'),
+                child: Text(
+                  t!.findWork,
+                  style: TextStyle(color: theme.colorScheme.primary),
+                ),
               ),
             ],
           ),
@@ -1299,7 +1391,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: fetchAISuggestions,
-                child: const Text('Refresh suggestions'),
+                child: Text(
+                  'Refresh suggestions',
+                  style: TextStyle(color: theme.colorScheme.primary),
+                ),
               ),
             ],
           ),
@@ -1317,7 +1412,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _filterTitle,
+                _getFilterTitle(t!),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1326,7 +1421,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               if (projects.length > 3)
                 TextButton(
                   onPressed: () => setState(() => _selectedNavIndex = 1),
-                  child: const Text('View All'),
+                  child: Text(
+                    'View All',
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
                 ),
             ],
           ),
@@ -1575,15 +1673,17 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Future<bool> _showLogoutDialog() async {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return await showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('Logout'),
-            content: const Text('Are you sure you want to logout?'),
+            title: Text(t!.logout),
+            content: Text(t!.logoutConfirmation),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(t!.cancel),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -1594,7 +1694,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                     Navigator.pushReplacementNamed(context, '/login');
                   }
                 },
-                child: const Text('Logout'),
+                child: Text(t.logout),
               ),
             ],
           ),
@@ -1603,65 +1703,39 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildTopBar() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        color: AppColors.cardBg,
+      decoration: BoxDecoration(
+        color: theme.cardColor,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E7EB), width: 0.5),
+          bottom: BorderSide(color: theme.dividerColor, width: 0.5),
         ),
       ),
       child: Row(
         children: [
-          const Text(
-            'Profile',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Text(
+            t!.profile,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const Spacer(),
-
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: Icon(Icons.search, color: theme.iconTheme.color),
             onPressed: () => setState(() => _selectedNavIndex = 1),
           ),
-
           IconButton(
-            icon: const Icon(Icons.star_border),
-            tooltip: 'Upgrade Plan',
-            onPressed: () =>
-                Navigator.pushNamed(context, '/subscription/plans'),
+            icon: Icon(Icons.star_border, color: theme.iconTheme.color),
+            tooltip: t.upgrade,
+            onPressed: () => Navigator.pushNamed(context, '/subscription/my'),
           ),
-
-          IconButton(
-            icon: const Icon(Icons.account_balance_wallet),
-            tooltip: 'Wallet',
-            onPressed: () => Navigator.pushNamed(
-              context,
-              '/wallet',
-              arguments: 'freelancer',
-            ),
-          ),
-
-          IconButton(
-            icon: const Icon(Icons.shopping_bag),
-            tooltip: 'Buy Features',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FeaturesShopScreen()),
-            ),
-          ),
-
-          IconButton(
-            icon: const Icon(Icons.interpreter_mode),
-            onPressed: () {
-              Navigator.pushNamed(context, '/interviews');
-            },
-            tooltip: 'Interviews',
-          ),
-
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.chat_bubble_outline),
+                icon: Icon(
+                  Icons.chat_bubble_outline,
+                  color: theme.iconTheme.color,
+                ),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => ChatsListScreen()),
@@ -1674,7 +1748,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: const BoxDecoration(
-                      color: AppColors.green,
+                      color: AppTheme.AppColors.secondary,
                       shape: BoxShape.circle,
                     ),
                     constraints: const BoxConstraints(
@@ -1690,19 +1764,19 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 ),
             ],
           ),
-
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_none),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationsScreen(),
-                    ),
-                  ).then((_) => _loadUnreadNotificationsCount());
-                },
+                icon: Icon(
+                  Icons.notifications_none,
+                  color: theme.iconTheme.color,
+                ),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationsScreen(),
+                  ),
+                ).then((_) => _loadUnreadNotificationsCount()),
               ),
               if (_unreadNotificationsCount > 0)
                 Positioned(
@@ -1729,56 +1803,88 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 ),
             ],
           ),
-
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () async {
-              final shareUrl =
-                  '${dotenv.env['FRONTEND_URL']}/freelancer/${profile?.id}';
-              await Share.share('Check out my profile: $shareUrl');
-            },
-          ),
-
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+            icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
             onSelected: (value) {
-              if (value == 'affiliate') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => AffiliateScreen()),
-                );
-              } else if (value == 'compare') {
-                Navigator.pushNamed(context, '/subscription/comparison');
-              } else if (value == 'subscriptionn') {
-                Navigator.pushNamed(context, '/subscription/plans');
-              } else if (value == 'subscription') {
-                Navigator.pushNamed(context, '/subscription/my');
-              } else if (value == 'settings') {
-                Fluttertoast.showToast(msg: 'Settings coming soon');
-              } else if (value == 'help') {
-                Fluttertoast.showToast(msg: 'Help coming soon');
-              } else if (value == 'logout') {
-                _showLogoutDialog();
+              switch (value) {
+                case 'wallet':
+                  Navigator.pushNamed(
+                    context,
+                    '/wallet',
+                    arguments: 'freelancer',
+                  );
+                  break;
+                case 'shop':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FeaturesShopScreen(),
+                    ),
+                  );
+                  break;
+                case 'interviews':
+                  Navigator.pushNamed(context, '/interviews');
+                  break;
+                case 'share':
+                  final shareUrl =
+                      '${dotenv.env['FRONTEND_URL']}/freelancer/${profile?.id}';
+                  Share.share('Check out my profile: $shareUrl');
+                  break;
+                case 'affiliate':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AffiliateScreen()),
+                  );
+                  break;
+                case 'settings':
+                  Navigator.pushNamed(context, '/settings');
+                  break;
+                case 'subscription':
+                  Navigator.pushNamed(context, '/subscription/plans');
+                  break;
+                case 'logout':
+                  _showLogoutDialog();
+                  break;
               }
             },
             itemBuilder: (_) => [
               const PopupMenuItem(
-                value: 'subscriptionn',
+                value: 'wallet',
                 child: Row(
                   children: [
-                    Icon(Icons.star_border),
+                    Icon(Icons.account_balance_wallet),
                     SizedBox(width: 12),
-                    Text('My Subscription'),
+                    Text('Wallet'),
                   ],
                 ),
               ),
               const PopupMenuItem(
-                value: 'settings',
+                value: 'shop',
                 child: Row(
                   children: [
-                    Icon(Icons.settings),
+                    Icon(Icons.shopping_bag),
                     SizedBox(width: 12),
-                    Text('Settings'),
+                    Text('Shop'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'interviews',
+                child: Row(
+                  children: [
+                    Icon(Icons.interpreter_mode),
+                    SizedBox(width: 12),
+                    Text('Interviews'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(Icons.share),
+                    SizedBox(width: 12),
+                    Text('Share Profile'),
                   ],
                 ),
               ),
@@ -1793,22 +1899,12 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 ),
               ),
               const PopupMenuItem(
-                value: 'compare',
+                value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.compare_arrows),
+                    Icon(Icons.settings),
                     SizedBox(width: 12),
-                    Text('Compare Plans'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'help',
-                child: Row(
-                  children: [
-                    Icon(Icons.help),
-                    SizedBox(width: 12),
-                    Text('Help & Support'),
+                    Text('Settings'),
                   ],
                 ),
               ),
@@ -1818,7 +1914,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                   children: [
                     Icon(Icons.subscriptions),
                     SizedBox(width: 12),
-                    Text('Subscription Plans'),
+                    Text('Plans'),
                   ],
                 ),
               ),
@@ -1840,6 +1936,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildProfileHeaderCard() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final avatarUrl = _getAvatarUrl(profile?.avatar);
     final totalProposals = stats?['totalProposals'] ?? 0;
     final acceptedProposals = stats?['acceptedProposals'] ?? 0;
@@ -1850,7 +1948,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1868,7 +1966,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             children: [
               CircleAvatar(
                 radius: 36,
-                backgroundColor: AppColors.accentLight,
+                backgroundColor: theme.colorScheme.primary,
                 backgroundImage: avatarUrl.isNotEmpty
                     ? NetworkImage(avatarUrl)
                     : null,
@@ -1892,7 +1990,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile?.name ?? 'Freelancer',
+                      profile?.name ?? t!.freelancer,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1902,11 +2000,12 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                     if (profile?.title?.isNotEmpty == true)
                       Text(
                         profile!.title!,
-                        style: TextStyle(fontSize: 13, color: AppColors.accent),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     const SizedBox(height: 8),
-                    // _infoRow(Icons.calendar_today_outlined,
-                    //     'Joined: ${_formatDate(profile?.createdAt)}'),
                     if (profile?.location?.isNotEmpty == true)
                       _infoRow(Icons.location_on_outlined, profile!.location!),
                     if (profile?.email?.isNotEmpty == true)
@@ -1919,13 +2018,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.08),
+                    color: theme.colorScheme.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.edit_outlined,
                     size: 16,
-                    color: AppColors.accent,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -1942,7 +2041,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 child: _StatCard(
                   icon: Icons.work_outline,
                   value: stats?['activeProjects']?.toString() ?? '0',
-                  label: 'Active',
+                  labelKey: 'active',
                   color: Colors.blue,
                 ),
               ),
@@ -1951,7 +2050,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 child: _StatCard(
                   icon: Icons.send_outlined,
                   value: stats?['totalProposals']?.toString() ?? '0',
-                  label: 'Proposals',
+                  labelKey: 'proposals',
                   color: Colors.orange,
                 ),
               ),
@@ -1960,7 +2059,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 child: _StatCard(
                   icon: Icons.star_outline,
                   value: profile?.rating?.toStringAsFixed(1) ?? '0.0',
-                  label: 'Rating',
+                  labelKey: 'rating',
                   color: Colors.amber,
                 ),
               ),
@@ -1969,8 +2068,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 child: _StatCard(
                   icon: Icons.trending_up,
                   value: '$jss%',
-                  label: 'JSS',
-                  color: AppColors.green,
+                  labelKey: 'jss',
+                  color: theme.colorScheme.secondary,
                 ),
               ),
             ],
@@ -1982,15 +2081,15 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Profile Completion',
+                  t!.profileCompletion,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 Text(
                   '${profileCompletion.toStringAsFixed(0)}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.accent,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ],
@@ -2001,8 +2100,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               child: LinearProgressIndicator(
                 value: profileCompletion / 100,
                 backgroundColor: Colors.grey.shade200,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.accent,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.primary,
                 ),
                 minHeight: 6,
               ),
@@ -2014,69 +2113,70 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildRatingSection() {
-  if (profile == null) {
-    return const SizedBox.shrink();
-  }
-  
-  final userId = profile!.id;
-  final rating = profile!.rating;
-  
-  if (userId == null || rating == null) {
-    return const SizedBox.shrink();
-  }
+    final theme = Theme.of(context);
+    if (profile == null) {
+      return const SizedBox.shrink();
+    }
 
-  final userName = profile!.name ?? 'Freelancer';
+    final userId = profile!.id;
+    final rating = profile!.rating;
 
-  return GestureDetector(
-    onTap: () {
-      if (userId != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ReviewsScreen(
-              userId: userId,
-              userName: userName,
-              userRole: 'freelancer',
+    if (userId == null || rating == null) {
+      return const SizedBox.shrink();
+    }
+
+    final userName = profile!.name ?? 'Freelancer';
+
+    return GestureDetector(
+      onTap: () {
+        if (userId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ReviewsScreen(
+                userId: userId,
+                userName: userName,
+                userRole: 'freelancer',
+              ),
             ),
-          ),
-        );
-      } else {
-        Fluttertoast.showToast(msg: 'Unable to load reviews');
-      }
-    },
-    child: Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade200),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.star, color: Colors.amber),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Rating: ${rating.toStringAsFixed(1)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Tap to see all reviews',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                ),
-              ],
+          );
+        } else {
+          Fluttertoast.showToast(msg: 'Unable to load reviews');
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.amber.shade200),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.star, color: Colors.amber),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${rating.toStringAsFixed(1)} ★',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Tap to see all reviews',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right, color: Colors.grey),
-        ],
+            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _infoRow(IconData icon, String text) {
     return Padding(
@@ -2098,6 +2198,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildActiveProjectsList() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     if (loadingContracts) {
       return const Center(
         child: Padding(
@@ -2111,7 +2213,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -2127,15 +2229,21 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Active Projects 🔥',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               TextButton(
                 onPressed: () => setState(() => _selectedNavIndex = 4),
-                child: const Text(
+                child: Text(
                   'View All',
-                  style: TextStyle(color: AppColors.accent, fontSize: 12),
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -2148,6 +2256,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildContractListItem(Contract contract) {
+    final theme = Theme.of(context);
     final project = contract.project;
     if (project == null) return const SizedBox.shrink();
 
@@ -2253,13 +2362,13 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      color: AppColors.green.withOpacity(0.1),
+                      color: theme.colorScheme.secondary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chat_bubble_outline,
                       size: 12,
-                      color: AppColors.green,
+                      color: theme.colorScheme.secondary,
                     ),
                   ),
                 ),
@@ -2272,6 +2381,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildTrendingSkills() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final skills = [
       {'name': 'Flutter', 'color': Colors.blue},
       {'name': 'React', 'color': Colors.cyan},
@@ -2283,7 +2394,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -2296,9 +2407,9 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Trending Skills 🔥',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          Text(
+            t!.trendingSkills,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -2342,10 +2453,11 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   Widget _buildDeliveredProjectsSection() {
     if (recentCompletedProjects.isEmpty) return const SizedBox.shrink();
 
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -2375,7 +2487,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             return ListTile(
               contentPadding: EdgeInsets.zero,
               dense: true,
-              leading: const Icon(Icons.task_alt, color: AppColors.green),
+              leading: Icon(Icons.task_alt, color: theme.colorScheme.secondary),
               title: Text(
                 title,
                 maxLines: 1,
@@ -2401,13 +2513,15 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildHomeContent() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     if (loadingProfile) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return RefreshIndicator(
       onRefresh: _loadAllData,
-      color: AppColors.accent,
+      color: theme.colorScheme.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
@@ -2427,21 +2541,23 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             const SizedBox(height: 16),
             _buildActiveProjectsList(),
             const SizedBox(height: 16),
-            _buildDeliveredProjectsSection(),
-            const SizedBox(height: 16),
-            _buildTrendingSkills(),
-            const SizedBox(height: 16),
 
             _buildProjectFilterTabs(),
             const SizedBox(height: 12),
             _buildProjectsSection(),
 
+            const SizedBox(height: 16),
+            _buildDeliveredProjectsSection(),
+
             const SizedBox(height: 20),
 
             if (portfolioItems.isNotEmpty) ...[
-              const Text(
-                'My Portfolio 🎨',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              Text(
+                t!.myPortfolio,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 10),
               ...portfolioItems
@@ -2458,6 +2574,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildProjectCard(Project project) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -2469,7 +2586,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.cardBg,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: const [
@@ -2564,7 +2681,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
+                    color: theme.colorScheme.secondary,
                   ),
                 ),
               ],
@@ -2576,6 +2693,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildRightColumn() {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -2590,7 +2709,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.cardBg,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -2603,9 +2722,12 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Skill Tests 🏆',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                Text(
+                  t!.skillTests,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _skillTestRow(Icons.code, 'Programming', Colors.blue),
@@ -2622,15 +2744,17 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accent,
-                      side: const BorderSide(color: AppColors.accent),
+                      side: BorderSide(color: theme.colorScheme.primary),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'View All Tests',
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -2643,6 +2767,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _skillTestRow(IconData icon, String title, Color color) {
+    final theme = Theme.of(context);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Container(
@@ -2718,7 +2843,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     final avatarUrl = _getAvatarUrl(profile?.avatar);
 
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Row(
         children: [
           _Sidebar(

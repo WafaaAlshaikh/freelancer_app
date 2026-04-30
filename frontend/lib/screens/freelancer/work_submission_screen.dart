@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:file_picker/file_picker.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/contract_model.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class WorkSubmissionScreen extends StatefulWidget {
   final Contract contract;
@@ -114,8 +116,9 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
   }
 
   Future<List<String>> _uploadFiles() async {
+    final t = AppLocalizations.of(context)!;
     if (_selectedFiles.isEmpty && _selectedWebFiles.isEmpty && _links.isEmpty) {
-      Fluttertoast.showToast(msg: 'Please add at least one file or link');
+      Fluttertoast.showToast(msg: t.pleaseAddAtLeastOneFileOrLink);
       return [];
     }
 
@@ -156,6 +159,7 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
   }
 
   Future<void> _submitWork() async {
+    final t = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
@@ -173,15 +177,15 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
       );
 
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: 'Work submitted successfully!');
+        Fluttertoast.showToast(msg: t.workSubmittedSuccess);
         Navigator.pop(context, true);
       } else {
         Fluttertoast.showToast(
-          msg: response['message'] ?? 'Error submitting work',
+          msg: response['message'] ?? t.errorSubmittingWork,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       setState(() => _loading = false);
     }
@@ -189,12 +193,17 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Submit Work'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.submitWork),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -206,17 +215,19 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: AppColors.info.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info, color: Colors.blue.shade700),
+                    Icon(Icons.info, color: AppColors.info),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Submitting work for: ${widget.contract.project?.title}',
-                        style: TextStyle(color: Colors.blue.shade800),
+                        t.submittingWorkFor(
+                          widget.contract.project?.title ?? '',
+                        ),
+                        style: TextStyle(color: AppColors.info),
                       ),
                     ),
                   ],
@@ -226,34 +237,59 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
 
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Submission Title',
-                  border: OutlineInputBorder(),
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: t.submissionTitle,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: isDark
+                      ? AppColors.darkSurface
+                      : Colors.grey.shade50,
                 ),
                 validator: (value) =>
-                    value?.isEmpty == true ? 'Please enter a title' : null,
+                    value?.isEmpty == true ? t.pleaseEnterTitle : null,
               ),
               const SizedBox(height: 16),
 
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Describe what you have completed...',
-                  border: OutlineInputBorder(),
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: t.description,
+                  hintText: t.describeYourWork,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: isDark
+                      ? AppColors.darkSurface
+                      : Colors.grey.shade50,
                   alignLabelWithHint: true,
                 ),
               ),
               const SizedBox(height: 20),
 
-              const Text(
-                'Files',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Text(
+                t.files,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
 
@@ -265,22 +301,34 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.insert_drive_file),
+                        Icon(
+                          Icons.insert_drive_file,
+                          color: theme.colorScheme.primary,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             fileData['name'],
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 18),
+                          icon: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: AppColors.danger,
+                          ),
                           onPressed: () => _removeFile(index),
                         ),
                       ],
@@ -298,22 +346,34 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.insert_drive_file),
+                        Icon(
+                          Icons.insert_drive_file,
+                          color: theme.colorScheme.primary,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             file.path.split('/').last,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 18),
+                          icon: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: AppColors.danger,
+                          ),
                           onPressed: () => _removeFile(index),
                         ),
                       ],
@@ -328,19 +388,28 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _pickFiles,
                   icon: const Icon(Icons.attach_file),
-                  label: const Text('Add Files'),
+                  label: Text(t.addFiles),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade200,
-                    foregroundColor: Colors.black87,
+                    backgroundColor: isDark
+                        ? AppColors.darkSurface
+                        : Colors.grey.shade200,
+                    foregroundColor: theme.colorScheme.onSurface,
                     padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              const Text(
-                'Links',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Text(
+                t.links,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
 
@@ -349,9 +418,20 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                   Expanded(
                     child: TextField(
                       controller: _linkController,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: theme.colorScheme.onSurface),
+                      decoration: InputDecoration(
                         hintText: 'https://...',
-                        border: OutlineInputBorder(),
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade50,
                         isDense: true,
                       ),
                     ),
@@ -363,7 +443,7 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                     child: ElevatedButton(
                       onPressed: _addLink,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff14A800),
+                        backgroundColor: AppColors.secondary,
                         shape: const CircleBorder(),
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(0, 0),
@@ -387,22 +467,31 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.link),
+                        Icon(Icons.link, color: theme.colorScheme.primary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             link,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 18),
+                          icon: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: AppColors.danger,
+                          ),
                           onPressed: () => _removeLink(index),
                         ),
                       ],
@@ -419,16 +508,16 @@ class _WorkSubmissionScreenState extends State<WorkSubmissionScreen> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submitWork,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff14A800),
+                    backgroundColor: AppColors.secondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _loading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Submit Work',
-                          style: TextStyle(
+                      : Text(
+                          t.submitWork,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

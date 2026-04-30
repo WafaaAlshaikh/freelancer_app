@@ -248,9 +248,11 @@ app.use((err, req, res, next) => {
   console.error("❌ Unhandled error:", err);
   res.status(500).json({ message: err.message || "Internal server error" });
 });
+import listEndpoints from "express-list-routes";
 
 // ==================== START SERVER ====================
 const PORT = process.env.PORT || 5001;
+listEndpoints(app);
 
 async function startServer() {
   try {

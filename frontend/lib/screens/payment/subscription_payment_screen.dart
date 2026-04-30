@@ -1,11 +1,14 @@
 // lib/screens/payment/subscription_payment_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_dotenv/flutter_dotenv.dart' show dotenv;
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 import 'dart:html' as html;
 
 class SubscriptionPaymentScreen extends StatefulWidget {
@@ -40,6 +43,7 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
   }
 
   Future<void> _confirmSubscriptionManually() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _confirming = true);
 
     try {
@@ -48,17 +52,17 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
       );
 
       if (result['success'] == true) {
-        Fluttertoast.showToast(msg: '✅ Subscription payment confirmed!');
+        Fluttertoast.showToast(msg: t.subscriptionPaymentConfirmed);
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/subscription/my');
         }
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? 'Failed to confirm subscription payment',
+          msg: result['message'] ?? t.failedToConfirmSubscriptionPayment,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       if (mounted) {
         setState(() => _confirming = false);
@@ -82,6 +86,7 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
   }
 
   Future<void> _presentPaymentSheet() async {
+    final t = AppLocalizations.of(context)!;
     if (kIsWeb) {
       await _openStripeCheckout();
       return;
@@ -98,14 +103,14 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
       );
 
       if (result['message'] != null) {
-        Fluttertoast.showToast(msg: '✅ Subscription payment successful!');
+        Fluttertoast.showToast(msg: t.subscriptionPaymentSuccessful);
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/subscription/my');
         }
       }
     } catch (e) {
       if (mounted) {
-        Fluttertoast.showToast(msg: 'Subscription payment failed: $e');
+        Fluttertoast.showToast(msg: '${t.subscriptionPaymentFailed}: $e');
       }
     } finally {
       if (mounted) {
@@ -115,6 +120,7 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
   }
 
   Future<void> _openStripeCheckout() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _isProcessing = true);
 
     try {
@@ -138,10 +144,10 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
           html.window.open(checkoutUrl, '_blank');
 
           Fluttertoast.showToast(
-            msg: 'Complete payment in the new tab',
+            msg: t.completePaymentInNewTab,
             timeInSecForIosWeb: 3,
             gravity: ToastGravity.BOTTOM,
-            backgroundColor: Colors.blue,
+            backgroundColor: AppColors.info,
             textColor: Colors.white,
           );
 
@@ -163,7 +169,7 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
     } catch (e) {
       print('❌ Subscription payment error: $e');
       if (mounted) {
-        Fluttertoast.showToast(msg: 'Subscription payment failed: $e');
+        Fluttertoast.showToast(msg: '${t.subscriptionPaymentFailed}: $e');
       }
     } finally {
       if (mounted) {
@@ -174,6 +180,10 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     double amount = 0.0;
     if (widget.paymentIntent['amount'] != null) {
       final amountValue = widget.paymentIntent['amount'];
@@ -187,11 +197,12 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
     }
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Complete Subscription Payment'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.completeSubscriptionPayment),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -200,20 +211,20 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: AppColors.info.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.subscriptions,
-                size: 64,
-                color: Colors.blue.shade700,
-              ),
+              child: Icon(Icons.subscriptions, size: 64, color: AppColors.info),
             ),
             const SizedBox(height: 24),
 
-            const Text(
-              'Subscription Payment',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              t.subscriptionPayment,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
 
@@ -223,26 +234,28 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
+                color: AppColors.info,
               ),
             ),
             const SizedBox(height: 8),
 
-            const Text(
-              'Your subscription will be activated immediately after payment.',
+            Text(
+              t.subscriptionActivatedImmediately,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: 32),
 
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -251,16 +264,19 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Subscription Price',
-                    style: TextStyle(fontSize: 16),
+                  Text(
+                    t.subscriptionPrice,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   Text(
                     widget.planPrice,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: AppColors.info,
                     ),
                   ),
                 ],
@@ -271,20 +287,17 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: AppColors.successBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.security, color: Colors.green.shade700),
+                  Icon(Icons.security, color: AppColors.success),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Your payment is secure and will grant you immediate access to all premium features.',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontSize: 12,
-                      ),
+                      t.subscriptionSecureDescription,
+                      style: TextStyle(color: AppColors.success, fontSize: 12),
                     ),
                   ),
                 ],
@@ -296,27 +309,21 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: kIsWeb ? Colors.amber.shade50 : Colors.green.shade50,
+                color: kIsWeb ? AppColors.warningBg : AppColors.successBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Icon(
                     kIsWeb ? Icons.web : Icons.phone_android,
-                    color: kIsWeb
-                        ? Colors.amber.shade700
-                        : Colors.green.shade700,
+                    color: kIsWeb ? AppColors.warning : AppColors.success,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      kIsWeb
-                          ? 'You will be redirected to Stripe secure checkout page.'
-                          : 'Secure in-app payment with Stripe.',
+                      kIsWeb ? t.stripeWebRedirect : t.stripeInAppPayment,
                       style: TextStyle(
-                        color: kIsWeb
-                            ? Colors.amber.shade800
-                            : Colors.green.shade800,
+                        color: kIsWeb ? AppColors.warning : AppColors.success,
                         fontSize: 12,
                       ),
                     ),
@@ -331,7 +338,7 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
               child: ElevatedButton(
                 onPressed: _isProcessing ? null : _presentPaymentSheet,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
+                  backgroundColor: AppColors.info,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -339,7 +346,7 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
                 child: _isProcessing
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(
-                        kIsWeb ? 'Pay with Stripe' : 'Subscribe Now',
+                        kIsWeb ? t.payWithStripe : t.subscribeNow,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -358,7 +365,7 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
                         ? null
                         : _confirmSubscriptionManually,
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.blue.shade700),
+                      side: BorderSide(color: AppColors.info),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -369,9 +376,12 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text(
-                            'Confirm Payment (Manual)',
-                            style: TextStyle(fontSize: 16),
+                        : Text(
+                            t.confirmPaymentManual,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.info,
+                            ),
                           ),
                   ),
                 ),
@@ -379,8 +389,12 @@ class _SubscriptionPaymentScreenState extends State<SubscriptionPaymentScreen> {
             const SizedBox(height: 16),
 
             Text(
-              'By subscribing, you agree to our Terms of Service and Privacy Policy',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              t.agreeToTermsBySubscribing,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

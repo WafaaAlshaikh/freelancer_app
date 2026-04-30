@@ -1,13 +1,16 @@
 // screens/rating/add_rating_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class AddRatingScreen extends StatefulWidget {
   final int contractId;
   final String projectTitle;
   final String otherPartyName;
-  final String role; 
+  final String role;
 
   const AddRatingScreen({
     super.key,
@@ -28,12 +31,17 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Rate Your Experience'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.rateYourExperience),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -43,33 +51,36 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: AppColors.infoBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: AppColors.info.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Project',
+                  Text(
+                    t.project,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.blue,
+                      color: AppColors.info,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     widget.projectTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'You are rating: ${widget.otherPartyName}',
-                    style: TextStyle(color: Colors.grey.shade700),
+                    '${t.youAreRating}: ${widget.otherPartyName}',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
                   ),
                 ],
               ),
@@ -77,9 +88,13 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Your Rating',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              t.yourRating,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             Center(
@@ -104,21 +119,41 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Your Review (Optional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              t.yourReviewOptional,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _commentController,
               maxLines: 4,
+              style: TextStyle(color: theme.colorScheme.onSurface),
               decoration: InputDecoration(
-                hintText: 'Share your experience...',
+                hintText: t.shareYourExperience,
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
                 ),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
               ),
             ),
 
@@ -131,10 +166,10 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
                 onPressed: _rating == 0
                     ? null
                     : _isLoading
-                        ? null
-                        : _submitRating,
+                    ? null
+                    : _submitRating,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff14A800),
+                  backgroundColor: AppColors.secondary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -142,9 +177,7 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(
-                        _rating == 0
-                            ? 'Please select a rating'
-                            : 'Submit Rating',
+                        _rating == 0 ? t.pleaseSelectRating : t.submitRating,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -160,9 +193,11 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: const Text(
-                  'Maybe later',
-                  style: TextStyle(color: Colors.grey),
+                child: Text(
+                  t.maybeLater,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
               ),
             ),
@@ -173,21 +208,24 @@ class _AddRatingScreenState extends State<AddRatingScreen> {
   }
 
   Future<void> _submitRating() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     final result = await ApiService.addRating(
       contractId: widget.contractId,
       rating: _rating,
-      comment: _commentController.text.isNotEmpty ? _commentController.text : null,
+      comment: _commentController.text.isNotEmpty
+          ? _commentController.text
+          : null,
     );
 
     setState(() => _isLoading = false);
 
     if (result['rating'] != null) {
-      Fluttertoast.showToast(msg: '✅ Thank you for your rating!');
+      Fluttertoast.showToast(msg: t.thankYouForRating);
       Navigator.pop(context, true);
     } else {
-      Fluttertoast.showToast(msg: result['message'] ?? 'Error submitting rating');
+      Fluttertoast.showToast(msg: result['message'] ?? t.errorSubmittingRating);
     }
   }
 

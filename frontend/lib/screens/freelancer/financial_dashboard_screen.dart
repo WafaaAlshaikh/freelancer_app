@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/financial_model.dart';
 import '../../services/api_service.dart';
 import '../../widgets/financial_charts.dart';
+import '../../theme/app_theme.dart';
 
 class FinancialDashboardScreen extends StatefulWidget {
   const FinancialDashboardScreen({super.key});
@@ -29,7 +31,11 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadData(context);
+      }
+    });
   }
 
   @override
@@ -38,13 +44,18 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+
     setState(() => _loading = true);
 
     try {
       final response = await ApiService.getFinancialStats(
         period: _selectedPeriod,
       );
+
+      if (!mounted) return;
 
       setState(() {
         _stats = response.stats;
@@ -55,8 +66,9 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
 
       _loadAnalytics();
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loading = false);
-      Fluttertoast.showToast(msg: 'Error loading financial data: $e');
+      Fluttertoast.showToast(msg: '${t.errorLoadingFinancialData}: $e');
     }
   }
 
@@ -71,7 +83,8 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
     }
   }
 
-  Future<void> _downloadReport() async {
+  Future<void> _downloadReport(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     try {
       final endDate = _selectedDateRange?.end ?? DateTime.now();
       final startDate =
@@ -84,50 +97,67 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
       );
 
       if (reportUrl != null && mounted) {
-        // TODO: فتح رابط التقرير
-        Fluttertoast.showToast(msg: 'Report generated successfully');
+        Fluttertoast.showToast(msg: t.reportGenerated);
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error generating report: $e');
+      Fluttertoast.showToast(msg: '${t.errorGeneratingReport}: $e');
     }
   }
 
   Future<void> _requestWithdrawal() async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final amountController = TextEditingController();
     String selectedMethod = 'paypal';
 
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Withdraw Funds'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.withdrawFunds,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         content: StatefulBuilder(
           builder: (context, setStateDialog) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Available: \$${_stats?.netEarnings.toStringAsFixed(2) ?? '0'}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                '${t.available}: \$${_stats?.netEarnings.toStringAsFixed(2) ?? '0'}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: amountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Amount',
+                decoration: InputDecoration(
+                  labelText: t.amount,
                   prefixText: '\$ ',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: selectedMethod,
-                decoration: const InputDecoration(
-                  labelText: 'Withdrawal Method',
+                decoration: InputDecoration(
+                  labelText: t.withdrawalMethod,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'paypal', child: Text('PayPal')),
-                  DropdownMenuItem(value: 'bank', child: Text('Bank Transfer')),
-                  DropdownMenuItem(value: 'stripe', child: Text('Stripe')),
+                dropdownColor: theme.cardColor,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                items: [
+                  DropdownMenuItem(value: 'paypal', child: Text(t.paypal)),
+                  DropdownMenuItem(value: 'bank', child: Text(t.bankTransfer)),
+                  DropdownMenuItem(value: 'stripe', child: Text(t.stripe)),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -141,14 +171,17 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              t.cancel,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff14A800),
+              backgroundColor: AppColors.secondary,
             ),
-            child: const Text('Withdraw'),
+            child: Text(t.withdraw),
           ),
         ],
       ),
@@ -162,58 +195,76 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
       );
 
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: 'Withdrawal request submitted');
-        _loadData();
+        Fluttertoast.showToast(msg: t.withdrawalRequestSubmitted);
+        _loadData(context);
       } else {
-        Fluttertoast.showToast(msg: response['message'] ?? 'Error');
+        Fluttertoast.showToast(msg: response['message'] ?? t.error);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Financial Dashboard',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          t.financialDashboard,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xff14A800),
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.grey,
-          tabs: const [
-            Tab(text: 'Overview', icon: Icon(Icons.dashboard)),
-            Tab(text: 'Analytics', icon: Icon(Icons.analytics)),
+          indicatorColor: AppColors.secondary,
+          labelColor: theme.colorScheme.onSurface,
+          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.5),
+          tabs: [
+            Tab(text: t.overview, icon: const Icon(Icons.dashboard)),
+            Tab(text: t.analytics, icon: const Icon(Icons.analytics)),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _downloadReport,
-            tooltip: 'Download Report',
+            icon: Icon(Icons.download, color: theme.iconTheme.color),
+            onPressed: () => _downloadReport(context),
+            tooltip: t.downloadReport,
           ),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+          IconButton(
+            icon: Icon(Icons.refresh, color: theme.iconTheme.color),
+            onPressed: () => _loadData(context),
+          ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : _stats == null
-          ? const Center(child: Text('No financial data available'))
+          ? Center(
+              child: Text(
+                t.noFinancialData,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            )
           : TabBarView(
               controller: _tabController,
               children: [_buildOverviewTab(), _buildAnalyticsTab()],
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _requestWithdrawal,
-        backgroundColor: const Color(0xff14A800),
+        backgroundColor: AppColors.secondary,
         icon: const Icon(Icons.arrow_upward),
-        label: const Text('Withdraw'),
+        label: Text(t.withdraw),
       ),
     );
   }
@@ -236,6 +287,9 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
   }
 
   Widget _buildStatsCards() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -245,33 +299,33 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
       childAspectRatio: 1.4,
       children: [
         _buildStatCard(
-          title: 'Total Earnings',
+          title: t.totalEarnings,
           value: '\$${_stats!.totalEarnings.toStringAsFixed(2)}',
           icon: Icons.trending_up,
-          color: Colors.green,
-          subtitle: 'All time',
+          color: AppColors.secondary,
+          subtitle: t.allTime,
         ),
         _buildStatCard(
-          title: 'Platform Fees',
+          title: t.platformFees,
           value: '\$${_stats!.totalFees.toStringAsFixed(2)}',
           icon: Icons.receipt,
-          color: Colors.orange,
+          color: AppColors.warning,
           subtitle:
               '${((_stats!.totalFees / (_stats!.totalEarnings + 0.01)) * 100).toStringAsFixed(1)}%',
         ),
         _buildStatCard(
-          title: 'Withdrawn',
+          title: t.withdrawn,
           value: '\$${_stats!.totalWithdrawals.toStringAsFixed(2)}',
           icon: Icons.arrow_upward,
-          color: Colors.blue,
-          subtitle: 'Total withdrawn',
+          color: AppColors.info,
+          subtitle: t.totalWithdrawn,
         ),
         _buildStatCard(
-          title: 'Net Earnings',
+          title: t.netEarnings,
           value: '\$${_stats!.netEarnings.toStringAsFixed(2)}',
           icon: Icons.account_balance_wallet,
-          color: const Color(0xff14A800),
-          subtitle: 'Available to withdraw',
+          color: theme.colorScheme.primary,
+          subtitle: t.availableToWithdraw,
         ),
       ],
     );
@@ -284,14 +338,17 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
     required Color color,
     required String subtitle,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -314,7 +371,10 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
               const Spacer(),
               Text(
                 subtitle,
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 10,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
               ),
             ],
           ),
@@ -331,7 +391,10 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
           ),
           Text(
             title,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
           ),
         ],
       ),
@@ -339,35 +402,42 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
   }
 
   Widget _buildPeriodSelector() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final periods = ['weekly', 'monthly', 'yearly'];
+    final periodLabels = [t.weekly, t.monthly, t.yearly];
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
-        children: periods.map((period) {
+        children: List.generate(periods.length, (index) {
+          final period = periods[index];
+          final label = periodLabels[index];
           final isSelected = _selectedPeriod == period;
           return Expanded(
             child: GestureDetector(
               onTap: () {
                 setState(() => _selectedPeriod = period);
-                _loadData();
+                _loadData(context);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xff14A800)
-                      : Colors.transparent,
+                  color: isSelected ? AppColors.secondary : Colors.transparent,
                   borderRadius: BorderRadius.circular(26),
                 ),
                 child: Text(
-                  period.toUpperCase(),
+                  label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade600,
+                    color: isSelected
+                        ? Colors.white
+                        : theme.colorScheme.onSurface.withOpacity(0.7),
                     fontWeight: isSelected
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -376,35 +446,48 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
               ),
             ),
           );
-        }).toList(),
+        }),
       ),
     );
   }
 
   Widget _buildEarningsChart() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_periodStats.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Center(child: Text('No data available for this period')),
+        child: Center(
+          child: Text(
+            t.noDataForPeriod,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ),
       );
     }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Earnings Overview',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.earningsOverview,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -421,33 +504,40 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
   }
 
   Widget _buildRecentTransactions() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_recentTransactions.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Text(
-              'Recent Transactions',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              t.recentTransactions,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: theme.dividerColor),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _recentTransactions.length > 5
                 ? 5
                 : _recentTransactions.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, __) =>
+                Divider(height: 1, color: theme.dividerColor),
             itemBuilder: (context, index) {
               final tx = _recentTransactions[index];
               return ListTile(
@@ -466,12 +556,18 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                   ),
                 ),
                 title: Text(
-                  _getTransactionTitle(tx.type),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  _getTransactionTitle(tx.type, t),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 subtitle: Text(
                   tx.description ?? '',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
                 trailing: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -481,14 +577,16 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                       '${tx.amount >= 0 ? '+' : ''}\$${tx.amount.abs().toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: tx.isIncome ? Colors.green : Colors.red,
+                        color: tx.isIncome
+                            ? AppColors.secondary
+                            : AppColors.danger,
                       ),
                     ),
                     Text(
                       _formatDate(tx.transactionDate),
-                      style: TextStyle(
+                      style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 10,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
                       ),
                     ),
                   ],
@@ -501,30 +599,41 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
     );
   }
 
-  String _getTransactionTitle(String type) {
+  String _getTransactionTitle(String type, AppLocalizations t) {
     switch (type) {
       case 'payment_received':
-        return 'Payment Received';
+        return t.paymentReceived;
       case 'payment_sent':
-        return 'Payment Sent';
+        return t.paymentSent;
       case 'withdrawal':
-        return 'Withdrawal';
+        return t.withdrawal;
       case 'deposit':
-        return 'Deposit';
+        return t.deposit;
       case 'platform_fee':
-        return 'Platform Fee';
+        return t.platformFee;
       case 'bonus':
-        return 'Bonus';
+        return t.bonus;
       case 'subscription':
-        return 'Subscription';
+        return t.subscription;
       default:
         return type;
     }
   }
 
   Widget _buildAnalyticsTab() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_analytics == null) {
-      return const Center(child: Text('No analytics data available'));
+      return Center(
+        child: Text(
+          t.noAnalyticsData,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      );
     }
 
     final topProjects = _analytics?['topProjects'] ?? [];
@@ -547,20 +656,26 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
   }
 
   Widget _buildTopProjectsCard(List<dynamic> topProjects) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (topProjects.isEmpty) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Top Projects',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.topProjects,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           ...topProjects.map(
@@ -572,10 +687,10 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: AppColors.info.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.work, color: Colors.blue),
+                    child: Icon(Icons.work, color: AppColors.info),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -583,14 +698,17 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          project['Project']?['title'] ?? 'Untitled',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          project['Project']?['title'] ?? t.untitled,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                         Text(
                           _formatDate(DateTime.parse(project['createdAt'])),
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 11,
-                            color: Colors.grey.shade500,
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
                           ),
                         ),
                       ],
@@ -598,9 +716,9 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                   ),
                   Text(
                     '\$${project['agreed_amount']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xff14A800),
+                      color: AppColors.secondary,
                     ),
                   ),
                 ],
@@ -613,18 +731,24 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
   }
 
   Widget _buildCategoryDistributionCard(List<dynamic> categories) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Earnings by Category',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.earningsByCategory,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           ...categories.map(
@@ -635,10 +759,16 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(cat['category'] ?? 'Other'),
+                      Text(
+                        cat['category'] ?? t.other,
+                        style: TextStyle(color: theme.colorScheme.onSurface),
+                      ),
                       Text(
                         '\$${cat['total']}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.secondary,
+                        ),
                       ),
                     ],
                   ),
@@ -648,8 +778,12 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                       0.0,
                       1.0,
                     ),
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation(Color(0xff14A800)),
+                    backgroundColor: isDark
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.secondary,
+                    ),
                   ),
                 ],
               ),
@@ -661,26 +795,32 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
   }
 
   Widget _buildProjectedEarningsCard(double projected) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple.shade50, Colors.blue.shade50],
+          colors: isDark
+              ? [Colors.purple.shade900, Colors.blue.shade900]
+              : [Colors.purple.shade50, Colors.blue.shade50],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.purple.shade200),
+        border: Border.all(
+          color: isDark ? Colors.purple.shade800 : Colors.purple.shade200,
+        ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Colors.purple, Colors.blue],
-              ),
-              borderRadius: BorderRadius.circular(12),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.purple, Colors.blue]),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             child: const Icon(Icons.trending_up, color: Colors.white, size: 24),
           ),
@@ -689,9 +829,13 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Projected Earnings',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                Text(
+                  t.projectedEarnings,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
                 Text(
                   '\$${projected.toStringAsFixed(2)}',
@@ -702,8 +846,11 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
                   ),
                 ),
                 Text(
-                  'Next 3 months based on your history',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  t.projectedEarningsSubtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
                 ),
               ],
             ),

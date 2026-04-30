@@ -72,6 +72,9 @@ dependencies:
   flutter_rating_bar: ^4.0.1
   flutter_staggered_animations: ^1.1.1
   glassmorphism: ^3.0.0
+  provider: ^6.1.5+1
+  flutter_localizations:
+    sdk: flutter
 
 
 dev_dependencies:
@@ -99,9 +102,14 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  generate: true  
   assets:
   - assets/images/login.jpg
   - assets/images/user.png
+  - assets/images/log.jpg
+  - assets/images/loglogo.png
+  - assets/images/logo.png
+  - assets/images/logol.html
   - assets/.env
   # To add assets to your application, add an assets section, like this:
   # assets:

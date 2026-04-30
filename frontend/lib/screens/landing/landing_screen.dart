@@ -78,10 +78,7 @@ class _LandingScreenState extends State<LandingScreen> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // _buildLogo(),
-                    _buildAuthButtons(),
-                  ],
+                  children: [_buildAuthButtons()],
                 ),
                 const SizedBox(height: 12),
                 SingleChildScrollView(
@@ -100,7 +97,6 @@ class _LandingScreenState extends State<LandingScreen> {
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // _buildLogo(),
                 Row(
                   children: [
                     _navLink('Home'),

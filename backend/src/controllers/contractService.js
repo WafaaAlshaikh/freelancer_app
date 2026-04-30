@@ -1,24 +1,34 @@
 // services/contractService.js
-import { Contract, Project, User, Wallet, Transaction } from "../models/index.js";
+import {
+  Contract,
+  Project,
+  User,
+  Wallet,
+  Transaction,
+} from "../models/index.js";
 import { Op } from "sequelize";
 
 class ContractService {
-
-  static async createContractDraft(projectId, freelancerId, clientId, agreed_amount) {
+  static async createContractDraft(
+    projectId,
+    freelancerId,
+    clientId,
+    agreed_amount,
+  ) {
     try {
       const existingContract = await Contract.findOne({
-        where: { ProjectId: projectId }
+        where: { ProjectId: projectId },
       });
 
       if (existingContract) {
-        throw new Error('Contract already exists for this project');
+        throw new Error("Contract already exists for this project");
       }
 
       const contractDocument = this.generateContractDocument({
         projectId,
         freelancerId,
         clientId,
-        agreed_amount
+        agreed_amount,
       });
 
       const contract = await Contract.create({
@@ -27,31 +37,31 @@ class ContractService {
         ClientId: clientId,
         agreed_amount,
         contract_document: contractDocument,
-        status: 'draft',
-        terms: 'Standard terms and conditions apply.',
+        status: "draft",
+        terms: "Standard terms and conditions apply.",
         milestones: JSON.stringify([
           {
-            title: 'Project Start',
-            description: 'Begin work on project',
+            title: "Project Start",
+            description: "Begin work on project",
             amount: agreed_amount * 0.3,
             due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            status: 'pending'
+            status: "pending",
           },
           {
-            title: 'Milestone 1',
-            description: 'First deliverable',
+            title: "Milestone 1",
+            description: "First deliverable",
             amount: agreed_amount * 0.4,
             due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-            status: 'pending'
+            status: "pending",
           },
           {
-            title: 'Final Delivery',
-            description: 'Complete project',
+            title: "Final Delivery",
+            description: "Complete project",
             amount: agreed_amount * 0.3,
             due_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-            status: 'pending'
-          }
-        ])
+            status: "pending",
+          },
+        ]),
       });
 
       return contract;
@@ -60,10 +70,14 @@ class ContractService {
     }
   }
 
+  static generateContractDocument({
+    projectId,
+    freelancerId,
+    clientId,
+    agreed_amount,
+  }) {
+    const date = new Date().toLocaleDateString("ar-SA");
 
-  static generateContractDocument({ projectId, freelancerId, clientId, agreed_amount }) {
-    const date = new Date().toLocaleDateString('ar-SA');
-    
     return `
       <!DOCTYPE html>
       <html>
@@ -128,135 +142,110 @@ class ContractService {
     `;
   }
 
- 
   static async signContractByClient(contractId, clientId) {
     const contract = await Contract.findOne({
-      where: { id: contractId, ClientId: clientId }
+      where: { id: contractId, ClientId: clientId },
     });
 
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new Error("Contract not found");
     }
 
-    if (contract.status !== 'draft' && contract.status !== 'pending_freelancer') {
-      throw new Error('Contract cannot be signed at this stage');
+    if (
+      contract.status !== "draft" &&
+      contract.status !== "pending_freelancer"
+    ) {
+      throw new Error("Contract cannot be signed at this stage");
     }
 
     await contract.update({
       client_signed_at: new Date(),
-      status: contract.freelancer_signed_at ? 'active' : 'pending_freelancer'
+      status: contract.freelancer_signed_at ? "active" : "pending_freelancer",
     });
 
     if (contract.freelancer_signed_at) {
       await contract.update({
         signed_at: new Date(),
-        status: 'active'
+        status: "active",
       });
-      
+
       await Project.update(
-        { status: 'in_progress' },
-        { where: { id: contract.ProjectId } }
+        { status: "in_progress" },
+        { where: { id: contract.ProjectId } },
       );
     }
 
     return contract;
   }
 
-
   static async signContractByFreelancer(contractId, freelancerId) {
     const contract = await Contract.findOne({
-      where: { id: contractId, FreelancerId: freelancerId }
+      where: { id: contractId, FreelancerId: freelancerId },
     });
 
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new Error("Contract not found");
     }
 
-    if (contract.status !== 'draft' && contract.status !== 'pending_client') {
-      throw new Error('Contract cannot be signed at this stage');
+    if (contract.status !== "draft" && contract.status !== "pending_client") {
+      throw new Error("Contract cannot be signed at this stage");
     }
 
     await contract.update({
       freelancer_signed_at: new Date(),
-      status: contract.client_signed_at ? 'active' : 'pending_client'
+      status: contract.client_signed_at ? "active" : "pending_client",
     });
 
     if (contract.client_signed_at) {
       await contract.update({
         signed_at: new Date(),
-        status: 'active'
+        status: "active",
       });
-      
+
       await Project.update(
-        { status: 'in_progress' },
-        { where: { id: contract.ProjectId } }
+        { status: "in_progress" },
+        { where: { id: contract.ProjectId } },
       );
     }
 
     return contract;
   }
 
-
   static async addMilestone(contractId, milestoneData) {
     const contract = await Contract.findByPk(contractId);
-    
+
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new Error("Contract not found");
     }
 
     const milestones = contract.milestones;
     milestones.push({
       ...milestoneData,
-      status: 'pending'
+      status: "pending",
     });
 
     await contract.update({ milestones: JSON.stringify(milestones) });
     return contract;
   }
 
-
   static async updateMilestoneStatus(contractId, milestoneIndex, status) {
     const contract = await Contract.findByPk(contractId);
-    
+
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new Error("Contract not found");
     }
 
     const milestones = contract.milestones;
     if (milestones[milestoneIndex]) {
       milestones[milestoneIndex].status = status;
-      
-      if (status === 'completed') {
+
+      if (status === "completed") {
         milestones[milestoneIndex].completed_at = new Date();
       }
-      
+
       await contract.update({ milestones: JSON.stringify(milestones) });
     }
 
-    return contract;
-  }
-
-
-  static async addReview(contractId, userId, rating, review) {
-    const contract = await Contract.findByPk(contractId);
-    
-    if (!contract) {
-      throw new Error('Contract not found');
-    }
-
-    const updateData = {};
-    
-    if (userId === contract.ClientId) {
-      updateData.client_rating = rating;
-      updateData.client_review = review;
-    } else if (userId === contract.FreelancerId) {
-      updateData.freelancer_rating = rating;
-      updateData.freelancer_review = review;
-    } else {
-      throw new Error('User not authorized');
-    }
-
-    await contract.update(updateData);
     return contract;
   }
 }

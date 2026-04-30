@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Badge;
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../models/skill_test_model.dart';
 import '../../services/skill_test_service.dart';
+import '../../theme/app_theme.dart';
 
 class TestResultsScreen extends StatefulWidget {
   final int userTestId;
@@ -32,28 +33,37 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
 
   Future<void> _loadDetailedResults() async {
     setState(() => _loading = true);
+    // TODO: Load detailed answers from API
     setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final passed = widget.result['passed'];
     final percentage = widget.result['percentage'];
     final totalPoints = widget.result['totalPoints'];
     final earnedPoints = widget.result['earnedPoints'];
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Test Results'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.share), onPressed: _shareResults),
+          IconButton(
+            icon: Icon(Icons.share, color: theme.iconTheme.color),
+            onPressed: _shareResults,
+          ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -78,13 +88,15 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
   }
 
   Widget _buildResultHeader(bool passed, int percentage) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: passed
-              ? [Colors.green.shade400, Colors.green.shade700]
-              : [Colors.orange.shade400, Colors.red.shade600],
+              ? [theme.colorScheme.secondary, AppColors.secondaryDark]
+              : [AppColors.warning, AppColors.danger],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -134,14 +146,18 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
   }
 
   Widget _buildScoreCard(int percentage, int totalPoints, int earnedPoints) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final passed = percentage >= widget.test.passingScore;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -149,9 +165,9 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Your Score',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+            style: TextStyle(fontSize: 14, color: AppColors.gray),
           ),
           const SizedBox(height: 8),
           Text(
@@ -159,19 +175,17 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
             style: TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.bold,
-              color: percentage >= widget.test.passingScore
-                  ? Colors.green
-                  : Colors.red,
+              color: passed ? theme.colorScheme.secondary : AppColors.danger,
             ),
           ),
           const SizedBox(height: 16),
           LinearProgressIndicator(
             value: percentage / 100,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: isDark
+                ? Colors.grey.shade800
+                : Colors.grey.shade200,
             valueColor: AlwaysStoppedAnimation(
-              percentage >= widget.test.passingScore
-                  ? Colors.green
-                  : Colors.red,
+              passed ? theme.colorScheme.secondary : AppColors.danger,
             ),
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
@@ -194,58 +208,54 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
   }
 
   Widget _buildScoreDetail(String label, String value) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildBadgeCard(Badge badge) {
+    final theme = Theme.of(context);
+    final badgeColor = Color(int.parse(badge.color.replaceFirst('#', '0xff')));
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(
-              int.parse(badge.color.replaceFirst('#', '0xff')),
-            ).withOpacity(0.1),
-            Color(
-              int.parse(badge.color.replaceFirst('#', '0xff')),
-            ).withOpacity(0.05),
-          ],
+          colors: [badgeColor.withOpacity(0.1), badgeColor.withOpacity(0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Color(
-            int.parse(badge.color.replaceFirst('#', '0xff')),
-          ).withOpacity(0.3),
-        ),
+        border: Border.all(color: badgeColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Color(
-                int.parse(badge.color.replaceFirst('#', '0xff')),
-              ).withOpacity(0.2),
+              color: badgeColor.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.emoji_events,
-              size: 32,
-              color: Color(int.parse(badge.color.replaceFirst('#', '0xff'))),
-            ),
+            child: Icon(Icons.emoji_events, size: 32, color: badgeColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -256,24 +266,23 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
                   'New Badge Earned!',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(
-                      int.parse(badge.color.replaceFirst('#', '0xff')),
-                    ),
+                    color: badgeColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   badge.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 if (badge.description != null)
                   Text(
                     badge.description!,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: AppColors.gray),
                   ),
               ],
             ),
@@ -284,14 +293,18 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
   }
 
   Widget _buildPerformanceAnalysis(int percentage) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final passed = percentage >= widget.test.passingScore;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -300,13 +313,21 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.analytics, size: 20, color: Color(0xff14A800)),
-              SizedBox(width: 8),
+              Icon(
+                Icons.analytics,
+                size: 20,
+                color: theme.colorScheme.secondary,
+              ),
+              const SizedBox(width: 8),
               Text(
                 'Performance Analysis',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -325,7 +346,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
           const SizedBox(height: 12),
           _buildPerformanceItem(
             'Recommended Actions',
-            percentage < widget.test.passingScore
+            !passed
                 ? '• Review the test questions\n• Study the topics you missed\n• Take the test again after preparation'
                 : '• Apply your skills in real projects\n• Share your badge on your profile\n• Help others learn this skill',
             Icons.lightbulb,
@@ -346,16 +367,19 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
   }
 
   Widget _buildPerformanceItem(String title, String content, IconData icon) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? AppColors.darkSurface : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: Colors.grey.shade600),
+          Icon(icon, size: 18, color: AppColors.gray),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -363,9 +387,10 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -373,7 +398,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
                   content,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade700,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                     height: 1.4,
                   ),
                 ),
@@ -386,14 +411,17 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
   }
 
   Widget _buildQuestionReview() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -402,20 +430,28 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.question_answer, size: 20, color: Color(0xff14A800)),
-              SizedBox(width: 8),
+              Icon(
+                Icons.question_answer,
+                size: 20,
+                color: theme.colorScheme.secondary,
+              ),
+              const SizedBox(width: 8),
               Text(
                 'Question Review',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             'Detailed answer review will be available soon.',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: AppColors.gray),
           ),
         ],
       ),
@@ -423,14 +459,21 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
   }
 
   Widget _buildActionButtons() {
+    final theme = Theme.of(context);
+    final passed = widget.result['passed'];
+
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close),
-            label: const Text('Close'),
+            icon: Icon(Icons.close, color: theme.colorScheme.primary),
+            label: Text(
+              'Close',
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
             style: OutlinedButton.styleFrom(
+              side: BorderSide(color: theme.colorScheme.primary),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -439,7 +482,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        if (!widget.result['passed'])
+        if (!passed)
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () {
@@ -449,7 +492,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Try Again'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff14A800),
+                backgroundColor: theme.colorScheme.secondary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -457,7 +500,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
               ),
             ),
           ),
-        if (widget.result['passed'])
+        if (passed)
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () {
@@ -466,7 +509,7 @@ class _TestResultsScreenState extends State<TestResultsScreen> {
               icon: const Icon(Icons.check_circle),
               label: const Text('Done'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff14A800),
+                backgroundColor: theme.colorScheme.secondary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

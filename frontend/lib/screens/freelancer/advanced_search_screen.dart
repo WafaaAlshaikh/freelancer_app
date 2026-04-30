@@ -1,10 +1,12 @@
 // ===== frontend/lib/screens/freelancer/advanced_search_screen.dart =====
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/project_model.dart';
 import '../../models/financial_model.dart';
 import '../../services/api_service.dart';
 import 'project_details_screen.dart';
+import '../../theme/app_theme.dart';
 
 class AdvancedSearchScreen extends StatefulWidget {
   const AdvancedSearchScreen({super.key});
@@ -38,26 +40,32 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
 
-  final List<String> _categories = [
-    'all',
-    'Mobile Development',
-    'Web Development',
-    'Backend Development',
-    'UI/UX Design',
-    'Graphic Design',
-    'Content Writing',
-    'Digital Marketing',
-    'DevOps',
-    'Database',
-  ];
+  List<String> get _categories {
+    final t = AppLocalizations.of(context);
+    return [
+      'all',
+      t!.mobileDevelopment,
+      t.webDevelopment,
+      t.backendDevelopment,
+      t.uiUxDesign,
+      t.graphicDesign,
+      t.contentWriting,
+      t.digitalMarketing,
+      t.devOps,
+      t.database,
+    ];
+  }
 
-  final List<Map<String, dynamic>> _sortOptions = [
-    {'value': 'newest', 'label': 'Newest First'},
-    {'value': 'budget_high', 'label': 'Budget: High to Low'},
-    {'value': 'budget_low', 'label': 'Budget: Low to High'},
-    {'value': 'duration_short', 'label': 'Duration: Shortest First'},
-    {'value': 'duration_long', 'label': 'Duration: Longest First'},
-  ];
+  List<Map<String, dynamic>> get _sortOptions {
+    final t = AppLocalizations.of(context);
+    return [
+      {'value': 'newest', 'label': t!.newestFirst},
+      {'value': 'budget_high', 'label': t.budgetHighToLow},
+      {'value': 'budget_low', 'label': t.budgetLowToHigh},
+      {'value': 'duration_short', 'label': t.durationShortestFirst},
+      {'value': 'duration_long', 'label': t.durationLongestFirst},
+    ];
+  }
 
   @override
   void initState() {
@@ -159,37 +167,39 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
       });
     } catch (e) {
       setState(() => _loading = false);
-      Fluttertoast.showToast(msg: 'Search error: $e');
+      final t = AppLocalizations.of(context);
+      Fluttertoast.showToast(msg: '${t!.searchError}: $e');
     }
   }
 
   Future<void> _saveCurrentFilter() async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final nameController = TextEditingController();
-    final isDefault = false;
 
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Save Search Filter'),
+        title: Text(t.saveSearchFilter),
         content: TextField(
           controller: nameController,
-          decoration: const InputDecoration(
-            labelText: 'Filter Name',
-            hintText: 'e.g., High Budget Flutter Jobs',
+          decoration: InputDecoration(
+            labelText: t.filterName,
+            hintText: t.filterHint,
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff14A800),
+              backgroundColor: AppColors.secondary,
             ),
-            child: const Text('Save'),
+            child: Text(t.save),
           ),
         ],
       ),
@@ -211,12 +221,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
         await ApiService.saveSearchFilter(
           name: nameController.text,
           filterData: filterData,
-          isDefault: isDefault,
+          isDefault: false,
         );
-        Fluttertoast.showToast(msg: 'Filter saved successfully');
+        Fluttertoast.showToast(msg: t.filterSaved);
         _loadSavedFilters();
       } catch (e) {
-        Fluttertoast.showToast(msg: 'Error saving filter: $e');
+        Fluttertoast.showToast(msg: '${t.errorSavingFilter}: $e');
       }
     }
   }
@@ -252,31 +262,40 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Advanced Search',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          t.advancedSearch,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xff14A800),
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.grey,
-          tabs: const [
-            Tab(text: 'Search', icon: Icon(Icons.search)),
-            Tab(text: 'Saved', icon: Icon(Icons.bookmark)),
+          indicatorColor: AppColors.secondary,
+          labelColor: theme.colorScheme.onSurface,
+          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.5),
+          tabs: [
+            Tab(text: t.search, icon: const Icon(Icons.search)),
+            Tab(text: t.saved, icon: const Icon(Icons.bookmark)),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(
+              Icons.filter_list,
+              color: _showFilters ? AppColors.secondary : theme.iconTheme.color,
+            ),
             onPressed: () => setState(() => _showFilters = !_showFilters),
-            color: _showFilters ? const Color(0xff14A800) : null,
           ),
         ],
       ),
@@ -295,13 +314,17 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   }
 
   Widget _buildFiltersPanel() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.55,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -315,20 +338,37 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
           children: [
             TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Search projects...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: t.searchProjects,
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: theme.cardColor,
               ),
+              style: TextStyle(color: theme.colorScheme.onSurface),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _selectedCategory,
-              decoration: const InputDecoration(labelText: 'Category'),
+              decoration: InputDecoration(
+                labelText: t.category,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: theme.cardColor,
+                labelStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              dropdownColor: theme.cardColor,
+              style: TextStyle(color: theme.colorScheme.onSurface),
               items: _categories.map((cat) {
                 return DropdownMenuItem(
                   value: cat,
-                  child: Text(cat.toUpperCase()),
+                  child: Text(cat == 'all' ? t.all : cat),
                 );
               }).toList(),
               onChanged: (value) => setState(() => _selectedCategory = value!),
@@ -340,11 +380,19 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                   child: TextField(
                     controller: _minBudgetController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Min Budget',
+                    decoration: InputDecoration(
+                      labelText: t.minBudget,
                       prefixText: '\$ ',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: theme.cardColor,
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -352,11 +400,19 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                   child: TextField(
                     controller: _maxBudgetController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Max Budget',
+                    decoration: InputDecoration(
+                      labelText: t.maxBudget,
                       prefixText: '\$ ',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: theme.cardColor,
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                 ),
               ],
@@ -368,11 +424,19 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                   child: TextField(
                     controller: _minDurationController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Min Duration',
-                      suffixText: 'days',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: t.minDuration,
+                      suffixText: t.days,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: theme.cardColor,
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -380,11 +444,19 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                   child: TextField(
                     controller: _maxDurationController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Max Duration',
-                      suffixText: 'days',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: t.maxDuration,
+                      suffixText: t.days,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: theme.cardColor,
+                      labelStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                 ),
               ],
@@ -392,16 +464,36 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
             const SizedBox(height: 12),
             TextField(
               controller: _skillsController,
-              decoration: const InputDecoration(
-                hintText: 'Skills (comma separated)',
-                prefixIcon: Icon(Icons.code),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: t.skillsCommaSeparated,
+                prefixIcon: const Icon(Icons.code),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: theme.cardColor,
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
               ),
+              style: TextStyle(color: theme.colorScheme.onSurface),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _selectedSortBy,
-              decoration: const InputDecoration(labelText: 'Sort By'),
+              decoration: InputDecoration(
+                labelText: t.sortBy,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: theme.cardColor,
+                labelStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              dropdownColor: theme.cardColor,
+              style: TextStyle(color: theme.colorScheme.onSurface),
               items: _sortOptions.map<DropdownMenuItem<String>>((opt) {
                 return DropdownMenuItem<String>(
                   value: opt['value'] as String,
@@ -417,9 +509,15 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                   child: OutlinedButton(
                     onPressed: _resetFilters,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.grey,
+                      foregroundColor: theme.colorScheme.primary,
+                      side: BorderSide(
+                        color: theme.colorScheme.primary.withOpacity(0.5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: const Text('Reset'),
+                    child: Text(t.reset),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -427,9 +525,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                   child: ElevatedButton(
                     onPressed: () => _searchProjects(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff14A800),
+                      backgroundColor: AppColors.secondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: const Text('Search'),
+                    child: Text(t.search),
                   ),
                 ),
               ],
@@ -437,8 +538,15 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: _saveCurrentFilter,
-              icon: const Icon(Icons.save, size: 16),
-              label: const Text('Save this search'),
+              icon: Icon(
+                Icons.save,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+              label: Text(
+                t.saveThisSearch,
+                style: TextStyle(color: theme.colorScheme.primary),
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -448,8 +556,14 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   }
 
   Widget _buildSearchResults() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_loading && _projects.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
+      );
     }
 
     if (_projects.isEmpty) {
@@ -457,16 +571,25 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey.shade300),
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: theme.colorScheme.onSurface.withOpacity(0.3),
+            ),
             const SizedBox(height: 16),
             Text(
-              'No projects found',
-              style: TextStyle(color: Colors.grey.shade600),
+              t.noProjectsFound,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => setState(() => _showFilters = true),
-              child: const Text('Adjust your search filters'),
+              child: Text(
+                t.adjustYourFilters,
+                style: TextStyle(color: theme.colorScheme.primary),
+              ),
             ),
           ],
         ),
@@ -475,6 +598,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
 
     return RefreshIndicator(
       onRefresh: () => _searchProjects(),
+      color: theme.colorScheme.primary,
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
@@ -499,9 +623,15 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   }
 
   Widget _buildProjectCard(Project project) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: theme.cardColor,
+      elevation: isDark ? 1 : 2,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -518,9 +648,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                project.title ?? 'Untitled',
-                style: const TextStyle(
-                  fontSize: 16,
+                project.title ?? t.untitled,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -529,10 +658,14 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                 project.description ?? '',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -540,7 +673,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: AppColors.secondary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -548,18 +681,17 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
+                        color: AppColors.secondary,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: Colors.blue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -568,25 +700,23 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                         const Icon(Icons.access_time, size: 12),
                         const SizedBox(width: 4),
                         Text(
-                          '${project.duration} days',
+                          '${project.duration} ${t.days}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.blue.shade700,
                           ),
                         ),
-                        _FavoriteButton(projectId: project.id!),
                       ],
                     ),
                   ),
-                  if (project.category != null) ...[
-                    const SizedBox(width: 8),
+                  if (project.category != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
+                        color: Colors.purple.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -597,7 +727,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                         ),
                       ),
                     ),
-                  ],
+                  _FavoriteButton(projectId: project.id!),
                 ],
               ),
             ],
@@ -608,21 +738,32 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   }
 
   Widget _buildSavedTab() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return RefreshIndicator(
       onRefresh: () async {
         await _loadSavedFilters();
         await _loadAlerts();
       },
+      color: theme.colorScheme.primary,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           if (_loadingFilters)
-            const Center(child: CircularProgressIndicator())
+            Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           else ...[
             if (_savedFilters.isNotEmpty) ...[
-              const Text(
-                'Saved Searches',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                t.savedSearches,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ..._savedFilters.map((filter) => _buildSavedFilterCard(filter)),
@@ -631,9 +772,11 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
             const SizedBox(height: 24),
 
             if (_alerts.isNotEmpty) ...[
-              const Text(
-                'Project Alerts',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                t.projectAlerts,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ..._alerts.map((alert) => _buildAlertCard(alert)),
@@ -644,10 +787,14 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
             ElevatedButton.icon(
               onPressed: _showCreateAlertDialog,
               icon: const Icon(Icons.add_alert),
-              label: const Text('Create New Alert'),
+              label: Text(t.createNewAlert),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff14A800),
+                backgroundColor: AppColors.secondary,
+                foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
 
@@ -659,26 +806,35 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   }
 
   Widget _buildSavedFilterCard(SavedFilter filter) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: theme.cardColor,
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xff14A800).withOpacity(0.1),
+            color: AppColors.secondary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(Icons.bookmark, color: Color(0xff14A800)),
+          child: Icon(Icons.bookmark, color: AppColors.secondary),
         ),
-        title: Text(filter.name),
+        title: Text(
+          filter.name,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         subtitle: Text(
-          '${filter.filterData['category'] ?? 'All'} • ${filter.filterData['minBudget'] != null ? '\$${filter.filterData['minBudget']}' : 'Any'} budget',
+          '${filter.filterData['category'] ?? t.all} • ${filter.filterData['minBudget'] != null ? '\$${filter.filterData['minBudget']}' : t.any} ${t.budget}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline),
           onPressed: () => _deleteFilter(filter),
+          color: theme.colorScheme.onSurface.withOpacity(0.6),
         ),
         onTap: () => _applySavedFilter(filter),
       ),
@@ -686,27 +842,36 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   }
 
   Widget _buildAlertCard(ProjectAlert alert) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: theme.cardColor,
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: alert.isActive
-                ? Colors.green.shade100
-                : Colors.grey.shade100,
+                ? AppColors.secondary.withOpacity(0.1)
+                : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             Icons.notifications_active,
-            color: alert.isActive ? Colors.green : Colors.grey,
+            color: alert.isActive ? AppColors.secondary : Colors.grey,
           ),
         ),
-        title: Text(alert.name),
+        title: Text(
+          alert.name,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         subtitle: Text(
-          '${alert.keywords.isNotEmpty ? alert.keywords.join(', ') : 'Any keywords'}',
+          alert.keywords.isNotEmpty ? alert.keywords.join(', ') : t.anyKeywords,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -714,10 +879,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
             Switch(
               value: alert.isActive,
               onChanged: (_) => _toggleAlert(alert),
+              activeColor: AppColors.secondary,
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: () => _deleteAlert(alert),
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ],
         ),
@@ -726,20 +893,23 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
   }
 
   Future<void> _deleteFilter(SavedFilter filter) async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Filter'),
-        content: Text('Delete "${filter.name}"?'),
+        title: Text(t.deleteFilter),
+        content: Text('${t.deleteFilterQuestion} "${filter.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(t.delete),
           ),
         ],
       ),
@@ -749,20 +919,21 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
       try {
         await ApiService.deleteSavedFilter(filter.id);
         _loadSavedFilters();
-        Fluttertoast.showToast(msg: 'Filter deleted');
+        Fluttertoast.showToast(msg: t.filterDeleted);
       } catch (e) {
-        Fluttertoast.showToast(msg: 'Error: $e');
+        Fluttertoast.showToast(msg: '${t.error}: $e');
       }
     }
   }
 
   Future<void> _deleteAlert(ProjectAlert alert) async {
+    final t = AppLocalizations.of(context)!;
     try {
       await ApiService.deleteAlert(alert.id);
       _loadAlerts();
-      Fluttertoast.showToast(msg: 'Alert deleted');
+      Fluttertoast.showToast(msg: t.alertDeleted);
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     }
   }
 
@@ -771,11 +942,14 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
       await ApiService.toggleAlert(alert.id);
       _loadAlerts();
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      final t = AppLocalizations.of(context)!;
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     }
   }
 
   void _showCreateAlertDialog() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final nameController = TextEditingController();
     final keywordsController = TextEditingController();
     final skillsController = TextEditingController();
@@ -785,29 +959,47 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create Project Alert'),
+        title: Text(t.createProjectAlert),
+        backgroundColor: theme.cardColor,
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Alert Name'),
+                decoration: InputDecoration(
+                  labelText: t.alertName,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: keywordsController,
-                decoration: const InputDecoration(
-                  labelText: 'Keywords (comma separated)',
-                  hintText: 'flutter, mobile, app',
+                decoration: InputDecoration(
+                  labelText: t.keywordsCommaSeparated,
+                  hintText: t.keywordsHint,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
                 ),
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: skillsController,
-                decoration: const InputDecoration(
-                  labelText: 'Skills (comma separated)',
+                decoration: InputDecoration(
+                  labelText: t.skillsCommaSeparated,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
               const SizedBox(height: 12),
               Row(
@@ -816,10 +1008,14 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                     child: TextField(
                       controller: minBudgetController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Min Budget',
+                      decoration: InputDecoration(
+                        labelText: t.minBudget,
                         prefixText: '\$ ',
+                        labelStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
                       ),
+                      style: TextStyle(color: theme.colorScheme.onSurface),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -827,10 +1023,14 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
                     child: TextField(
                       controller: maxBudgetController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Max Budget',
+                      decoration: InputDecoration(
+                        labelText: t.maxBudget,
                         prefixText: '\$ ',
+                        labelStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
                       ),
+                      style: TextStyle(color: theme.colorScheme.onSurface),
                     ),
                   ),
                 ],
@@ -841,7 +1041,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -870,12 +1070,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
 
               Navigator.pop(context);
               _loadAlerts();
-              Fluttertoast.showToast(msg: 'Alert created successfully');
+              Fluttertoast.showToast(msg: t.alertCreated);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff14A800),
+              backgroundColor: AppColors.secondary,
             ),
-            child: const Text('Create'),
+            child: Text(t.create),
           ),
         ],
       ),
@@ -916,6 +1116,7 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
   }
 
   Future<void> _toggleFavorite() async {
+    final t = AppLocalizations.of(context);
     setState(() => _loading = true);
     try {
       if (_isFavorite) {
@@ -923,23 +1124,29 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
         if (mounted) {
           setState(() => _isFavorite = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Removed from favorites')),
+            SnackBar(
+              content: Text(
+                t?.removedFromFavorites ?? 'Removed from favorites',
+              ),
+            ),
           );
         }
       } else {
         await ApiService.addToFavorites(widget.projectId);
         if (mounted) {
           setState(() => _isFavorite = true);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Added to favorites')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(t?.addedToFavorites ?? 'Added to favorites'),
+            ),
+          );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text('${t?.error}: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

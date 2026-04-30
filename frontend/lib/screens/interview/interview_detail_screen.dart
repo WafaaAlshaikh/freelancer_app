@@ -1,12 +1,15 @@
 // lib/screens/interview/interview_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:freelancer_platform/models/project_model.dart';
 import 'package:freelancer_platform/models/user_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/interview_model.dart';
 import '../../services/api_service.dart';
 import '../../utils/token_storage.dart';
+import '../../theme/app_theme.dart';
 import 'post_interview_feedback_screen.dart';
 
 class InterviewDetailScreen extends StatefulWidget {
@@ -67,9 +70,8 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Future<void> _acceptInterview(DateTime selectedTime) async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _loading = true);
-
-    print('📤 Sending acceptance with time: ${selectedTime.toIso8601String()}');
 
     final result = await ApiService.respondToInterview(
       invitationId: _invitation.id,
@@ -83,34 +85,41 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     setState(() => _loading = false);
 
     if (result['success'] == true) {
-      Fluttertoast.showToast(msg: 'Interview accepted!');
+      Fluttertoast.showToast(msg: t.interviewAccepted);
       await _refresh();
       Navigator.pop(context, true);
     } else {
       Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error accepting interview',
-        backgroundColor: Colors.red,
+        msg: result['message'] ?? t.errorAcceptingInterview,
+        backgroundColor: AppColors.danger,
       );
     }
   }
 
   Future<void> _declineInterview() async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Decline Interview'),
-        content: const Text(
-          'Are you sure you want to decline this interview invitation?',
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.declineInterview,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
+        content: Text(
+          t.declineInterviewConfirmation,
+          style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Decline'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: Text(t.decline),
           ),
         ],
       ),
@@ -131,18 +140,20 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     setState(() => _loading = false);
 
     if (result['success'] == true) {
-      Fluttertoast.showToast(msg: 'Interview declined');
+      Fluttertoast.showToast(msg: t.interviewDeclined);
       await _refresh();
       Navigator.pop(context, true);
     } else {
       Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error declining interview',
-        backgroundColor: Colors.red,
+        msg: result['message'] ?? t.errorDecliningInterview,
+        backgroundColor: AppColors.danger,
       );
     }
   }
 
   Future<void> _rescheduleInterview() async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final DateTime? newTime = await showDatePicker(
       context: context,
       initialDate:
@@ -150,6 +161,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 30)),
+      helpText: t.selectDate,
+      cancelText: t.cancel,
+      confirmText: t.ok,
     );
 
     if (newTime == null) return;
@@ -157,6 +171,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     final TimeOfDay? newTimeOfDay = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      helpText: t.selectTime,
+      cancelText: t.cancel,
+      confirmText: t.ok,
     );
 
     if (newTimeOfDay == null) return;
@@ -169,7 +186,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
       newTimeOfDay.minute,
     );
 
-    final reason = await _showReasonDialog('Reason for rescheduling?');
+    final reason = await _showReasonDialog(t.reasonForRescheduling);
 
     if (reason == null) return;
 
@@ -184,19 +201,20 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     setState(() => _loading = false);
 
     if (result['success'] == true) {
-      Fluttertoast.showToast(msg: 'Interview rescheduled');
+      Fluttertoast.showToast(msg: t.interviewRescheduled);
       await _refresh();
       Navigator.pop(context, true);
     } else {
       Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error rescheduling',
-        backgroundColor: Colors.red,
+        msg: result['message'] ?? t.errorRescheduling,
+        backgroundColor: AppColors.danger,
       );
     }
   }
 
   Future<void> _cancelInterview() async {
-    final reason = await _showReasonDialog('Reason for cancellation?');
+    final t = AppLocalizations.of(context)!;
+    final reason = await _showReasonDialog(t.reasonForCancellation);
 
     if (reason == null) return;
 
@@ -210,39 +228,56 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     setState(() => _loading = false);
 
     if (result['success'] == true) {
-      Fluttertoast.showToast(msg: 'Interview cancelled');
+      Fluttertoast.showToast(msg: t.interviewCancelled);
       await _refresh();
       Navigator.pop(context, true);
     } else {
       Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error cancelling',
-        backgroundColor: Colors.red,
+        msg: result['message'] ?? t.errorCancelling,
+        backgroundColor: AppColors.danger,
       );
     }
   }
 
   Future<String?> _showReasonDialog(String title) async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          title,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         content: TextField(
           controller: controller,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Please provide a reason...',
+          style: TextStyle(color: theme.colorScheme.onSurface),
+          decoration: InputDecoration(
+            hintText: t.pleaseProvideReason,
+            hintStyle: TextStyle(color: AppColors.gray),
             border: OutlineInputBorder(),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: theme.dividerColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: theme.colorScheme.primary),
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, null),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Submit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+            ),
+            child: Text(t.submit),
           ),
         ],
       ),
@@ -250,32 +285,60 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Future<void> _completeInterview() async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Complete Interview'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.completeInterview,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Add notes about the interview:'),
+            Text(
+              t.addNotesAboutInterview,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _meetingNotesController,
               maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Meeting notes...',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+              decoration: InputDecoration(
+                hintText: t.meetingNotesHint,
+                hintStyle: TextStyle(color: AppColors.gray),
                 border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: theme.dividerColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: theme.colorScheme.primary),
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            const Text('Feedback (optional):'),
+            Text(
+              t.feedbackOptional,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _feedbackController,
               maxLines: 2,
-              decoration: const InputDecoration(
-                hintText: 'Any additional feedback...',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+              decoration: InputDecoration(
+                hintText: t.additionalFeedbackHint,
+                hintStyle: TextStyle(color: AppColors.gray),
                 border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: theme.dividerColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: theme.colorScheme.primary),
+                ),
               ),
             ),
           ],
@@ -283,11 +346,14 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Complete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+            ),
+            child: Text(t.complete),
           ),
         ],
       ),
@@ -308,43 +374,45 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     setState(() => _loading = false);
 
     if (apiResult['success'] == true) {
-      Fluttertoast.showToast(msg: 'Interview completed!');
+      Fluttertoast.showToast(msg: t.interviewCompleted);
       await _refresh();
       Navigator.pop(context, true);
     } else {
       Fluttertoast.showToast(
-        msg: apiResult['message'] ?? 'Error completing interview',
-        backgroundColor: Colors.red,
+        msg: apiResult['message'] ?? t.errorCompletingInterview,
+        backgroundColor: AppColors.danger,
       );
     }
   }
 
   Future<void> _addToCalendar(String type) async {
+    final t = AppLocalizations.of(context)!;
     final result = await ApiService.addToCalendar(
       invitationId: _invitation.id,
       calendarType: type,
     );
 
     if (type == 'ics') {
-      Fluttertoast.showToast(msg: 'Calendar file downloaded');
+      Fluttertoast.showToast(msg: t.calendarFileDownloaded);
     } else if (result['success'] == true) {
-      Fluttertoast.showToast(msg: 'Added to calendar successfully!');
+      Fluttertoast.showToast(msg: t.addedToCalendar);
     } else {
       Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error adding to calendar',
-        backgroundColor: Colors.red,
+        msg: result['message'] ?? t.errorAddingToCalendar,
+        backgroundColor: AppColors.danger,
       );
     }
   }
 
   Future<void> _sendManualReminder() async {
+    final t = AppLocalizations.of(context)!;
     final result = await ApiService.sendManualReminder(_invitation.id);
     if (result['success'] == true) {
-      Fluttertoast.showToast(msg: 'Reminder sent successfully!');
+      Fluttertoast.showToast(msg: t.reminderSent);
     } else {
       Fluttertoast.showToast(
-        msg: result['message'] ?? 'Error sending reminder',
-        backgroundColor: Colors.red,
+        msg: result['message'] ?? t.errorSendingReminder,
+        backgroundColor: AppColors.danger,
       );
     }
   }
@@ -365,11 +433,15 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Future<void> _selectDateTime() async {
+    final t = AppLocalizations.of(context)!;
     final DateTime? date = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 30)),
+      helpText: t.selectDate,
+      cancelText: t.cancel,
+      confirmText: t.ok,
     );
 
     if (date == null) return;
@@ -377,6 +449,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     final TimeOfDay? time = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 14, minute: 0),
+      helpText: t.selectTime,
+      cancelText: t.cancel,
+      confirmText: t.ok,
     );
 
     if (time == null) return;
@@ -394,6 +469,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isClient = _userRole == 'client';
     final isFreelancer = _userRole == 'freelancer';
     final isPending = _invitation.isPending && !_invitation.isExpiredByDate;
@@ -403,35 +481,35 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     final project = _invitation.project;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Interview Details'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.interviewDetails),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           if (isAccepted && !isCompleted && _invitation.selectedTime != null)
             PopupMenuButton<String>(
               onSelected: _addToCalendar,
-              icon: const Icon(Icons.calendar_today),
+              icon: Icon(Icons.calendar_today, color: theme.iconTheme.color),
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'google',
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_month),
-                      SizedBox(width: 8),
-                      Text('Google Calendar'),
+                      const Icon(Icons.calendar_month),
+                      const SizedBox(width: 8),
+                      Text(t.googleCalendar),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'ics',
                   child: Row(
                     children: [
-                      Icon(Icons.download),
-                      SizedBox(width: 8),
-                      Text('Download .ics file'),
+                      const Icon(Icons.download),
+                      const SizedBox(width: 8),
+                      Text(t.downloadIcsFile),
                     ],
                   ),
                 ),
@@ -445,28 +523,28 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                 color: Colors.orange,
               ),
               onPressed: _sendManualReminder,
-              tooltip: 'Send Reminder',
+              tooltip: t.sendReminder,
             ),
 
           if (isAccepted && !isCompleted && !_invitation.isExpiredByDate)
             IconButton(
-              icon: const Icon(Icons.edit_calendar, color: Colors.orange),
+              icon: Icon(Icons.edit_calendar, color: Colors.orange),
               onPressed: _rescheduleInterview,
-              tooltip: 'Reschedule',
+              tooltip: t.reschedule,
             ),
 
           if (isAccepted && !isCompleted)
             IconButton(
-              icon: const Icon(Icons.cancel, color: Colors.red),
+              icon: Icon(Icons.cancel, color: AppColors.danger),
               onPressed: _cancelInterview,
-              tooltip: 'Cancel',
+              tooltip: t.cancel,
             ),
 
           if (isCompleted && _invitation.feedbackRating == null && isClient)
             IconButton(
               icon: const Icon(Icons.rate_review, color: Colors.amber),
               onPressed: _addFeedback,
-              tooltip: 'Add Feedback',
+              tooltip: t.addFeedback,
             ),
         ],
       ),
@@ -499,17 +577,21 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildStatusCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final isExpired = _invitation.isExpiredByDate;
-    final statusColor = isExpired ? Colors.grey : _invitation.statusColor;
+    final statusColor = isExpired ? AppColors.gray : _invitation.statusColor;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(
+              theme.brightness == Brightness.dark ? 0.3 : 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -531,7 +613,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isExpired ? 'Expired' : _invitation.statusText,
+                  isExpired ? t.expired : _invitation.statusText,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -541,18 +623,21 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                 const SizedBox(height: 4),
                 Text(
                   isExpired
-                      ? 'This invitation has expired'
+                      ? t.invitationExpired
                       : _invitation.isAccepted &&
                             _invitation.selectedTime != null
-                      ? 'Scheduled for ${_invitation.formattedSelectedTime}'
+                      ? '${t.scheduledFor} ${_invitation.formattedSelectedTime}'
                       : _invitation.isPending
-                      ? 'Waiting for response'
+                      ? t.waitingForResponse
                       : _invitation.isCompleted
-                      ? 'Interview completed'
+                      ? t.interviewCompleted
                       : _invitation.isDeclined
-                      ? 'Interview declined'
+                      ? t.interviewDeclined
                       : '',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
               ],
             ),
@@ -563,14 +648,18 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildProjectCard(Project? project, User? otherParty) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -579,25 +668,30 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Project Details',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.projectDetails,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: Colors.blue.shade100,
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                 backgroundImage: otherParty?.avatar != null
                     ? NetworkImage(otherParty!.avatar!)
                     : null,
                 child: otherParty?.avatar == null
                     ? Text(
                         otherParty?.name?[0].toUpperCase() ?? '?',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
                         ),
                       )
                     : null,
@@ -608,14 +702,17 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      otherParty?.name ?? 'User',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      otherParty?.name ?? t.user,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                     Text(
                       otherParty?.email ?? '',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -623,15 +720,22 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
               ),
             ],
           ),
-          const Divider(height: 24),
+          Divider(height: 24, color: theme.dividerColor),
           Text(
-            project?.title ?? 'Project',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            project?.title ?? t.project,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             project?.description ?? '',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
@@ -641,24 +745,27 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade100,
+                  color: theme.colorScheme.secondary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Budget: \$${project?.budget?.toStringAsFixed(0)}',
-                  style: TextStyle(fontSize: 11, color: Colors.green.shade700),
+                  '${t.budget}: ${t.dollar}${project?.budget?.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.secondary,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  color: AppColors.infoBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Duration: ${project?.duration} days',
-                  style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                  '${t.duration}: ${project?.duration} ${t.days}',
+                  style: TextStyle(fontSize: 11, color: AppColors.info),
                 ),
               ),
             ],
@@ -669,26 +776,31 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildMessageCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final sender = _userRole == 'client' ? t.freelancer : t.client;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: AppColors.infoBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: AppColors.info.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.message, size: 18, color: Colors.blue.shade700),
+              Icon(Icons.message, size: 18, color: AppColors.info),
               const SizedBox(width: 8),
               Text(
-                'Message from ${_userRole == 'client' ? 'Freelancer' : 'Client'}',
+                '${t.messageFrom} $sender',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
+                  color: AppColors.info,
                 ),
               ),
             ],
@@ -696,7 +808,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           const SizedBox(height: 8),
           Text(
             _invitation.message!,
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
           ),
         ],
       ),
@@ -704,14 +816,18 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildTimelineCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -720,28 +836,34 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Timeline',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.timeline,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 12),
           _buildTimelineItem(
             icon: Icons.send,
-            label: 'Invitation Sent',
+            label: t.invitationSent,
             date: _invitation.createdAt,
             isFirst: true,
           ),
           if (_invitation.respondedAt != null)
             _buildTimelineItem(
               icon: _invitation.isAccepted ? Icons.check_circle : Icons.cancel,
-              label: _invitation.isAccepted ? 'Accepted' : 'Declined',
+              label: _invitation.isAccepted ? t.accepted : t.declined,
               date: _invitation.respondedAt!,
-              color: _invitation.isAccepted ? Colors.green : Colors.red,
+              color: _invitation.isAccepted
+                  ? theme.colorScheme.secondary
+                  : AppColors.danger,
             ),
           if (_invitation.selectedTime != null)
             _buildTimelineItem(
               icon: Icons.calendar_today,
-              label: 'Interview Scheduled',
+              label: t.interviewScheduled,
               date: _invitation.selectedTime!,
             ),
           if (_invitation.respondedAt != null &&
@@ -751,7 +873,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: isDark ? AppColors.darkSurface : Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -759,7 +881,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -767,24 +889,26 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           if (_invitation.rescheduleReason != null)
             _buildTimelineItem(
               icon: Icons.update,
-              label: 'Rescheduled',
+              label: t.rescheduled,
               date: _invitation.updatedAt,
-              color: Colors.orange,
-              subtitle: 'Reason: ${_invitation.rescheduleReason}',
+              color: AppColors.warning,
+              subtitle: '${t.reason}: ${_invitation.rescheduleReason}',
             ),
           if (_invitation.completedAt != null)
             _buildTimelineItem(
               icon: Icons.verified,
-              label: 'Completed',
+              label: t.completed,
               date: _invitation.completedAt!,
-              color: Colors.blue,
+              color: AppColors.info,
             ),
           _buildTimelineItem(
             icon: Icons.timer_off,
-            label: 'Expires',
+            label: t.expires,
             date: _invitation.expiresAt,
             isLast: true,
-            color: _invitation.isExpiredByDate ? Colors.red : Colors.orange,
+            color: _invitation.isExpiredByDate
+                ? AppColors.danger
+                : AppColors.warning,
           ),
         ],
       ),
@@ -800,23 +924,35 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     bool isFirst = false,
     bool isLast = false,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final effectiveColor = color ?? theme.colorScheme.primary;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           children: [
             if (!isFirst)
-              Container(width: 2, height: 20, color: Colors.grey.shade300),
+              Container(
+                width: 2,
+                height: 20,
+                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+              ),
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: (color ?? Colors.blue).withOpacity(0.1),
+                color: effectiveColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 16, color: color ?? Colors.blue),
+              child: Icon(icon, size: 16, color: effectiveColor),
             ),
             if (!isLast)
-              Container(width: 2, height: 20, color: Colors.grey.shade300),
+              Container(
+                width: 2,
+                height: 20,
+                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+              ),
           ],
         ),
         const SizedBox(width: 12),
@@ -828,21 +964,28 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   _formatDateTime(date),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ],
@@ -854,12 +997,15 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildMeetingCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: theme.colorScheme.secondary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -869,7 +1015,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green,
+                  color: theme.colorScheme.secondary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -879,18 +1025,21 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Join Interview',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  t.joinInterview,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Click the button below to join the video interview.',
-            style: TextStyle(fontSize: 13),
+          Text(
+            t.joinInterviewDescription,
+            style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -903,9 +1052,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                 }
               },
               icon: const Icon(Icons.video_call),
-              label: const Text('Join Meeting'),
+              label: Text(t.joinMeeting),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: theme.colorScheme.secondary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -919,6 +1068,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildResponseCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final suggestedTimes = _invitation.suggestedTimes;
     final isSingleTime = suggestedTimes.length == 1;
     final effectiveSelectedTime = isSingleTime
@@ -928,11 +1080,11 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -941,9 +1093,13 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Interview Invitation',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.interviewInvitation,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
 
@@ -952,28 +1108,31 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.purple.shade50,
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.purple.shade200),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withOpacity(0.2),
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, color: Colors.purple),
+                  Icon(Icons.calendar_today, color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Proposed Time:',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        Text(
+                          t.proposedTime,
+                          style: TextStyle(fontSize: 12, color: AppColors.gray),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _formatDateTime(suggestedTimes.first),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       ],
@@ -985,9 +1144,13 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           ],
 
           if (!isSingleTime) ...[
-            const Text(
-              'Available Times:',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            Text(
+              t.availableTimes,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             ...suggestedTimes.map((time) {
@@ -999,11 +1162,15 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? Colors.purple.shade50
-                        : Colors.grey.shade50,
+                        ? theme.colorScheme.primary.withOpacity(0.1)
+                        : (isDark
+                              ? AppColors.darkSurface
+                              : Colors.grey.shade50),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? Colors.purple : Colors.transparent,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : Colors.transparent,
                       width: 1.5,
                     ),
                   ),
@@ -1014,7 +1181,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                         groupValue: _selectedTime,
                         onChanged: (value) =>
                             setState(() => _selectedTime = value),
-                        activeColor: Colors.purple,
+                        activeColor: theme.colorScheme.primary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -1025,6 +1192,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -1041,11 +1209,19 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           TextField(
             controller: _responseMessageController,
             maxLines: 2,
-            decoration: const InputDecoration(
-              hintText: 'Add a message (optional)',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+            decoration: InputDecoration(
+              hintText: t.addMessageOptional,
+              hintStyle: TextStyle(color: AppColors.gray),
               border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: theme.dividerColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: theme.colorScheme.primary),
+              ),
               filled: true,
-              fillColor: Color(0xFFF5F6F8),
+              fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
             ),
           ),
 
@@ -1057,11 +1233,11 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                 child: OutlinedButton(
                   onPressed: _loading ? null : _declineInterview,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: AppColors.danger,
+                    side: BorderSide(color: AppColors.danger),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('Decline'),
+                  child: Text(t.decline),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1076,13 +1252,13 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                             _acceptInterview(_selectedTime!);
                           } else {
                             Fluttertoast.showToast(
-                              msg: 'Please select a time',
-                              backgroundColor: Colors.orange,
+                              msg: t.pleaseSelectTime,
+                              backgroundColor: AppColors.warning,
                             );
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff14A800),
+                    backgroundColor: theme.colorScheme.secondary,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: _loading
@@ -1096,8 +1272,8 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                         )
                       : Text(
                           isSingleTime
-                              ? 'Accept & Confirm'
-                              : 'Accept Selected Time',
+                              ? t.acceptAndConfirm
+                              : t.acceptSelectedTime,
                         ),
                 ),
               ),
@@ -1109,24 +1285,31 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildCompletionCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: AppColors.warningBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: AppColors.warning.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Complete Interview',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            t.completeInterview,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.warning,
+            ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'After the interview, add your notes and feedback.',
-            style: TextStyle(fontSize: 13),
+          Text(
+            t.completeInterviewDescription,
+            style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -1134,9 +1317,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
             child: ElevatedButton.icon(
               onPressed: _loading ? null : _completeInterview,
               icon: const Icon(Icons.check_circle),
-              label: const Text('Mark as Completed'),
+              label: Text(t.markAsCompleted),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: AppColors.warning,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1150,10 +1333,14 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   Widget _buildNotesCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: AppColors.infoBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1161,14 +1348,14 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.description, color: Colors.blue.shade700),
+              Icon(Icons.description, color: AppColors.info),
               const SizedBox(width: 8),
               Text(
-                'Meeting Notes',
+                t.meetingNotes,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
+                  color: AppColors.info,
                 ),
               ),
             ],
@@ -1176,22 +1363,26 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           const SizedBox(height: 12),
           Text(
             _invitation.meetingNotes ?? '',
-            style: const TextStyle(fontSize: 14, height: 1.5),
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           if (_invitation.feedback != null) ...[
             const SizedBox(height: 12),
-            const Divider(),
+            Divider(color: theme.dividerColor),
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.feedback, size: 16, color: Colors.blue.shade700),
+                Icon(Icons.feedback, size: 16, color: AppColors.info),
                 const SizedBox(width: 8),
                 Text(
-                  'Feedback',
+                  t.feedback,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
+                    color: AppColors.info,
                   ),
                 ),
               ],
@@ -1199,7 +1390,11 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
             const SizedBox(height: 8),
             Text(
               _invitation.feedback!,
-              style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ],
         ],

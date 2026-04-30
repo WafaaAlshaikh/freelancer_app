@@ -2,7 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class AIChatScreen extends StatefulWidget {
   final int? projectId;
@@ -22,6 +24,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
   void initState() {
     super.initState();
     _loadChatHistory();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadChatHistory() async {
@@ -45,6 +54,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Future<void> _sendMessage() async {
+    final t = AppLocalizations.of(context)!;
     if (_controller.text.trim().isEmpty) return;
 
     final userMessage = _controller.text.trim();
@@ -77,7 +87,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       _scrollToBottom();
     } catch (e) {
       setState(() => _isLoading = false);
-      Fluttertoast.showToast(msg: "Error: $e");
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     }
   }
 
@@ -101,23 +111,64 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (actionType == "navigate" && screen != null) {
       Navigator.pushNamed(context, screen);
     } else if (actionType == "open" && url != null) {
-      // TODO: Open URL
-      Fluttertoast.showToast(msg: "Opening $url");
+      final t = AppLocalizations.of(context)!;
+      Fluttertoast.showToast(msg: '${t.opening} $url');
+    }
+  }
+
+  Future<void> _clearChat() async {
+    final t = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
+          t.clearChat,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
+        content: Text(
+          t.clearChatConfirmation,
+          style: TextStyle(color: AppColors.gray),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              t.clear,
+              style: const TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ApiService.clearChatHistory();
+      setState(() => _messages.clear());
+      Fluttertoast.showToast(msg: t.chatHistoryCleared);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(colors: [Colors.purple, Colors.blue]),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
               child: const Icon(
                 Icons.auto_awesome,
@@ -126,48 +177,22 @@ class _AIChatScreenState extends State<AIChatScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            const Text(
-              "AI Assistant",
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              t.aiAssistant,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ],
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("Clear Chat"),
-                  content: const Text(
-                    "Are you sure you want to clear chat history?",
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text("Cancel"),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text(
-                        "Clear",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true) {
-                await ApiService.clearChatHistory();
-                setState(() => _messages.clear());
-                Fluttertoast.showToast(msg: "Chat history cleared");
-              }
-            },
+            icon: Icon(Icons.delete_outline, color: theme.iconTheme.color),
+            onPressed: _clearChat,
           ),
         ],
       ),
@@ -196,8 +221,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: isUser
-                              ? const Color(0xFF14A800)
-                              : Colors.white,
+                              ? theme.colorScheme.secondary
+                              : theme.cardColor,
                           borderRadius: BorderRadius.circular(16).copyWith(
                             bottomRight: isUser
                                 ? const Radius.circular(4)
@@ -208,7 +233,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withOpacity(
+                                isDark ? 0.3 : 0.05,
+                              ),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -217,7 +244,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         child: Text(
                           msg["content"],
                           style: TextStyle(
-                            color: isUser ? Colors.white : Colors.black87,
+                            color: isUser
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -231,21 +260,24 @@ class _AIChatScreenState extends State<AIChatScreen> {
                             spacing: 8,
                             runSpacing: 8,
                             children: List<Widget>.from(
-                              msg["suggestedActions"].map((action) {
+                              (msg["suggestedActions"] as List).map((action) {
                                 return ActionChip(
-                                  label: Text(action["label"]),
+                                  label: Text(
+                                    action["label"],
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.info,
+                                    ),
+                                  ),
                                   onPressed: () => _executeAction(action),
                                   avatar: Icon(
                                     action["action"] == "navigate"
                                         ? Icons.arrow_forward
                                         : Icons.open_in_new,
                                     size: 14,
+                                    color: AppColors.info,
                                   ),
-                                  backgroundColor: Colors.blue.shade50,
-                                  labelStyle: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.blue.shade700,
-                                  ),
+                                  backgroundColor: AppColors.infoBg,
                                 );
                               }),
                             ),
@@ -259,18 +291,20 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
 
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
             ),
 
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, -2),
                 ),
@@ -281,14 +315,18 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                     decoration: InputDecoration(
-                      hintText: "Ask me anything...",
+                      hintText: t.askMeAnything,
+                      hintStyle: TextStyle(color: AppColors.gray),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade100,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
@@ -308,8 +346,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          const Color(0xFF14A800),
-                          const Color(0xFF0F7A00),
+                          theme.colorScheme.secondary,
+                          AppColors.secondaryDark,
                         ],
                       ),
                       shape: BoxShape.circle,

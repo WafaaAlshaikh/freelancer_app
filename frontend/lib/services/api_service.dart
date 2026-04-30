@@ -189,13 +189,52 @@ class ApiService {
   static Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$BASE_URL/auth/forgot-password'),
+        Uri.parse('$baseUrl/auth/forgot-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
       return jsonDecode(response.body);
     } catch (e) {
-      return {'message': 'Connection error: $e'};
+      return {'message': 'Network error', 'error': true};
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyResetCode(
+    String email,
+    String code,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/verify-reset-code'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'code': code}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'message': 'Network error', 'error': true};
+    }
+  }
+
+  static Future<Map<String, dynamic>> resetPasswordWithCode({
+    required String email,
+    required String code,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'code': code,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'message': 'Network error', 'error': true};
     }
   }
 
@@ -3503,29 +3542,29 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> markReviewHelpful(int reviewId) async {
-    try {
-      final response = await _dio.post(
-        '$BASE_URL/ratings/$reviewId/helpful',
-        options: Options(headers: headers),
-      );
-      return response.data;
-    } catch (e) {
-      return {'success': false, 'message': e.toString()};
-    }
-  }
-
   static Future<Map<String, dynamic>> addReviewReply(
     int reviewId,
     String reply,
   ) async {
     try {
-      final response = await _dio.post(
-        '$BASE_URL/ratings/$reviewId/reply',
-        data: {'reply': reply},
-        options: Options(headers: headers),
+      final response = await http.post(
+        Uri.parse('$baseUrl/ratings/$reviewId/reply'),
+        headers: headers,
+        body: jsonEncode({'reply': reply}),
       );
-      return response.data;
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> markReviewHelpful(int reviewId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/ratings/$reviewId/helpful'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
     } catch (e) {
       return {'success': false, 'message': e.toString()};
     }

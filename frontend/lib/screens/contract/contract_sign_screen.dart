@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../utils/pdf_viewer.dart';
+import '../../theme/app_theme.dart';
 
 class ContractSignScreen extends StatefulWidget {
   final int contractId;
@@ -38,17 +40,32 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
   @override
   void initState() {
     super.initState();
-    requestCode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        requestCode(context);
+      }
+    });
 
     if (widget.sowData != null) {
       _sowHtml = widget.sowData!['sow'];
     }
   }
 
-  Future<void> requestCode() async {
+  @override
+  void dispose() {
+    codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> requestCode(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+
     setState(() => loading = true);
 
     final result = await ApiService.requestSignCode(widget.contractId);
+
+    if (!mounted) return;
 
     setState(() {
       loading = false;
@@ -56,10 +73,10 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
     });
 
     if (result['success'] == true) {
-      Fluttertoast.showToast(msg: "✅ Verification code sent");
+      Fluttertoast.showToast(msg: t.verificationCodeSent);
       startTimer();
     } else {
-      Fluttertoast.showToast(msg: result['message'] ?? "Error");
+      Fluttertoast.showToast(msg: result['message'] ?? t.error);
     }
   }
 
@@ -72,9 +89,10 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
     });
   }
 
-  Future<void> verifyAndSign() async {
+  Future<void> verifyAndSign(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     if (codeController.text.length != 6) {
-      Fluttertoast.showToast(msg: "❌ Code must be 6 digits");
+      Fluttertoast.showToast(msg: t.codeMustBe6Digits);
       return;
     }
 
@@ -88,19 +106,19 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
     setState(() => loading = false);
 
     if (result['success'] == true) {
-      Fluttertoast.showToast(msg: "✅ Contract signed successfully");
+      Fluttertoast.showToast(msg: t.contractSignedSuccess);
 
       if (_sowHtml != null && widget.sowData != null) {
-        await _generateAndDownloadSOWPDF();
+        await _generateAndDownloadSOWPDF(context);
       }
 
-      Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
     } else {
       setState(() => attempts++);
-      Fluttertoast.showToast(msg: result['message'] ?? "❌ Invalid code");
+      Fluttertoast.showToast(msg: result['message'] ?? t.invalidCode);
 
       if (attempts >= 5) {
-        Fluttertoast.showToast(msg: "❌ Max attempts. Request new code");
+        Fluttertoast.showToast(msg: t.maxAttemptsReached);
         setState(() {
           codeSent = false;
           attempts = 0;
@@ -109,7 +127,8 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
     }
   }
 
-  Future<void> _generateAndDownloadSOWPDF() async {
+  Future<void> _generateAndDownloadSOWPDF(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _downloadingPDF = true);
 
     try {
@@ -124,17 +143,23 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           _downloadingPDF = false;
         });
 
-        _showPDFOptions();
+        _showPDFOptions(context);
       }
     } catch (e) {
-      setState(() => _downloadingPDF = false);
-      Fluttertoast.showToast(msg: 'Error generating PDF: $e');
+      if (mounted) {
+        setState(() => _downloadingPDF = false);
+        Fluttertoast.showToast(msg: '${t.errorGeneratingPDF}: $e');
+      }
     }
   }
 
-  void _showPDFOptions() {
+  void _showPDFOptions(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     showModalBottomSheet(
       context: context,
+      backgroundColor: theme.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -144,7 +169,10 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-              title: const Text('View PDF'),
+              title: Text(
+                t.viewPDF,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 if (_sowPdfUrl != null) {
@@ -154,18 +182,24 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.download, color: Colors.blue),
-              title: const Text('Download PDF'),
+              title: Text(
+                t.downloadPDF,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                _downloadPDF();
+                _downloadPDF(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.share, color: Colors.green),
-              title: const Text('Share PDF'),
+              title: Text(
+                t.sharePDF,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                _sharePDF();
+                _sharePDF(context);
               },
             ),
           ],
@@ -174,28 +208,30 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
     );
   }
 
-  Future<void> _downloadPDF() async {
+  Future<void> _downloadPDF(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     if (_sowPdfUrl == null) return;
 
     try {
-      Fluttertoast.showToast(msg: 'Downloading PDF...');
+      Fluttertoast.showToast(msg: t.downloadingPDF);
       // TODO: تنفيذ تحميل PDF
       // يمكن استخدام dio أو http client لتحميل الملف
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error downloading PDF: $e');
+      Fluttertoast.showToast(msg: '${t.errorDownloadingPDF}: $e');
     }
   }
 
-  Future<void> _sharePDF() async {
+  Future<void> _sharePDF(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     if (_sowPdfUrl == null) return;
 
     try {
       await Share.share(
-        'Contract signed successfully! View the SOW document: ${_sowPdfUrl}',
-        subject: 'Contract SOW Document',
+        '${t.contractSignedSuccessViewSOW}: $_sowPdfUrl',
+        subject: t.contractSOWDocument,
       );
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error sharing: $e');
+      Fluttertoast.showToast(msg: '${t.errorSharing}: $e');
     }
   }
 
@@ -205,20 +241,26 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Sign Contract"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.signContract),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           if (_sowHtml != null)
             IconButton(
               icon: Icon(
                 _showSOWPreview ? Icons.visibility_off : Icons.visibility,
+                color: theme.iconTheme.color,
               ),
               onPressed: _toggleSOWPreview,
-              tooltip: 'Preview SOW',
+              tooltip: t.previewSOW,
             ),
         ],
       ),
@@ -229,6 +271,10 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
   }
 
   Widget _buildSignForm() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -237,25 +283,33 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: theme.colorScheme.secondary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.security, size: 64, color: Colors.green.shade700),
+            child: Icon(
+              Icons.security,
+              size: 64,
+              color: theme.colorScheme.secondary,
+            ),
           ),
 
           const SizedBox(height: 24),
 
-          const Text(
-            "Electronic Contract Signing",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          Text(
+            t.electronicContractSigning,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
 
           const SizedBox(height: 12),
 
-          const Text(
-            "A verification code has been sent to your email",
+          Text(
+            t.verificationCodeSentToEmail,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+            style: TextStyle(fontSize: 14, color: AppColors.gray),
           ),
 
           const SizedBox(height: 32),
@@ -264,15 +318,32 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
             controller: codeController,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, letterSpacing: 8),
+            style: TextStyle(
+              fontSize: 24,
+              letterSpacing: 8,
+              color: theme.colorScheme.onSurface,
+            ),
             maxLength: 6,
             decoration: InputDecoration(
               hintText: "000000",
+              hintStyle: TextStyle(color: AppColors.gray),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.primary,
+                  width: 2,
+                ),
               ),
               filled: true,
-              fillColor: Colors.grey.shade50,
+              fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
               counterText: "",
             ),
           ),
@@ -280,22 +351,25 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           const SizedBox(height: 16),
 
           Text(
-            "Code valid for: ${(secondsRemaining / 60).floor()}:${(secondsRemaining % 60).toString().padLeft(2, '0')}",
+            '${t.codeValidFor}: ${(secondsRemaining / 60).floor()}:${(secondsRemaining % 60).toString().padLeft(2, '0')}',
             style: TextStyle(
-              color: secondsRemaining < 60 ? Colors.red : Colors.grey,
+              color: secondsRemaining < 60 ? AppColors.danger : AppColors.gray,
             ),
           ),
 
           const SizedBox(height: 24),
 
           if (_downloadingPDF)
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 8),
-                  Text('Generating PDF document...'),
+                  CircularProgressIndicator(color: theme.colorScheme.primary),
+                  const SizedBox(height: 8),
+                  Text(
+                    t.generatingPDFDocument,
+                    style: TextStyle(color: AppColors.gray),
+                  ),
                 ],
               ),
             ),
@@ -304,18 +378,18 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
-              onPressed: loading ? null : verifyAndSign,
+              onPressed: loading ? null : () => verifyAndSign(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff14A800),
+                backgroundColor: theme.colorScheme.secondary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: loading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      "Confirm Signature",
-                      style: TextStyle(
+                  : Text(
+                      t.confirmSignature,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -326,11 +400,16 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           const SizedBox(height: 12),
 
           TextButton(
-            onPressed: secondsRemaining > 0 ? null : requestCode,
+            onPressed: secondsRemaining > 0 ? null : () => requestCode(context),
             child: Text(
               secondsRemaining > 0
-                  ? "Wait ${secondsRemaining}s to resend"
-                  : "Resend Code",
+                  ? '${t.waitSecondsToResend(secondsRemaining)}'
+                  : t.resendCode,
+              style: TextStyle(
+                color: secondsRemaining > 0
+                    ? AppColors.gray
+                    : theme.colorScheme.primary,
+              ),
             ),
           ),
         ],
@@ -339,6 +418,10 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
   }
 
   Widget _buildSOWPreview() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -347,7 +430,7 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.purple.shade50,
+              color: Colors.purple.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -358,15 +441,15 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'AI-Generated SOW',
-                        style: TextStyle(
+                      Text(
+                        t.aiGeneratedSOW,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.purple,
                         ),
                       ),
                       Text(
-                        'This document was generated by AI and is legally binding',
+                        t.aiGeneratedSOWDescription,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.purple.shade700,
@@ -387,19 +470,23 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: theme.dividerColor),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
-                const Text(
-                  'Statement of Work Preview',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  t.statementOfWorkPreview,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Please review the document before signing',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  t.reviewBeforeSigning,
+                  style: TextStyle(color: AppColors.gray),
                 ),
               ],
             ),
@@ -408,21 +495,19 @@ class _ContractSignScreenState extends State<ContractSignScreen> {
           Container(
             height: 400,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: theme.dividerColor),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Center(
-              child: Text('SOW content will appear here\n(HTML rendering)'),
+            child: Center(
+              child: Text(
+                t.sowContentWillAppearHere,
+                style: TextStyle(color: AppColors.gray),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    codeController.dispose();
-    super.dispose();
   }
 }

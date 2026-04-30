@@ -1,9 +1,12 @@
 // lib/screens/contract/contract_progress_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/contract_model.dart';
 import '../../services/api_service.dart';
 import '../freelancer/work_submission_screen.dart';
+import '../../theme/app_theme.dart';
 
 class ContractProgressScreen extends StatefulWidget {
   final int contractId;
@@ -28,10 +31,17 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _load(context);
+      }
+    });
   }
 
-  Future<void> _load() async {
+  Future<void> _load(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+
     setState(() {
       _loading = true;
       _error = null;
@@ -39,34 +49,43 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     try {
       final prog = await ApiService.getContractProgress(widget.contractId);
       if (prog['success'] != true) {
-        setState(() {
-          _error = prog['message']?.toString() ?? 'Could not load progress';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _error = prog['message']?.toString() ?? t.couldNotLoadProgress;
+            _loading = false;
+          });
+        }
         return;
       }
       final raw = await ApiService.getContract(widget.contractId);
       if (raw['message'] != null && raw['id'] == null) {
-        setState(() {
-          _progress = Map<String, dynamic>.from(prog);
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _progress = Map<String, dynamic>.from(prog);
+            _loading = false;
+          });
+        }
         return;
       }
-      setState(() {
-        _progress = Map<String, dynamic>.from(prog);
-        _contract = Contract.fromJson(Map<String, dynamic>.from(raw));
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _progress = Map<String, dynamic>.from(prog);
+          _contract = Contract.fromJson(Map<String, dynamic>.from(raw));
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
-  Future<void> _approveMilestone(int index) async {
+  Future<void> _approveMilestone(BuildContext context, int index) async {
+    final t = AppLocalizations.of(context)!;
     final r = await ApiService.approveMilestone(
       contractId: widget.contractId,
       milestoneIndex: index,
@@ -74,51 +93,58 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     if (mounted) {
       if (r['milestone'] != null || r['message'] != null) {
         Fluttertoast.showToast(
-          msg: r['message']?.toString() ?? 'Milestone updated',
+          msg: r['message']?.toString() ?? t.milestoneUpdated,
         );
-        _load();
+        _load(context);
       } else {
         Fluttertoast.showToast(
-          msg: r['message']?.toString() ?? 'Could not approve milestone',
+          msg: r['message']?.toString() ?? t.couldNotApproveMilestone,
         );
       }
     }
   }
 
-  Future<void> _approveWork(int submissionId) async {
+  Future<void> _approveWork(BuildContext context, int submissionId) async {
+    final t = AppLocalizations.of(context)!;
     final r = await ApiService.approveWork(submissionId);
     if (!mounted) return;
     if (r['success'] == true || r['submission'] != null) {
-      Fluttertoast.showToast(msg: 'Work approved');
-      _load();
+      Fluttertoast.showToast(msg: t.workApproved);
+      _load(context);
     } else {
-      Fluttertoast.showToast(
-        msg: r['message']?.toString() ?? 'Approval failed',
-      );
+      Fluttertoast.showToast(msg: r['message']?.toString() ?? t.approvalFailed);
     }
   }
 
-  Future<void> _promptRevision(int submissionId) async {
+  Future<void> _promptRevision(BuildContext context, int submissionId) async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final ctrl = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Request revision'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.requestRevision,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         content: TextField(
           controller: ctrl,
-          decoration: const InputDecoration(
-            hintText: 'What should be changed?',
+          style: TextStyle(color: theme.colorScheme.onSurface),
+          decoration: InputDecoration(
+            hintText: t.whatShouldBeChanged,
+            hintStyle: TextStyle(color: AppColors.gray),
           ),
           maxLines: 3,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Send'),
+            child: Text(t.send),
           ),
         ],
       ),
@@ -130,34 +156,47 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     );
     if (!mounted) return;
     if (r['success'] == true) {
-      Fluttertoast.showToast(msg: 'Revision requested');
-      _load();
+      Fluttertoast.showToast(msg: t.revisionRequested);
+      _load(context);
     } else {
-      Fluttertoast.showToast(msg: r['message']?.toString() ?? 'Request failed');
+      Fluttertoast.showToast(msg: r['message']?.toString() ?? t.requestFailed);
     }
   }
 
-  Future<void> _addSubmissionToPortfolio(int submissionId) async {
+  Future<void> _addSubmissionToPortfolio(
+    BuildContext context,
+    int submissionId,
+  ) async {
+    final t = AppLocalizations.of(context)!;
     final r = await ApiService.createPortfolioFromSubmission(submissionId);
     if (!mounted) return;
     if (r['success'] == true || r['portfolio'] != null) {
-      Fluttertoast.showToast(msg: r['message']?.toString() ?? 'Added to portfolio');
+      Fluttertoast.showToast(
+        msg: r['message']?.toString() ?? t.addedToPortfolio,
+      );
     } else {
       Fluttertoast.showToast(
-        msg: r['message']?.toString() ?? 'Could not add to portfolio',
+        msg: r['message']?.toString() ?? t.couldNotAddToPortfolio,
       );
     }
   }
 
-  Future<void> _addMilestoneToPortfolio(int milestoneIndex) async {
+  Future<void> _addMilestoneToPortfolio(
+    BuildContext context,
+    int milestoneIndex,
+  ) async {
+    final t = AppLocalizations.of(context)!;
     final r = await ApiService.createPortfolioFromContractMilestone(
       contractId: widget.contractId,
       milestoneIndex: milestoneIndex,
     );
     if (!mounted) return;
     Fluttertoast.showToast(
-      msg: r['message']?.toString() ??
-          ((r['success'] == true) ? 'Added to portfolio' : 'Could not add to portfolio'),
+      msg:
+          r['message']?.toString() ??
+          ((r['success'] == true)
+              ? t.addedToPortfolio
+              : t.couldNotAddToPortfolio),
     );
   }
 
@@ -173,35 +212,47 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
           milestone: Map<String, dynamic>.from(milestone),
         ),
       ),
-    ).then((_) => _load());
+    ).then((_) => _load(context));
   }
 
   Color _statusColor(String? s) {
     switch (s) {
       case 'approved':
       case 'completed':
-        return Colors.green;
+        return AppColors.success;
       case 'pending':
-        return Colors.orange;
+        return AppColors.warning;
       default:
-        return Colors.blueGrey;
+        return AppColors.gray;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Contract progress'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.contractProgress),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
+          IconButton(
+            icon: Icon(Icons.refresh, color: theme.iconTheme.color),
+            onPressed: () => _load(context),
+          ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
           : _error != null
           ? Center(
               child: Padding(
@@ -209,18 +260,26 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(_error!, textAlign: TextAlign.center),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.danger),
+                    ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: _load,
-                      child: const Text('Retry'),
+                      onPressed: () => _load(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                      ),
+                      child: Text(t.retry),
                     ),
                   ],
                 ),
               ),
             )
           : RefreshIndicator(
-              onRefresh: _load,
+              onRefresh: () => _load(context),
+              color: theme.colorScheme.primary,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -242,17 +301,21 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
   }
 
   Widget _buildHeader() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final project = _progress?['project'] as Map<String, dynamic>?;
     final c = _progress?['contract'] as Map<String, dynamic>?;
     final title =
-        project?['title']?.toString() ?? 'Contract #${widget.contractId}';
+        project?['title']?.toString() ?? t.contractNumber(widget.contractId);
     final escrow = c?['escrow_status']?.toString() ?? '';
     final pool = c?['escrow_pool'];
+
     return Card(
       elevation: 0,
+      color: theme.cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: theme.dividerColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -261,7 +324,9 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -269,17 +334,23 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
               runSpacing: 8,
               children: [
                 Chip(
-                  label: Text('You: ${widget.userRole}'),
+                  label: Text('${t.you}: ${widget.userRole}'),
                   visualDensity: VisualDensity.compact,
+                  backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                  labelStyle: TextStyle(color: theme.colorScheme.primary),
                 ),
                 Chip(
-                  label: Text('Escrow: $escrow'),
+                  label: Text('${t.escrow}: $escrow'),
                   visualDensity: VisualDensity.compact,
+                  backgroundColor: theme.colorScheme.secondary.withOpacity(0.1),
+                  labelStyle: TextStyle(color: theme.colorScheme.secondary),
                 ),
                 if (pool != null)
                   Chip(
-                    label: Text('Pool: \$${_fmtMoney(pool)}'),
+                    label: Text('${t.pool}: \$${_fmtMoney(pool)}'),
                     visualDensity: VisualDensity.compact,
+                    backgroundColor: AppColors.infoBg,
+                    labelStyle: const TextStyle(color: AppColors.info),
                   ),
               ],
             ),
@@ -287,9 +358,9 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
                 (c?['coupon_code']?.toString().isNotEmpty ?? false)) ...[
               const SizedBox(height: 8),
               Text(
-                'Coupon ${c!['coupon_code']}: -\$${_fmtMoney(c['coupon_discount_amount'])}',
+                '${t.coupon} ${c!['coupon_code']}: -${t.dollar}${_fmtMoney(c['coupon_discount_amount'])}',
                 style: TextStyle(
-                  color: Colors.green.shade700,
+                  color: theme.colorScheme.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -301,13 +372,16 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
   }
 
   Widget _buildCommissionCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final cp = _progress?['commission_preview'] as Map<String, dynamic>?;
     if (cp == null) return const SizedBox.shrink();
     final rate = cp['rate_percent'];
     final fee = cp['estimated_fee_on_release'] ?? cp['estimated_fee'];
     final note = cp['note']?.toString() ?? '';
+
     return Card(
-      color: Colors.indigo.shade50,
+      color: AppColors.infoBg,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
@@ -317,28 +391,25 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.percent, color: Colors.indigo.shade800, size: 20),
+                Icon(Icons.percent, color: AppColors.info, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Commission preview',
+                  t.commissionPreview,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.indigo.shade900,
+                    color: AppColors.info,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Plan rate (indicative): ${rate ?? '—'}% · Est. platform fee on release: \$${_fmtMoney(fee)}',
-              style: TextStyle(fontSize: 13, color: Colors.indigo.shade900),
+              '${t.planRateIndicative}: ${rate ?? '—'}% · ${t.estPlatformFeeOnRelease}: ${t.dollar}${_fmtMoney(fee)}',
+              style: TextStyle(fontSize: 13, color: AppColors.info),
             ),
             if (note.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text(
-                note,
-                style: TextStyle(fontSize: 12, color: Colors.indigo.shade700),
-              ),
+              Text(note, style: TextStyle(fontSize: 12, color: AppColors.info)),
             ],
           ],
         ),
@@ -347,30 +418,41 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
   }
 
   Widget _buildPendingSection() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final list = _progress?['pending_actions'] as List<dynamic>? ?? [];
+
     if (list.isEmpty) {
       return Card(
+        color: theme.cardColor,
         child: ListTile(
-          leading: const Icon(Icons.check_circle_outline, color: Colors.green),
-          title: const Text('No pending steps'),
-          subtitle: const Text(
-            'You are up to date on milestones and deliverables.',
+          leading: Icon(
+            Icons.check_circle_outline,
+            color: theme.colorScheme.secondary,
           ),
+          title: Text(
+            t.noPendingSteps,
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          subtitle: Text(t.upToDateOnMilestones),
         ),
       );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Your next steps',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          t.yourNextSteps,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         ...list.map((raw) {
           final a = Map<String, dynamic>.from(raw as Map);
           final type = a['type']?.toString() ?? '';
           return Card(
+            color: theme.cardColor,
             margin: const EdgeInsets.only(bottom: 8),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -379,7 +461,10 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
                 children: [
                   Text(
                     _pendingTitle(type, a),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Wrap(spacing: 8, children: _pendingButtons(type, a)),
@@ -393,27 +478,34 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
   }
 
   String _pendingTitle(String type, Map<String, dynamic> a) {
-    final t = a['title']?.toString() ?? '';
+    final t = AppLocalizations.of(context)!;
+    final title = a['title']?.toString() ?? '';
     switch (type) {
       case 'approve_milestone':
-        return 'Approve milestone: $t';
+        return '${t.approveMilestone}: $title';
       case 'review_submission':
-        return 'Review submission: $t';
+        return '${t.reviewSubmission}: $title';
       case 'submit_deliverable':
-        return 'Submit deliverable: $t';
+        return '${t.submitDeliverable}: $title';
       default:
-        return t.isNotEmpty ? t : type;
+        return title.isNotEmpty ? title : type;
     }
   }
 
   List<Widget> _pendingButtons(String type, Map<String, dynamic> a) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     switch (type) {
       case 'approve_milestone':
         final idx = a['milestoneIndex'] as int? ?? 0;
         return [
           ElevatedButton(
-            onPressed: () => _approveMilestone(idx),
-            child: const Text('Approve & release'),
+            onPressed: () => _approveMilestone(context, idx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+            ),
+            child: Text(t.approveAndRelease),
           ),
         ];
       case 'review_submission':
@@ -421,12 +513,18 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
         final id = sid is int ? sid : int.tryParse(sid.toString()) ?? 0;
         return [
           ElevatedButton(
-            onPressed: id > 0 ? () => _approveWork(id) : null,
-            child: const Text('Approve work'),
+            onPressed: id > 0 ? () => _approveWork(context, id) : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.secondary,
+            ),
+            child: Text(t.approveWork),
           ),
           OutlinedButton(
-            onPressed: id > 0 ? () => _promptRevision(id) : null,
-            child: const Text('Request revision'),
+            onPressed: id > 0 ? () => _promptRevision(context, id) : null,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: theme.colorScheme.primary),
+            ),
+            child: Text(t.requestRevision),
           ),
         ];
       case 'submit_deliverable':
@@ -444,7 +542,10 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
             onPressed: _contract != null
                 ? () => _openSubmitDeliverable(m)
                 : null,
-            child: const Text('Submit deliverable'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+            ),
+            child: Text(t.submitDeliverable),
           ),
         ];
       default:
@@ -452,58 +553,18 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     }
   }
 
-  Widget _buildMilestonesSection() {
-    final milestones = _progress?['milestones'] as List<dynamic>? ?? [];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Milestones',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        ...milestones.asMap().entries.map((e) {
-          final m = Map<String, dynamic>.from(e.value as Map);
-          final st = m['status']?.toString() ?? 'pending';
-          final amt = m['amount'];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: _statusColor(st).withOpacity(0.15),
-                child: Text(
-                  '${m['index'] ?? e.key}',
-                  style: TextStyle(
-                    color: _statusColor(st),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              title: Text(m['title']?.toString() ?? 'Milestone'),
-              subtitle: Text(
-                '${st.toUpperCase()}${amt != null ? ' · \$${_fmtMoney(amt)}' : ''}',
-              ),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
   Widget _buildSubmissionsSection() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final subs = _progress?['submissions'] as List<dynamic>? ?? [];
     final milestones = _progress?['milestones'] as List<dynamic>? ?? [];
     final contract = _progress?['contract'] as Map<String, dynamic>?;
     final contractStatus = contract?['status']?.toString() ?? '';
-    final approvedMilestoneOnly = milestones
-        .asMap()
-        .entries
-        .where((e) {
-          final m = Map<String, dynamic>.from(e.value as Map);
-          final st = m['status']?.toString() ?? '';
-          return st == 'approved' || st == 'completed';
-        })
-        .toList();
+    final approvedMilestoneOnly = milestones.asMap().entries.where((e) {
+      final m = Map<String, dynamic>.from(e.value as Map);
+      final st = m['status']?.toString() ?? '';
+      return st == 'approved' || st == 'completed';
+    }).toList();
 
     if (subs.isEmpty && approvedMilestoneOnly.isEmpty) {
       return const SizedBox.shrink();
@@ -511,9 +572,11 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Deliverables',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          t.deliverables,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         ...subs.map((raw) {
@@ -527,7 +590,9 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
           if (milestoneIndex != null &&
               milestoneIndex >= 0 &&
               milestoneIndex < milestones.length) {
-            final m = Map<String, dynamic>.from(milestones[milestoneIndex] as Map);
+            final m = Map<String, dynamic>.from(
+              milestones[milestoneIndex] as Map,
+            );
             milestoneStatus = m['status']?.toString() ?? '';
           }
           final canAddToPortfolio =
@@ -537,10 +602,19 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
                   milestoneStatus == 'approved' ||
                   milestoneStatus == 'completed');
           return Card(
+            color: theme.cardColor,
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
-              title: Text(s['title']?.toString() ?? 'Submission'),
-              subtitle: Text('$st · Milestone ${s['milestone_index'] ?? '—'}'),
+              title: Text(
+                s['title']?.toString() ?? t.submission,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+              subtitle: Text(
+                '$st · ${t.milestone} ${s['milestone_index'] ?? '—'}',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
               trailing: canAddToPortfolio
                   ? TextButton.icon(
                       onPressed: () {
@@ -548,10 +622,17 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
                         final id = sid is int
                             ? sid
                             : int.tryParse(sid.toString()) ?? 0;
-                        if (id > 0) _addSubmissionToPortfolio(id);
+                        if (id > 0) _addSubmissionToPortfolio(context, id);
                       },
-                      icon: const Icon(Icons.add_box_outlined, size: 16),
-                      label: const Text('Add to Portfolio'),
+                      icon: Icon(
+                        Icons.add_box_outlined,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
+                      label: Text(
+                        t.addToPortfolio,
+                        style: TextStyle(color: theme.colorScheme.primary),
+                      ),
                     )
                   : null,
             ),
@@ -562,16 +643,30 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
             final idx = entry.key;
             final m = Map<String, dynamic>.from(entry.value as Map);
             return Card(
+              color: theme.cardColor,
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text(m['title']?.toString() ?? 'Milestone ${idx + 1}'),
+                title: Text(
+                  m['title']?.toString() ?? '${t.milestone} ${idx + 1}',
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
                 subtitle: Text(
-                  '${(m['status'] ?? 'approved').toString()} · Milestone $idx',
+                  '${(m['status'] ?? 'approved').toString()} · ${t.milestone} $idx',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
                 trailing: TextButton.icon(
-                  onPressed: () => _addMilestoneToPortfolio(idx),
-                  icon: const Icon(Icons.add_box_outlined, size: 16),
-                  label: const Text('Add to Portfolio'),
+                  onPressed: () => _addMilestoneToPortfolio(context, idx),
+                  icon: Icon(
+                    Icons.add_box_outlined,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  label: Text(
+                    t.addToPortfolio,
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
                 ),
               ),
             );
@@ -581,26 +676,96 @@ class _ContractProgressScreenState extends State<ContractProgressScreen> {
     );
   }
 
-  Widget _buildTimelineSection() {
-    final items = _progress?['timeline'] as List<dynamic>? ?? [];
-    if (items.isEmpty) return const SizedBox.shrink();
+  Widget _buildMilestonesSection() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final milestones = _progress?['milestones'] as List<dynamic>? ?? [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recent activity',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          t.milestones,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...milestones.asMap().entries.map((e) {
+          final m = Map<String, dynamic>.from(e.value as Map);
+          final st = m['status']?.toString() ?? 'pending';
+          final amt = m['amount'];
+          final statusColor = _statusColor(st);
+
+          return Card(
+            color: theme.cardColor,
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: statusColor.withOpacity(0.15),
+                child: Text(
+                  '${m['index'] ?? e.key}',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              title: Text(
+                m['title']?.toString() ?? t.milestone,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+              subtitle: Text(
+                '${st.toUpperCase()}${amt != null ? ' · ${t.dollar}${_fmtMoney(amt)}' : ''}',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildTimelineSection() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final items = _progress?['timeline'] as List<dynamic>? ?? [];
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t.recentActivity,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         ...items.take(15).map((raw) {
-          final t = Map<String, dynamic>.from(raw as Map);
-          final at = t['at']?.toString() ?? '';
-          final label = t['label']?.toString() ?? '';
+          final item = Map<String, dynamic>.from(raw as Map);
+          final at = item['at']?.toString() ?? '';
+          final label = item['label']?.toString() ?? '';
           return ListTile(
             dense: true,
-            leading: const Icon(Icons.history, size: 18),
-            title: Text(label, style: const TextStyle(fontSize: 13)),
-            subtitle: Text(at, style: const TextStyle(fontSize: 11)),
+            leading: Icon(
+              Icons.history,
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
+            title: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+            ),
+            subtitle: Text(
+              at,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 11,
+                color: AppColors.gray,
+              ),
+            ),
           );
         }),
       ],

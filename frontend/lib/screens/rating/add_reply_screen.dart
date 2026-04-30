@@ -2,7 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class AddReplyScreen extends StatefulWidget {
   final int reviewId;
@@ -19,19 +21,24 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Reply to Review'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.replyToReview),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _submitReply,
-            child: const Text(
-              'Post',
+            child: Text(
+              t.post,
               style: TextStyle(
-                color: Color(0xff14A800),
+                color: AppColors.secondary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -46,21 +53,18 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: AppColors.infoBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: AppColors.info.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.blue),
+                  Icon(Icons.info_outline, color: AppColors.info),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Your reply will be visible to everyone. Be professional and courteous.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue.shade800,
-                      ),
+                      t.replyVisibilityMessage,
+                      style: TextStyle(fontSize: 12, color: AppColors.info),
                     ),
                   ),
                 ],
@@ -68,22 +72,41 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
             ),
             const SizedBox(height: 20),
 
-            const Text(
-              'Your Reply',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              t.yourReply,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _replyController,
               maxLines: 6,
+              style: TextStyle(color: theme.colorScheme.onSurface),
               decoration: InputDecoration(
-                hintText: 'Write your response to this review...\n\n'
-                    'Example: "Thank you for your feedback! We appreciate your business and will work on improving."',
+                hintText: t.replyHint,
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
                 ),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
                 alignLabelWithHint: true,
               ),
               autofocus: true,
@@ -95,7 +118,9 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
                 '${_replyController.text.length}/1000',
                 style: TextStyle(
                   fontSize: 11,
-                  color: _replyController.text.length > 1000 ? Colors.red : Colors.grey,
+                  color: _replyController.text.length > 1000
+                      ? AppColors.danger
+                      : theme.colorScheme.onSurface.withOpacity(0.5),
                 ),
               ),
             ),
@@ -104,21 +129,31 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
 
             Card(
               elevation: 0,
+              color: theme.cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
+                side: BorderSide(color: theme.dividerColor),
               ),
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.lightbulb_outline, color: Colors.amber),
-                    title: const Text('Tips for a good reply'),
-                    subtitle: const Text(
-                      '• Be professional and polite\n'
-                      '• Address specific concerns\n'
-                      '• Thank the reviewer for feedback\n'
-                      '• Show willingness to improve',
-                      style: TextStyle(fontSize: 11),
+                    leading: const Icon(
+                      Icons.lightbulb_outline,
+                      color: Colors.amber,
+                    ),
+                    title: Text(
+                      t.tipsForGoodReply,
+                      style: TextStyle(color: theme.colorScheme.onSurface),
+                    ),
+                    subtitle: Text(
+                      '${t.beProfessionalAndPolite}\n'
+                      '${t.addressSpecificConcerns}\n'
+                      '${t.thankReviewerForFeedback}\n'
+                      '${t.showWillingnessToImprove}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
                   ),
                 ],
@@ -131,17 +166,23 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Preview',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  Text(
+                    t.preview,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: theme.dividerColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,27 +193,42 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: Colors.green.shade100,
+                                color: AppColors.success.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.reply, size: 14, color: Colors.green),
+                              child: Icon(
+                                Icons.reply,
+                                size: 14,
+                                color: AppColors.success,
+                              ),
                             ),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Seller Response',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            Text(
+                              t.sellerResponse,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: theme.colorScheme.onSurface,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
                           _replyController.text,
-                          style: const TextStyle(fontSize: 13, height: 1.4),
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Just now',
-                          style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                          t.justNow,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
                         ),
                       ],
                     ),
@@ -186,14 +242,15 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
   }
 
   Future<void> _submitReply() async {
+    final t = AppLocalizations.of(context)!;
     final reply = _replyController.text.trim();
     if (reply.isEmpty) {
-      Fluttertoast.showToast(msg: 'Please enter a reply');
+      Fluttertoast.showToast(msg: t.pleaseEnterReply);
       return;
     }
 
     if (reply.length < 10) {
-      Fluttertoast.showToast(msg: 'Reply should be at least 10 characters');
+      Fluttertoast.showToast(msg: t.replyMinLength);
       return;
     }
 
@@ -204,18 +261,21 @@ class _AddReplyScreenState extends State<AddReplyScreen> {
 
       if (result['success'] == true) {
         Fluttertoast.showToast(
-          msg: '✅ Reply posted successfully',
-          backgroundColor: Colors.green,
+          msg: t.replyPostedSuccess,
+          backgroundColor: AppColors.success,
         );
         Navigator.pop(context, reply);
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? 'Error posting reply',
-          backgroundColor: Colors.red,
+          msg: result['message'] ?? t.errorPostingReply,
+          backgroundColor: AppColors.danger,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e', backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+        msg: '${t.error}: $e',
+        backgroundColor: AppColors.danger,
+      );
     } finally {
       setState(() => _isLoading = false);
     }

@@ -2,6 +2,7 @@
 import 'dart:ui';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lottie/lottie.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
@@ -9,22 +10,15 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../services/landing_service.dart';
 import '../../models/landing_data.dart';
+import '../../providers/theme_provider.dart';
 import '../auth/login_screen.dart';
 import '../auth/signup_screen.dart';
 
-class AppColors {
+class BrandColors {
   static const brand = Color(0xFF6C3AFF);
   static const brand2 = Color(0xFF9B59FF);
   static const accent = Color(0xFFFF6B35);
   static const accent2 = Color(0xFFFFB347);
-  static const darkBg = Color(0xFF0D0B1E);
-  static const darkCard = Color(0xFF1A1535);
-  static const darkCard2 = Color(0xFF13102B);
-  static const glass = Color(0x1AFFFFFF);
-  static const border = Color(0x1FFFFFFF);
-  static const textPrimary = Colors.white;
-  static const textMuted = Color(0x99FFFFFF);
-  static const textSubtle = Color(0x55FFFFFF);
 
   static const LinearGradient brandGradient = LinearGradient(
     colors: [brand, brand2],
@@ -36,11 +30,49 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  static const LinearGradient heroBg = LinearGradient(
-    colors: [darkBg, Color(0xFF130F2A)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-  );
+}
+
+class DynamicColors {
+  static Color background(BuildContext context) {
+    return Theme.of(context).scaffoldBackgroundColor;
+  }
+
+  static Color cardColor(BuildContext context) {
+    return Theme.of(context).cardColor;
+  }
+
+  static Color textPrimary(BuildContext context) {
+    return Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white;
+  }
+
+  static Color textMuted(BuildContext context) {
+    return Theme.of(context).textTheme.bodyMedium?.color ?? Colors.white70;
+  }
+
+  static Color textSubtle(BuildContext context) {
+    return textMuted(context).withOpacity(0.6);
+  }
+
+  static Color glassColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? const Color(0x1AFFFFFF) : const Color(0x1A000000);
+  }
+
+  static Color borderColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? const Color(0x1FFFFFFF) : const Color(0x1A000000);
+  }
+
+  static LinearGradient heroBg(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return LinearGradient(
+      colors: isDark
+          ? [const Color(0xFF0D0B1E), const Color(0xFF130F2A)]
+          : [const Color(0xFFF8FAFF), const Color(0xFFEFE7DF)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+  }
 }
 
 class ParticleBackground extends StatefulWidget {
@@ -114,9 +146,14 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
-        CustomPaint(painter: _ParticlePainter(_particles), size: Size.infinite),
+        if (isDark)
+          CustomPaint(
+            painter: _ParticlePainter(_particles),
+            size: Size.infinite,
+          ),
         widget.child,
       ],
     );
@@ -126,7 +163,6 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 class _Particle {
   double x, y, size, speed;
   Color color;
-
   _Particle({
     required this.x,
     required this.y,
@@ -138,13 +174,11 @@ class _Particle {
 
 class _ParticlePainter extends CustomPainter {
   final List<_Particle> particles;
-
   _ParticlePainter(this.particles);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
-
     for (var particle in particles) {
       paint.color = particle.color;
       canvas.drawCircle(
@@ -228,18 +262,15 @@ class _AnimatedCounterState extends State<AnimatedCounter>
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-
     _animation = Tween<double>(
       begin: 0,
       end: widget.targetValue.toDouble(),
     ).animate(_controller);
-
     _animation.addListener(() {
       setState(() {
         _currentValue = _animation.value.round();
       });
     });
-
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         _controller.forward();
@@ -261,14 +292,14 @@ class _AnimatedCounterState extends State<AnimatedCounter>
         border: Border(
           right: widget.isLast
               ? BorderSide.none
-              : BorderSide(color: AppColors.border),
+              : BorderSide(color: DynamicColors.borderColor(context)),
         ),
       ),
       child: Column(
         children: [
           ShaderMask(
             shaderCallback: (b) => const LinearGradient(
-              colors: [AppColors.brand2, AppColors.accent2],
+              colors: [BrandColors.brand2, BrandColors.accent2],
             ).createShader(b),
             child: Text(
               '$_currentValue${widget.suffix}',
@@ -282,7 +313,10 @@ class _AnimatedCounterState extends State<AnimatedCounter>
           const SizedBox(height: 4),
           Text(
             widget.label,
-            style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+            style: TextStyle(
+              fontSize: 13,
+              color: DynamicColors.textMuted(context),
+            ),
           ),
         ],
       ),
@@ -311,25 +345,25 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
       'icon': Icons.verified_rounded,
       'title': 'Verified Pros',
       'desc': 'Every freelancer is background-checked & skill-verified.',
-      'color': AppColors.brand,
+      'color': BrandColors.brand,
     },
     {
       'icon': Icons.lock_rounded,
       'title': 'Secure Payments',
       'desc': 'Escrow system keeps funds safe until the job is approved.',
-      'color': AppColors.accent,
+      'color': BrandColors.accent,
     },
     {
       'icon': Icons.auto_awesome_rounded,
       'title': 'AI Matching',
       'desc': 'Smart algorithm finds your perfect match in seconds.',
-      'color': AppColors.accent2,
+      'color': BrandColors.accent2,
     },
     {
       'icon': Icons.public_rounded,
       'title': 'Global Talent',
       'desc': 'Access top talent from 150+ countries worldwide.',
-      'color': AppColors.brand2,
+      'color': BrandColors.brand2,
     },
     {
       'icon': Icons.bar_chart_rounded,
@@ -372,7 +406,7 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
     {
       'emoji': '📱',
       'badge': '🔥 Hot',
-      'badgeColor': AppColors.brand,
+      'badgeColor': BrandColors.brand,
       'title': 'Senior Flutter Developer',
       'budget': '\$5K–\$8K',
       'duration': '3 months',
@@ -381,7 +415,7 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
     {
       'emoji': '🎨',
       'badge': '✨ New',
-      'badgeColor': AppColors.accent,
+      'badgeColor': BrandColors.accent,
       'title': 'UI/UX Designer',
       'budget': '\$3K–\$5K',
       'duration': '2 months',
@@ -452,11 +486,11 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        backgroundColor: AppColors.darkBg,
-        body: Center(
+      return Scaffold(
+        backgroundColor: DynamicColors.background(context),
+        body: const Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation(AppColors.brand),
+            valueColor: AlwaysStoppedAnimation(BrandColors.brand),
           ),
         ),
       );
@@ -468,7 +502,7 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
     return ParticleBackground(
       particleCount: 30,
       child: Scaffold(
-        backgroundColor: AppColors.darkBg,
+        backgroundColor: DynamicColors.background(context),
         floatingActionButton: _showBackToTop ? _backToTopBtn() : null,
         body: CustomScrollView(
           controller: _scrollController,
@@ -495,10 +529,11 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
   }
 
   SliverAppBar _buildSliverAppBar(bool isMobile) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SliverAppBar(
       pinned: true,
       floating: true,
-      backgroundColor: AppColors.darkBg.withOpacity(0.85),
+      backgroundColor: DynamicColors.background(context).withOpacity(0.85),
       elevation: 0,
       toolbarHeight: 64,
       flexibleSpace: ClipRect(
@@ -506,14 +541,16 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border)),
+              border: Border(
+                bottom: BorderSide(color: DynamicColors.borderColor(context)),
+              ),
             ),
             padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 48),
             child: Row(
               children: [
                 ShaderMask(
                   shaderCallback: (bounds) =>
-                      AppColors.brandGradient.createShader(bounds),
+                      BrandColors.brandGradient.createShader(bounds),
                   child: const Text(
                     '⚡ FreelanceX',
                     style: TextStyle(
@@ -545,6 +582,8 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
                     MaterialPageRoute(builder: (_) => const SignupScreen()),
                   ),
                 ),
+                const SizedBox(width: 10),
+                _themeToggleButton(),
               ],
             ),
           ),
@@ -553,10 +592,36 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
     );
   }
 
+  Widget _themeToggleButton() {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        return IconButton(
+          onPressed: () => themeProvider.toggleTheme(),
+          icon: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Icon(
+              themeProvider.isDarkMode
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              key: ValueKey(themeProvider.isDarkMode),
+              color: Colors.white,
+            ),
+          ),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white.withOpacity(0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHero(bool isMobile) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(gradient: AppColors.heroBg),
+      decoration: BoxDecoration(gradient: DynamicColors.heroBg(context)),
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 24 : 48,
         vertical: isMobile ? 60 : 100,
@@ -578,7 +643,7 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: AppColors.textMuted,
+            color: DynamicColors.textMuted(context),
             height: 1.7,
           ),
         ),
@@ -608,7 +673,7 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
                 'Connect with verified freelancers, get projects done faster, and grow your business with confidence.',
                 style: TextStyle(
                   fontSize: 17,
-                  color: AppColors.textMuted,
+                  color: DynamicColors.textMuted(context),
                   height: 1.7,
                 ),
               ),
@@ -624,145 +689,182 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
         ),
       ),
       const SizedBox(width: 48),
-      Expanded(
-  child: ZoomIn(
-    child: _buildDashboardPreview(),
-  ),
-),
+      Expanded(child: ZoomIn(child: _buildDashboardPreview())),
     ],
   );
 
   Widget _buildDashboardPreview() {
-  return Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [AppColors.darkCard, AppColors.darkCard2],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(32),
-      border: Border.all(color: AppColors.brand.withOpacity(0.3)),
-      boxShadow: [
-        BoxShadow(
-          color: AppColors.brand.withOpacity(0.2),
-          blurRadius: 30,
-          spreadRadius: 5,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1A1535), const Color(0xFF13102B)]
+              : [Colors.white, const Color(0xFFF5F5F5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
-    ),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: AppColors.brandGradient,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.dashboard, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Live Dashboard',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Text('Live', style: TextStyle(color: Colors.green, fontSize: 11)),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            _buildStatCard('💰', 'Total Volume', '\$2.4M', '+23%'),
-            const SizedBox(width: 12),
-            _buildStatCard('👥', 'Active Users', '12.4K', '+18%'),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _buildStatCard('✅', 'Completed', '3,221', '+42%'),
-            const SizedBox(width: 12),
-            _buildStatCard('⭐', 'Rating', '4.98', '+0.2'),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: BrandColors.brand.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: BrandColors.brand.withOpacity(0.2),
+            blurRadius: 30,
+            spreadRadius: 5,
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
             children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Monthly Goal', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Text('78%', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: 0.78,
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  color: AppColors.brand2,
-                  minHeight: 8,
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: BrandColors.brandGradient,
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Icon(Icons.dashboard, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Live Dashboard',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Live',
+                style: TextStyle(color: Colors.green, fontSize: 11),
               ),
             ],
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildStatCard(String icon, String label, String value, String change) {
-  return Expanded(
-    child: Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 24)),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-          Text(change, style: TextStyle(color: Colors.green[400], fontSize: 10)),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildStatCard('💰', 'Total Volume', '\$2.4M', '+23%', isDark),
+              const SizedBox(width: 12),
+              _buildStatCard('👥', 'Active Users', '12.4K', '+18%', isDark),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildStatCard('✅', 'Completed', '3,221', '+42%', isDark),
+              const SizedBox(width: 12),
+              _buildStatCard('⭐', 'Rating', '4.98', '+0.2', isDark),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.black.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Monthly Goal',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    Text(
+                      '78%',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: 0.78,
+                    backgroundColor: Colors.white.withOpacity(0.1),
+                    color: BrandColors.brand2,
+                    minHeight: 8,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildStatCard(
+    String icon,
+    String label,
+    String value,
+    String change,
+    bool isDark,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 24)),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isDark ? Colors.white54 : Colors.black54,
+                fontSize: 10,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              change,
+              style: TextStyle(color: Colors.green[400], fontSize: 10),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _heroBadge() => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     decoration: BoxDecoration(
-      color: AppColors.brand.withOpacity(0.15),
-      border: Border.all(color: AppColors.brand.withOpacity(0.4)),
+      color: BrandColors.brand.withOpacity(0.15),
+      border: Border.all(color: BrandColors.brand.withOpacity(0.4)),
       borderRadius: BorderRadius.circular(100),
     ),
     child: Row(
@@ -772,7 +874,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
           width: 7,
           height: 7,
           decoration: const BoxDecoration(
-            color: AppColors.brand2,
+            color: BrandColors.brand2,
             shape: BoxShape.circle,
           ),
         ),
@@ -781,7 +883,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
           '#1 Freelance Platform 2025',
           style: TextStyle(
             fontSize: 13,
-            color: AppColors.brand2,
+            color: BrandColors.brand2,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -817,7 +919,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                   fontSize: 52,
                   fontWeight: FontWeight.w800,
                 ),
-                colors: [AppColors.brand2, AppColors.accent],
+                colors: [BrandColors.brand2, BrandColors.accent],
               ),
               ColorizeAnimatedText(
                 'Developers',
@@ -825,7 +927,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                   fontSize: 52,
                   fontWeight: FontWeight.w800,
                 ),
-                colors: [AppColors.accent, AppColors.accent2],
+                colors: [BrandColors.accent, BrandColors.accent2],
               ),
               ColorizeAnimatedText(
                 'Designers',
@@ -833,7 +935,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                   fontSize: 52,
                   fontWeight: FontWeight.w800,
                 ),
-                colors: [AppColors.accent2, AppColors.brand2],
+                colors: [BrandColors.accent2, BrandColors.brand2],
               ),
             ],
             repeatForever: true,
@@ -848,22 +950,25 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     height: 58,
     constraints: const BoxConstraints(maxWidth: 540),
     decoration: BoxDecoration(
-      color: AppColors.glass,
-      border: Border.all(color: AppColors.border),
+      color: DynamicColors.glassColor(context),
+      border: Border.all(color: DynamicColors.borderColor(context)),
       borderRadius: BorderRadius.circular(100),
     ),
     child: Row(
       children: [
         const SizedBox(width: 20),
-        const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+        Icon(Icons.search, color: DynamicColors.textMuted(context), size: 20),
         const SizedBox(width: 10),
         Expanded(
           child: TextField(
-            style: const TextStyle(color: Colors.white, fontSize: 15),
+            style: TextStyle(
+              color: DynamicColors.textPrimary(context),
+              fontSize: 15,
+            ),
             decoration: InputDecoration(
               hintText: 'Search skills, jobs or freelancers...',
-              hintStyle: const TextStyle(
-                color: AppColors.textMuted,
+              hintStyle: TextStyle(
+                color: DynamicColors.textMuted(context),
                 fontSize: 15,
               ),
               border: InputBorder.none,
@@ -873,11 +978,11 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
         Container(
           margin: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            gradient: AppColors.brandGradient,
+            gradient: BrandColors.brandGradient,
             borderRadius: BorderRadius.circular(100),
             boxShadow: [
               BoxShadow(
-                color: AppColors.brand.withOpacity(0.5),
+                color: BrandColors.brand.withOpacity(0.5),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -914,13 +1019,13 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
   Widget _pillTag(String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     decoration: BoxDecoration(
-      color: AppColors.glass,
-      border: Border.all(color: AppColors.border),
+      color: DynamicColors.glassColor(context),
+      border: Border.all(color: DynamicColors.borderColor(context)),
       borderRadius: BorderRadius.circular(100),
     ),
     child: Text(
       label,
-      style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+      style: TextStyle(color: DynamicColors.textMuted(context), fontSize: 13),
     ),
   );
 
@@ -930,11 +1035,15 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     errorBuilder: (_, __, ___) => Container(
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: DynamicColors.cardColor(context),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: const Center(
-        child: Icon(Icons.animation_rounded, size: 64, color: AppColors.brand),
+      child: Center(
+        child: Icon(
+          Icons.animation_rounded,
+          size: 64,
+          color: BrandColors.brand,
+        ),
       ),
     ),
   );
@@ -951,7 +1060,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     return FadeInUp(
       duration: const Duration(milliseconds: 800),
       child: Container(
-        color: AppColors.darkCard2,
+        color: DynamicColors.cardColor(context).withOpacity(0.5),
         child: Row(
           children: items.asMap().entries.map((e) {
             final isLast = e.key == items.length - 1;
@@ -978,7 +1087,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
 
   Widget _buildFeatures(bool isMobile) {
     return Container(
-      color: AppColors.darkBg,
+      color: DynamicColors.background(context),
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 24 : 48,
         vertical: 80,
@@ -1016,6 +1125,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
 
   Widget _featureCard(Map<String, dynamic> f) {
     final color = f['color'] as Color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedHover(
       scale: 1.03,
       child: Container(
@@ -1024,9 +1134,14 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.darkCard, AppColors.darkCard.withOpacity(0.8)],
+            colors: isDark
+                ? [
+                    const Color(0xFF1A1535),
+                    const Color(0xFF1A1535).withOpacity(0.8),
+                  ]
+                : [Colors.white, Colors.white.withOpacity(0.8)],
           ),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: DynamicColors.borderColor(context)),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -1072,18 +1187,18 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
             const SizedBox(height: 18),
             Text(
               f['title'] as String,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: DynamicColors.textPrimary(context),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               f['desc'] as String,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textMuted,
+                color: DynamicColors.textMuted(context),
                 height: 1.6,
               ),
             ),
@@ -1139,7 +1254,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
 
   Widget _buildHowItWorks(bool isMobile) {
     return Container(
-      color: AppColors.darkCard2,
+      color: DynamicColors.cardColor(context).withOpacity(0.3),
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 24 : 48,
         vertical: 80,
@@ -1209,7 +1324,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                   right: 0,
                   child: Container(
                     height: 1,
-                    color: AppColors.brand.withOpacity(0.3),
+                    color: BrandColors.brand.withOpacity(0.3),
                   ),
                 ),
               TweenAnimationBuilder<double>(
@@ -1222,11 +1337,11 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        gradient: AppColors.brandGradient,
+                        gradient: BrandColors.brandGradient,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.brand.withOpacity(0.5),
+                            color: BrandColors.brand.withOpacity(0.5),
                             blurRadius: 20,
                             spreadRadius: 4,
                           ),
@@ -1252,19 +1367,19 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
           Text(
             step['title'] as String,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: DynamicColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             step['desc'] as String,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textMuted,
+              color: DynamicColors.textMuted(context),
               height: 1.5,
             ),
           ),
@@ -1275,7 +1390,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
 
   Widget _buildLatestJobs(bool isMobile) {
     return Container(
-      color: AppColors.darkBg,
+      color: DynamicColors.background(context),
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 24 : 48,
         vertical: 80,
@@ -1316,8 +1431,8 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.darkCard,
-          border: Border.all(color: AppColors.border),
+          color: DynamicColors.cardColor(context),
+          border: Border.all(color: DynamicColors.borderColor(context)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -1330,7 +1445,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    gradient: AppColors.brandGradient,
+                    gradient: BrandColors.brandGradient,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -1364,40 +1479,40 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
             const SizedBox(height: 16),
             Text(
               j['title'] as String,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: DynamicColors.textPrimary(context),
               ),
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.attach_money_rounded,
                   size: 15,
-                  color: AppColors.textMuted,
+                  color: DynamicColors.textMuted(context),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   j['budget'] as String,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textMuted,
+                    color: DynamicColors.textMuted(context),
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Icon(
+                Icon(
                   Icons.timer_outlined,
                   size: 15,
-                  color: AppColors.textMuted,
+                  color: DynamicColors.textMuted(context),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   j['duration'] as String,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textMuted,
+                    color: DynamicColors.textMuted(context),
                   ),
                 ),
               ],
@@ -1414,15 +1529,17 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.glass,
-                        border: Border.all(color: AppColors.border),
+                        color: DynamicColors.glassColor(context),
+                        border: Border.all(
+                          color: DynamicColors.borderColor(context),
+                        ),
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text(
                         s,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textMuted,
+                          color: DynamicColors.textMuted(context),
                         ),
                       ),
                     ),
@@ -1435,12 +1552,12 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
               child: OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: DynamicColors.borderColor(context)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(100),
                   ),
-                  foregroundColor: Colors.white,
+                  foregroundColor: DynamicColors.textPrimary(context),
                 ),
                 child: const Text(
                   'Apply Now →',
@@ -1459,7 +1576,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     if (testimonials.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      color: AppColors.darkCard2,
+      color: DynamicColors.cardColor(context).withOpacity(0.3),
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 24 : 48,
         vertical: 80,
@@ -1491,8 +1608,10 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppColors.darkCard,
-                    border: Border.all(color: AppColors.border),
+                    color: DynamicColors.cardColor(context),
+                    border: Border.all(
+                      color: DynamicColors.borderColor(context),
+                    ),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
@@ -1505,7 +1624,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                             i < t.rating
                                 ? Icons.star_rounded
                                 : Icons.star_border_rounded,
-                            color: AppColors.accent2,
+                            color: BrandColors.accent2,
                             size: 18,
                           ),
                         ),
@@ -1514,9 +1633,9 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                       Expanded(
                         child: Text(
                           '"${t.content}"',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textMuted,
+                            color: DynamicColors.textMuted(context),
                             height: 1.65,
                             fontStyle: FontStyle.italic,
                           ),
@@ -1527,7 +1646,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                         children: [
                           CircleAvatar(
                             radius: 22,
-                            backgroundColor: AppColors.brand.withOpacity(0.3),
+                            backgroundColor: BrandColors.brand.withOpacity(0.3),
                             backgroundImage: t.avatar != null
                                 ? NetworkImage(t.avatar!)
                                 : null,
@@ -1535,7 +1654,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                                 ? Text(
                                     t.name[0].toUpperCase(),
                                     style: const TextStyle(
-                                      color: AppColors.brand2,
+                                      color: BrandColors.brand2,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   )
@@ -1547,17 +1666,17 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                             children: [
                               Text(
                                 t.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  color: DynamicColors.textPrimary(context),
                                 ),
                               ),
                               Text(
                                 t.role ?? 'User',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textMuted,
+                                  color: DynamicColors.textMuted(context),
                                 ),
                               ),
                             ],
@@ -1582,8 +1701,8 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   color: _currentCarouselIndex == i
-                      ? AppColors.brand2
-                      : AppColors.border,
+                      ? BrandColors.brand2
+                      : DynamicColors.borderColor(context),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1595,6 +1714,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
   }
 
   Widget _buildCTA(bool isMobile) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FadeInUp(
       child: Container(
         margin: EdgeInsets.symmetric(
@@ -1606,12 +1726,26 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
           vertical: 72,
         ),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A0A3C), Color(0xFF2D0E5C), Color(0xFF1A0A3C)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: AppColors.brand.withOpacity(0.35)),
+          gradient: isDark
+              ? const LinearGradient(
+                  colors: [
+                    Color(0xFF1A0A3C),
+                    Color(0xFF2D0E5C),
+                    Color(0xFF1A0A3C),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : const LinearGradient(
+                  colors: [
+                    Color(0xFFE6C4A4),
+                    Color(0xFFD4AAFF),
+                    Color(0xFFE6C4A4),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          border: Border.all(color: BrandColors.brand.withOpacity(0.35)),
           borderRadius: BorderRadius.circular(28),
         ),
         child: Column(
@@ -1631,12 +1765,12 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Join 50,000+ professionals already building their future on FreelanceX',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 17,
-                color: AppColors.textMuted,
+                color: isDark ? Colors.white70 : Colors.white,
                 height: 1.5,
               ),
             ),
@@ -1681,7 +1815,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
                           child: const Text(
                             'Start Hiring Today',
                             style: TextStyle(
-                              color: AppColors.darkBg,
+                              color: Color(0xFF1A0A3C),
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
                             ),
@@ -1732,7 +1866,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
 
   Widget _buildFooter(bool isMobile) {
     return Container(
-      color: AppColors.darkCard2,
+      color: DynamicColors.cardColor(context).withOpacity(0.5),
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 24 : 48,
         vertical: 48,
@@ -1741,16 +1875,16 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
         children: [
           isMobile ? _footerMobile() : _footerDesktop(),
           const SizedBox(height: 32),
-          Container(height: 1, color: AppColors.border),
+          Container(height: 1, color: DynamicColors.borderColor(context)),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 '© 2025 FreelanceX. All rights reserved.',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textMuted,
+                  color: DynamicColors.textMuted(context),
                 ),
               ),
               Row(
@@ -1821,7 +1955,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       ShaderMask(
-        shaderCallback: (b) => AppColors.brandGradient.createShader(b),
+        shaderCallback: (b) => BrandColors.brandGradient.createShader(b),
         child: const Text(
           '⚡ FreelanceX',
           style: TextStyle(
@@ -1832,9 +1966,13 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
         ),
       ),
       const SizedBox(height: 12),
-      const Text(
+      Text(
         'The world\'s leading platform connecting top freelancers with innovative businesses.',
-        style: TextStyle(fontSize: 14, color: AppColors.textMuted, height: 1.7),
+        style: TextStyle(
+          fontSize: 14,
+          color: DynamicColors.textMuted(context),
+          height: 1.7,
+        ),
       ),
     ],
   );
@@ -1844,10 +1982,10 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     children: [
       Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: AppColors.textMuted,
+          color: DynamicColors.textMuted(context),
           letterSpacing: 1.5,
         ),
       ),
@@ -1859,7 +1997,10 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
             onTap: () {},
             child: Text(
               l,
-              style: const TextStyle(fontSize: 14, color: AppColors.textSubtle),
+              style: TextStyle(
+                fontSize: 14,
+                color: DynamicColors.textSubtle(context),
+              ),
             ),
           ),
         ),
@@ -1871,16 +2012,16 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     width: 36,
     height: 36,
     decoration: BoxDecoration(
-      color: AppColors.glass,
-      border: Border.all(color: AppColors.border),
+      color: DynamicColors.glassColor(context),
+      border: Border.all(color: DynamicColors.borderColor(context)),
       shape: BoxShape.circle,
     ),
     child: Center(
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
-          color: AppColors.textMuted,
+          color: DynamicColors.textMuted(context),
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -1892,7 +2033,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
     style: const TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w700,
-      color: AppColors.brand2,
+      color: BrandColors.brand2,
       letterSpacing: 3,
     ),
   );
@@ -1900,10 +2041,10 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
   Widget _sectionTitle(String text) => Text(
     text,
     textAlign: TextAlign.center,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 36,
       fontWeight: FontWeight.w800,
-      color: Colors.white,
+      color: DynamicColors.textPrimary(context),
       height: 1.2,
     ),
   );
@@ -1917,7 +2058,10 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
+          style: TextStyle(
+            fontSize: 14,
+            color: DynamicColors.textMuted(context),
+          ),
         ),
       ),
     ),
@@ -1926,10 +2070,10 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
   Widget _ghostBtn(String label, VoidCallback onTap) => OutlinedButton(
     onPressed: onTap,
     style: OutlinedButton.styleFrom(
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide(color: DynamicColors.borderColor(context)),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-      foregroundColor: Colors.white,
+      foregroundColor: DynamicColors.textPrimary(context),
     ),
     child: Text(label, style: const TextStyle(fontSize: 14)),
   );
@@ -1943,11 +2087,11 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
             scale: 0.9 + (value * 0.1),
             child: Container(
               decoration: BoxDecoration(
-                gradient: AppColors.brandGradient,
+                gradient: BrandColors.brandGradient,
                 borderRadius: BorderRadius.circular(100),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.brand.withOpacity(0.45),
+                    color: BrandColors.brand.withOpacity(0.45),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -1981,7 +2125,7 @@ Widget _buildStatCard(String icon, String label, String value, String change) {
   Widget _backToTopBtn() => FloatingActionButton(
     mini: true,
     onPressed: _scrollToTop,
-    backgroundColor: AppColors.brand,
+    backgroundColor: BrandColors.brand,
     elevation: 8,
     child: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
   );

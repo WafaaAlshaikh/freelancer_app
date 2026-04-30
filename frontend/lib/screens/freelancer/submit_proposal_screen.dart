@@ -1,13 +1,16 @@
 // screens/freelancer/submit_proposal_screen.dart
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:freelancer_platform/models/usage_limits_model.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/usage_limits_model.dart';
 import '../../models/project_model.dart';
 import '../../services/api_service.dart';
 import '../../services/draft_local_storage.dart';
 import '../../widgets/milestone_editor.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../theme/app_theme.dart';
 
 class SubmitProposalScreen extends StatefulWidget {
   final Project project;
@@ -105,6 +108,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
   }
 
   Future<void> _restoreProposalDraftIfAny() async {
+    final t = AppLocalizations.of(context)!;
     final id = widget.project.id;
     if (id == null) return;
     final d = await DraftLocalStorage.getProposalDraft(id);
@@ -125,8 +129,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
 
     if (mounted) {
       Fluttertoast.showToast(
-        msg: 'Restored your saved proposal draft',
-        backgroundColor: Colors.teal,
+        msg: t.restoredProposalDraft,
+        backgroundColor: AppColors.secondary,
         textColor: Colors.white,
       );
     }
@@ -139,7 +143,6 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
 
     try {
       final response = await ApiService.getSmartPricing(widget.project.id!);
-      print('📊 Smart pricing response: $response');
 
       if (response['success'] == true && response['pricing'] != null) {
         setState(() {
@@ -151,7 +154,6 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
         setState(() => loadingPricing = false);
       }
     } catch (e) {
-      print('❌ Error loading smart pricing: $e');
       setState(() => loadingPricing = false);
     }
   }
@@ -162,11 +164,6 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
     setState(() => loadingMilestones = true);
 
     try {
-      print('🔍 Calling analyzeProject with:');
-      print('  title: ${widget.project.title}');
-      print('  description: ${widget.project.description}');
-      print('  budget: ${widget.project.budget}');
-
       final response = await ApiService.analyzeProject(
         title: widget.project.title ?? '',
         description: widget.project.description ?? '',
@@ -175,12 +172,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
         budget: widget.project.budget,
       );
 
-      print('📊 Raw response from API: $response');
-      print('📊 Response type: ${response.runtimeType}');
-      print('📊 Response keys: ${response.keys}');
-
       if (response.isEmpty) {
-        print('⚠️ Empty response from API, using default milestones');
         setState(() {
           loadingMilestones = false;
           showAIMilestones = false;
@@ -190,11 +182,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       }
 
       final milestones = response['suggested_milestones'];
-      print('📊 Suggested milestones: $milestones');
-      print('📊 Milestones count: ${milestones?.length ?? 0}');
 
       if (milestones != null && milestones.isNotEmpty) {
-        print('✅ Applying ${milestones.length} milestones from API');
         setState(() {
           projectAnalysis = response;
           showAIMilestones = true;
@@ -202,16 +191,13 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
         });
         _applyAIMilestones(milestones);
       } else {
-        print('⚠️ No milestones in response, using default');
         setState(() {
           loadingMilestones = false;
           showAIMilestones = false;
         });
         _initDefaultMilestones();
       }
-    } catch (e, stacktrace) {
-      print('❌ Error loading project analysis: $e');
-      print('❌ Stacktrace: $stacktrace');
+    } catch (e) {
       setState(() => loadingMilestones = false);
       _initDefaultMilestones();
     }
@@ -294,6 +280,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
   }
 
   void _applySmartPricing() {
+    final t = AppLocalizations.of(context)!;
     if (smartPricing == null) return;
 
     final recommendedPrice = smartPricing!['recommended_price'];
@@ -308,16 +295,20 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("✅ AI recommended price applied!"),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(t.aiPriceApplied),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
   }
 
   void _showAIMilestonesDialog() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (projectAnalysis == null ||
         projectAnalysis!['suggested_milestones'] == null)
       return;
@@ -327,11 +318,15 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        backgroundColor: theme.cardColor,
+        title: Row(
           children: [
-            Icon(Icons.auto_awesome, color: Colors.orange),
-            SizedBox(width: 8),
-            Text("AI Suggested Milestones"),
+            Icon(Icons.auto_awesome, color: AppColors.warning),
+            const SizedBox(width: 8),
+            Text(
+              t.aiSuggestedMilestones,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ],
         ),
         content: SizedBox(
@@ -340,9 +335,12 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Based on your project analysis, here are recommended milestones:",
-                style: TextStyle(fontSize: 13),
+              Text(
+                t.aiMilestonesDescription,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
               const SizedBox(height: 16),
               ...List.generate(aiMilestones.length, (index) {
@@ -351,9 +349,11 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: AppColors.warning.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.shade200),
+                    border: Border.all(
+                      color: AppColors.warning.withOpacity(0.3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,7 +364,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              color: Colors.orange.shade700,
+                              color: AppColors.warning,
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -382,9 +382,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                           Expanded(
                             child: Text(
                               m['title'] ?? 'Milestone',
-                              style: const TextStyle(
+                              style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
                               ),
                             ),
                           ),
@@ -394,7 +393,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.shade100,
+                              color: AppColors.secondary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -402,7 +401,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.green.shade700,
+                                color: AppColors.secondary,
                               ),
                             ),
                           ),
@@ -411,9 +410,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                       const SizedBox(height: 8),
                       Text(
                         m['description'] ?? '',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -426,23 +424,24 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(
+              t.cancel,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _applyAIMilestones(aiMilestones);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    "✅ AI milestones applied! You can edit them below.",
-                  ),
-                  backgroundColor: Colors.green,
+                SnackBar(
+                  content: Text(t.aiMilestonesApplied),
+                  backgroundColor: AppColors.success,
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text("Apply Milestones"),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
+            child: Text(t.applyMilestones),
           ),
         ],
       ),
@@ -483,6 +482,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
   }
 
   Future<void> _submitProposal() async {
+    final t = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
     final totalMilestones = _calculateTotalAmount();
@@ -490,11 +490,12 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
 
     if (milestones.isNotEmpty && (totalMilestones - price).abs() > 0.01) {
       Fluttertoast.showToast(
-        msg:
-            'Total milestone amounts (\$${totalMilestones.toStringAsFixed(0)}) '
-            'does not match your price (\$${price.toStringAsFixed(0)})',
+        msg: t.milestoneAmountMismatch(
+          totalMilestones.toStringAsFixed(0),
+          price.toStringAsFixed(0),
+        ),
         timeInSecForIosWeb: 3,
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.danger,
         textColor: Colors.white,
       );
       return;
@@ -509,11 +510,11 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       final usage = UsageLimits.fromJson(usageResponse['usage']);
       if (!usage.canSubmitProposal) {
         Fluttertoast.showToast(
-          msg:
-              'You have reached your proposal limit. Please upgrade to submit more proposals.',
+          msg: t.proposalLimitReachedUpgrade,
           timeInSecForIosWeb: 3,
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.danger,
         );
+        setState(() => loading = false);
         return;
       }
     }
@@ -530,25 +531,25 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       if (result['proposal'] != null) {
         await DraftLocalStorage.clearProposalDraft(widget.project.id!);
         Fluttertoast.showToast(
-          msg: "✅ Proposal submitted successfully!",
+          msg: t.proposalSubmittedSuccess,
           timeInSecForIosWeb: 3,
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
           textColor: Colors.white,
         );
         if (mounted) Navigator.pop(context, true);
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? "Error submitting proposal",
+          msg: result['message'] ?? t.errorSubmittingProposal,
           timeInSecForIosWeb: 3,
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.danger,
           textColor: Colors.white,
         );
       }
     } catch (e) {
       Fluttertoast.showToast(
-        msg: "Error: $e",
+        msg: '${t.error}: $e',
         timeInSecForIosWeb: 3,
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.danger,
         textColor: Colors.white,
       );
     } finally {
@@ -557,14 +558,13 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
   }
 
   Future<void> _analyzeProposalQuality() async {
+    final t = AppLocalizations.of(context)!;
     final price = double.tryParse(priceController.text);
     final delivery = int.tryParse(deliveryController.text);
     final message = messageController.text.trim();
 
     if (price == null || delivery == null || message.length < 20) {
-      Fluttertoast.showToast(
-        msg: 'Fill price, delivery time, and a meaningful cover letter first',
-      );
+      Fluttertoast.showToast(msg: t.fillProposalFieldsFirst);
       return;
     }
 
@@ -585,46 +585,83 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
         });
       } else {
         Fluttertoast.showToast(
-          msg: response['message']?.toString() ?? 'Could not analyze proposal',
+          msg: response['message']?.toString() ?? t.couldNotAnalyzeProposal,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Analysis failed: $e');
+      Fluttertoast.showToast(msg: '${t.analysisFailed}: $e');
     } finally {
       if (mounted) setState(() => _analyzingProposal = false);
     }
   }
 
+  Widget _buildBreakdownRow(String label, String value) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Submit Proposal"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.submitProposal),
         elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           if (_proposalDraftSavedAt != null)
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: Text(
-                  'Draft saved',
+                  t.draftSaved,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.teal.shade800,
+                    color: AppColors.secondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
           if (loadingPricing || loadingMilestones)
-            const Padding(
-              padding: EdgeInsets.all(12),
+            Padding(
+              padding: const EdgeInsets.all(12),
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ),
         ],
@@ -643,25 +680,26 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                 ),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: Colors.teal.shade50,
+                  color: AppColors.secondary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.teal.shade100),
+                  border: Border.all(
+                    color: AppColors.secondary.withOpacity(0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.save_outlined,
                       size: 18,
-                      color: Colors.teal.shade800,
+                      color: AppColors.secondary,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Proposal autosaves on this device while you edit.',
+                        t.proposalAutosaveMessage,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.teal.shade900,
-                          height: 1.25,
+                          color: AppColors.secondary,
                         ),
                       ),
                     ),
@@ -671,31 +709,30 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: AppColors.info.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: AppColors.info.withOpacity(0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.info_outline, color: Colors.blue),
+                        Icon(Icons.info_outline, color: AppColors.info),
                         const SizedBox(width: 8),
-                        const Text(
-                          "You're applying for:",
+                        Text(
+                          t.youAreApplyingFor,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color: AppColors.info,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.project.title ?? 'Untitled Project',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      widget.project.title ?? t.untitledProject,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -704,9 +741,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                       widget.project.description ?? '',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -718,13 +754,13 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade100,
+                            color: AppColors.secondary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            'Budget: \$${widget.project.budget?.toStringAsFixed(0)}',
+                            '${t.budget}: \$${widget.project.budget?.toStringAsFixed(0)}',
                             style: TextStyle(
-                              color: Colors.green.shade700,
+                              color: AppColors.secondary,
                               fontWeight: FontWeight.w500,
                               fontSize: 12,
                             ),
@@ -737,13 +773,13 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
+                            color: AppColors.warning.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            'Duration: ${widget.project.duration} days',
+                            '${t.duration}: ${widget.project.duration} ${t.days}',
                             style: TextStyle(
-                              color: Colors.orange.shade700,
+                              color: AppColors.warning,
                               fontWeight: FontWeight.w500,
                               fontSize: 12,
                             ),
@@ -754,21 +790,28 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
               if (showSmartPricing && smartPricing != null)
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.amber.shade50, Colors.orange.shade50],
+                      colors: isDark
+                          ? [
+                              Colors.amber.shade900.withOpacity(0.3),
+                              Colors.orange.shade900.withOpacity(0.3),
+                            ]
+                          : [Colors.amber.shade50, Colors.orange.shade50],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.amber.shade200),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.amber.shade800
+                          : Colors.amber.shade200,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,11 +820,13 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
                                 colors: [Colors.amber, Colors.orange],
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
                             ),
                             child: const Icon(
                               Icons.auto_awesome,
@@ -790,9 +835,9 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
-                            "AI Smart Pricing",
-                            style: TextStyle(
+                          Text(
+                            t.aiSmartPricing,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.orange,
@@ -801,18 +846,18 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
                       Row(
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Recommended Price",
+                                Text(
+                                  t.recommendedPrice,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -831,11 +876,12 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Hourly Rate",
+                                Text(
+                                  t.hourlyRate,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -853,16 +899,17 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Est. Hours",
+                                Text(
+                                  t.estHours,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "${smartPricing!['estimated_hours'] ?? '?'} hrs",
+                                  "${smartPricing!['estimated_hours'] ?? '?'} ${t.hours}",
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -873,9 +920,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 12),
-
                       Row(
                         children: [
                           const Icon(
@@ -885,10 +930,12 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            "Confidence: ${smartPricing!['confidence_score'] ?? 85}%",
-                            style: const TextStyle(
+                            "${t.confidence}: ${smartPricing!['confidence_score'] ?? 85}%",
+                            style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey,
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
                             ),
                           ),
                           const Spacer(),
@@ -896,24 +943,50 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             Flexible(
                               child: Text(
                                 smartPricing!['justification'],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
                                 ),
                                 textAlign: TextAlign.right,
                               ),
                             ),
                         ],
                       ),
-
                       const SizedBox(height: 12),
-
+                      if (smartPricing!['pricing_breakdown'] != null)
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkSurface
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            children: [
+                              _buildBreakdownRow(
+                                t.baseRate,
+                                "\$${smartPricing!['pricing_breakdown']['base_rate']?.toStringAsFixed(0) ?? '?'}/hr",
+                              ),
+                              _buildBreakdownRow(
+                                t.complexity,
+                                "+${((smartPricing!['pricing_breakdown']['complexity_multiplier'] ?? 1) - 1) * 100}%",
+                              ),
+                              _buildBreakdownRow(
+                                t.experience,
+                                "+${((smartPricing!['pricing_breakdown']['experience_multiplier'] ?? 1) - 1) * 100}%",
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: _applySmartPricing,
                           icon: const Icon(Icons.check_circle, size: 16),
-                          label: const Text("Use Recommended Price"),
+                          label: Text(t.useRecommendedPrice),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.orange,
                             side: const BorderSide(color: Colors.orange),
@@ -926,7 +999,6 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                     ],
                   ),
                 ),
-
               if (showAIMilestones &&
                   projectAnalysis != null &&
                   projectAnalysis!['suggested_milestones'] != null)
@@ -935,12 +1007,21 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.green.shade50, Colors.teal.shade50],
+                      colors: isDark
+                          ? [
+                              Colors.green.shade900.withOpacity(0.3),
+                              Colors.teal.shade900.withOpacity(0.3),
+                            ]
+                          : [Colors.green.shade50, Colors.teal.shade50],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.green.shade200),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.green.shade800
+                          : Colors.green.shade200,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -949,11 +1030,13 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
                                 colors: [Colors.green, Colors.teal],
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
                             ),
                             child: const Icon(
                               Icons.auto_awesome,
@@ -962,9 +1045,9 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
-                            "AI Milestone Suggestions",
-                            style: TextStyle(
+                          Text(
+                            t.aiMilestoneSuggestions,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.teal,
@@ -973,9 +1056,12 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        "Based on project analysis, here are suggested milestones:",
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                      Text(
+                        t.aiMilestonesDescription,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       ...List.generate(
@@ -989,7 +1075,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: theme.cardColor,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
@@ -998,7 +1084,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                                   width: 28,
                                   height: 28,
                                   decoration: BoxDecoration(
-                                    color: Colors.green.shade100,
+                                    color: AppColors.secondary.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Center(
@@ -1006,7 +1092,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                                       '${index + 1}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.green.shade700,
+                                        color: AppColors.secondary,
                                       ),
                                     ),
                                   ),
@@ -1028,7 +1114,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                                         m['description'] ?? '',
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: Colors.grey.shade600,
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.6),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -1042,7 +1129,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.shade100,
+                                    color: AppColors.secondary.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -1050,7 +1137,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.green.shade700,
+                                      color: AppColors.secondary,
                                     ),
                                   ),
                                 ),
@@ -1065,10 +1152,16 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            "+ ${(projectAnalysis!['suggested_milestones'] as List).length - 2} more milestones",
+                            t.plusMoreMilestones(
+                              (projectAnalysis!['suggested_milestones'] as List)
+                                      .length -
+                                  2,
+                            ),
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
                             ),
                           ),
                         ),
@@ -1078,7 +1171,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _showAIMilestonesDialog,
                           icon: const Icon(Icons.auto_awesome, size: 16),
-                          label: const Text("View & Apply AI Milestones"),
+                          label: Text(t.viewAndApplyMilestones),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.teal,
                             side: const BorderSide(color: Colors.teal),
@@ -1091,40 +1184,55 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                     ],
                   ),
                 ),
-
               const SizedBox(height: 24),
-
-              const Text(
-                "Your Proposal",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                t.yourProposal,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                "Fill in the details below to submit your proposal",
-                style: TextStyle(color: Colors.grey),
+              Text(
+                t.fillProposalDetails,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
-
               const SizedBox(height: 20),
-
-              const Text(
-                "Your Price (\$)",
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                t.yourPrice,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: priceController,
                 keyboardType: TextInputType.number,
+                style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.attach_money),
-                  hintText: "Enter your proposed price",
+                  prefixIcon: Icon(
+                    Icons.attach_money,
+                    color: theme.colorScheme.primary,
+                  ),
+                  hintText: t.enterYourPrice,
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: isDark
+                      ? AppColors.darkSurface
+                      : Colors.grey.shade50,
                   suffix: Text(
                     'USD',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
                   ),
                 ),
                 onChanged: (value) {
@@ -1136,40 +1244,47 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   });
                 },
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your price';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Invalid price';
-                  }
-                  if (double.parse(value) <= 0) {
-                    return 'Price must be greater than 0';
-                  }
+                  if (value == null || value.isEmpty) return t.pleaseEnterPrice;
+                  if (double.tryParse(value) == null) return t.invalidPrice;
+                  if (double.parse(value) <= 0) return t.priceGreaterThanZero;
                   return null;
                 },
               ),
-
               const SizedBox(height: 16),
-
-              const Text(
-                "Delivery Time (days)",
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                t.deliveryTimeDays,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: deliveryController,
                 keyboardType: TextInputType.number,
+                style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.access_time),
-                  hintText: "How many days you need?",
+                  prefixIcon: Icon(
+                    Icons.access_time,
+                    color: theme.colorScheme.primary,
+                  ),
+                  hintText: t.howManyDays,
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: isDark
+                      ? AppColors.darkSurface
+                      : Colors.grey.shade50,
                   suffix: Text(
-                    'days',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    t.days,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
                   ),
                 ),
                 onChanged: (value) {
@@ -1179,26 +1294,22 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   }
                 },
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter delivery time';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Invalid number';
-                  }
-                  if (int.parse(value) <= 0) {
-                    return 'Delivery time must be greater than 0';
-                  }
+                  if (value == null || value.isEmpty)
+                    return t.pleaseEnterDeliveryTime;
+                  if (int.tryParse(value) == null) return t.invalidNumber;
+                  if (int.parse(value) <= 0)
+                    return t.deliveryTimeGreaterThanZero;
                   return null;
                 },
               ),
-
               const SizedBox(height: 16),
-
               Row(
                 children: [
-                  const Text(
-                    "Payment Milestones",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Text(
+                    t.paymentMilestones,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   if (showAIMilestones)
@@ -1208,21 +1319,24 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.teal.shade100,
+                        color: AppColors.success.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.auto_awesome,
                             size: 12,
-                            color: Colors.teal,
+                            color: AppColors.success,
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
-                            "AI Generated",
-                            style: TextStyle(fontSize: 10, color: Colors.teal),
+                            t.aiGenerated,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.success,
+                            ),
                           ),
                         ],
                       ),
@@ -1230,73 +1344,69 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
-                "Define the project phases and payment schedule",
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+              Text(
+                t.defineMilestones,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
               const SizedBox(height: 12),
-
               MilestoneEditor(
                 milestones: milestones,
                 onChanged: (newMilestones) {
-                  setState(() {
-                    milestones = newMilestones;
-                  });
+                  setState(() => milestones = newMilestones);
                   _scheduleProposalDraftSave();
                 },
               ),
-
               const SizedBox(height: 16),
-
-              const Text(
-                "Cover Letter",
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                t.coverLetter,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: messageController,
                 maxLines: 6,
+                style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  hintText:
-                      "Explain why you're the best candidate for this project...\n"
-                      "- Your relevant experience\n"
-                      "- How you'll approach the project\n"
-                      "- Any questions you have",
+                  hintText: t.coverLetterHint,
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: isDark
+                      ? AppColors.darkSurface
+                      : Colors.grey.shade50,
                   alignLabelWithHint: true,
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please write a cover letter';
-                  }
-                  if (value.length < 50) {
-                    return 'Cover letter should be at least 50 characters';
-                  }
+                  if (value == null || value.isEmpty)
+                    return t.pleaseWriteCoverLetter;
+                  if (value.length < 50) return t.coverLetterMinLength;
                   return null;
                 },
               ),
-
               const SizedBox(height: 8),
-
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
                   '${messageController.text.length}/5000',
                   style: TextStyle(
                     color: messageController.text.length >= 5000
-                        ? Colors.red
-                        : Colors.grey,
+                        ? AppColors.danger
+                        : theme.colorScheme.onSurface.withOpacity(0.5),
                     fontSize: 12,
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -1304,29 +1414,44 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                       ? null
                       : _analyzeProposalQuality,
                   icon: _analyzingProposal
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
                         )
-                      : const Icon(Icons.auto_awesome, size: 16),
+                      : Icon(
+                          Icons.auto_awesome,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
                   label: Text(
                     _analyzingProposal
-                        ? 'Analyzing proposal...'
-                        : 'Analyze Proposal Quality (AI)',
+                        ? t.analyzingProposal
+                        : t.analyzeProposalQuality,
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: theme.colorScheme.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
-
               if (_proposalQuality != null) ...[
                 const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade50,
+                    color: Colors.deepPurple.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.deepPurple.shade100),
+                    border: Border.all(
+                      color: Colors.deepPurple.withOpacity(0.2),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1339,7 +1464,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Proposal Score: ${_proposalQuality!['score'] ?? 0}/100',
+                            '${t.proposalScore}: ${_proposalQuality!['score'] ?? 0}/100',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.deepPurple,
@@ -1350,9 +1475,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                       const SizedBox(height: 8),
                       Text(
                         _proposalQuality!['summary']?.toString() ?? '',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade800,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1360,10 +1484,10 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                               ?.isNotEmpty ==
                           true)
                         Text(
-                          'Strengths: ${(List<dynamic>.from(_proposalQuality!['strengths'])).join(' • ')}',
+                          '${t.strengths}: ${(List<dynamic>.from(_proposalQuality!['strengths'])).join(' • ')}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.green.shade800,
+                            color: AppColors.success,
                           ),
                         ),
                       const SizedBox(height: 6),
@@ -1371,26 +1495,24 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                               ?.isNotEmpty ==
                           true)
                         Text(
-                          'Improve: ${(List<dynamic>.from(_proposalQuality!['improvements'])).join(' • ')}',
+                          '${t.improve}: ${(List<dynamic>.from(_proposalQuality!['improvements'])).join(' • ')}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.orange.shade800,
+                            color: AppColors.warning,
                           ),
                         ),
                     ],
                   ),
                 ),
               ],
-
               const SizedBox(height: 20),
-
               if (calculatedPrice != null && widget.project.budget != null)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: calculatedPrice! <= widget.project.budget!
-                        ? Colors.green.shade50
-                        : Colors.orange.shade50,
+                        ? AppColors.success.withOpacity(0.1)
+                        : AppColors.warning.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -1400,42 +1522,40 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                             ? Icons.thumb_up
                             : Icons.warning,
                         color: calculatedPrice! <= widget.project.budget!
-                            ? Colors.green
-                            : Colors.orange,
+                            ? AppColors.success
+                            : AppColors.warning,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           calculatedPrice! <= widget.project.budget!
-                              ? 'Your price is within the project budget'
-                              : 'Your price is above the project budget. Make sure to justify this in your cover letter.',
+                              ? t.priceWithinBudget
+                              : t.priceAboveBudget,
                           style: TextStyle(
                             color: calculatedPrice! <= widget.project.budget!
-                                ? Colors.green.shade700
-                                : Colors.orange.shade700,
+                                ? AppColors.success
+                                : AppColors.warning,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-
               if (milestones.isNotEmpty)
                 Container(
                   margin: const EdgeInsets.symmetric(vertical: 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: isDark ? AppColors.darkSurface : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Payment Schedule Summary',
-                        style: TextStyle(
+                      Text(
+                        t.paymentScheduleSummary,
+                        style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1450,7 +1570,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.shade100,
+                                  color: AppColors.info.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
@@ -1459,7 +1579,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
+                                      color: AppColors.info,
                                     ),
                                   ),
                                 ),
@@ -1468,14 +1588,14 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                               Expanded(
                                 child: Text(
                                   milestone['title'] ?? 'Milestone',
-                                  style: const TextStyle(fontSize: 12),
+                                  style: theme.textTheme.bodySmall,
                                 ),
                               ),
                               Text(
                                 '\$${milestone['amount']?.toStringAsFixed(0) ?? '0'}',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade700,
+                                  color: AppColors.secondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -1487,15 +1607,17 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Total',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            t.total,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Text(
                             '\$${_calculateTotalAmount().toStringAsFixed(0)}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
+                              color: AppColors.secondary,
                             ),
                           ),
                         ],
@@ -1503,59 +1625,41 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                     ],
                   ),
                 ),
-
               const SizedBox(height: 24),
-
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   onPressed: loading ? null : _submitProposal,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff14A800),
+                    backgroundColor: AppColors.secondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: loading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Submit Proposal',
-                          style: TextStyle(
+                      : Text(
+                          t.submitProposal,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
               Center(
                 child: Text(
-                  'By submitting, you agree to our Terms of Service',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  t.agreeToTerms,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBreakdownRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 12)),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-        ],
       ),
     );
   }

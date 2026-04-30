@@ -1,6 +1,7 @@
+// forgot_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:freelancer_platform/screens/auth/verify_reset_code_screen.dart';
 import '../../services/api_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -8,139 +9,145 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
-    with SingleTickerProviderStateMixin {
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
   bool loading = false;
 
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  static const Color primaryPurple = Color(0xFF5B5BD6);
 
-  @override
-  void initState() {
-    super.initState();
+  void sendResetCode() async {
+    if (emailController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Please enter your email");
+      return;
+    }
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 600),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_controller);
-
-    _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _controller.forward();
-  }
-
-  void forgotPassword() async {
     setState(() => loading = true);
     final res = await ApiService.forgotPassword(emailController.text);
     setState(() => loading = false);
 
     Fluttertoast.showToast(msg: res['message']);
-  }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    if (res['hasCode'] == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              VerifyResetCodeScreen(email: emailController.text),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF8E8EA0),
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Container(
-              width: 320,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 20,
-                    offset: Offset(0, 10),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF122543), Color(0xFF7C6FF7), Color(0xFF9B8FF7)],
+          ),
+        ),
+        child: Center(
+          child: Container(
+            width: 380,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 40,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: primaryPurple.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lock_reset, size: 80, color: Colors.deepPurple),
-                  const SizedBox(height: 15),
-
-                  Text(
-                    "Forgot your password?",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  child: Icon(Icons.lock_reset, size: 40, color: primaryPurple),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Forgot Password?",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
                   ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Enter your email and we'll send you a reset code",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+                const SizedBox(height: 28),
 
-                  const SizedBox(height: 8),
-
-                  Text(
-                    "Enter your email and we'll send you a reset link",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                TextField(
+                  controller: emailController,
+                  style: const TextStyle(
+                    color: Color(0xFF333333),
+                    fontSize: 14,
                   ),
-
-                  const SizedBox(height: 20),
-
-                  TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      hintText: "Email Address",
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
+                  cursorColor: primaryPurple,
+                  decoration: InputDecoration(
+                    hintText: "Email Address",
+                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: Colors.grey[400],
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F5F5),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(50),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(50),
+                      borderSide: BorderSide(color: primaryPurple, width: 1.5),
                     ),
                   ),
+                ),
+                const SizedBox(height: 24),
 
-                  const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text("Cancel"),
-                        ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: loading ? null : sendResetCode,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryPurple,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: forgotPassword,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
-                          ),
-                          child: loading
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text("Reset"),
-                        ),
-                      ),
-                    ],
+                    ),
+                    child: loading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Send Reset Code"),
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 12),
+
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Back to Login",
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

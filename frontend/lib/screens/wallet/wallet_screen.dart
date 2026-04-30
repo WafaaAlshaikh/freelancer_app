@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../models/wallet_model.dart';
 import '../../models/transaction_model.dart';
+import '../../theme/app_theme.dart';
 import '../freelancer/financial_dashboard_screen.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -24,10 +26,17 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void initState() {
     super.initState();
-    _loadWallet();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadWallet(context);
+      }
+    });
   }
 
-  Future<void> _loadWallet() async {
+  Future<void> _loadWallet(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    if (!mounted) return;
+
     setState(() => loading = true);
 
     try {
@@ -37,6 +46,8 @@ class _WalletScreenState extends State<WalletScreen> {
       } else {
         result = await ApiService.getFreelancerWallet();
       }
+
+      if (!mounted) return;
 
       setState(() {
         if (result['wallet'] != null) {
@@ -50,47 +61,67 @@ class _WalletScreenState extends State<WalletScreen> {
         loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => loading = false);
-      Fluttertoast.showToast(msg: 'Error loading wallet');
+      Fluttertoast.showToast(msg: t.errorLoadingWallet);
     }
   }
 
-  Future<void> _requestWithdrawal() async {
+  Future<void> _requestWithdrawal(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final amountController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Withdraw Funds'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          t.withdrawFunds,
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         content: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Available Balance: \$${wallet?.balance.toStringAsFixed(2)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                '${t.availableBalance}: ${t.dollar}${wallet?.balance.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.secondary,
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: amountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Amount',
-                  prefixText: '\$ ',
-                  border: OutlineInputBorder(),
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: t.amount,
+                  prefixText: '${t.dollar} ',
+                  labelStyle: TextStyle(color: AppColors.gray),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter amount';
+                    return t.pleaseEnterAmount;
                   }
                   final amount = double.tryParse(value);
                   if (amount == null || amount <= 0) {
-                    return 'Invalid amount';
+                    return t.invalidAmount;
                   }
                   if (amount > (wallet?.balance ?? 0)) {
-                    return 'Insufficient balance';
+                    return t.insufficientBalance;
                   }
                   return null;
                 },
@@ -101,7 +132,7 @@ class _WalletScreenState extends State<WalletScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel, style: TextStyle(color: AppColors.gray)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -110,9 +141,9 @@ class _WalletScreenState extends State<WalletScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff14A800),
+              backgroundColor: theme.colorScheme.secondary,
             ),
-            child: const Text('Withdraw'),
+            child: Text(t.withdraw),
           ),
         ],
       ),
@@ -129,33 +160,130 @@ class _WalletScreenState extends State<WalletScreen> {
       setState(() => withdrawing = false);
 
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: '✅ Withdrawal request submitted');
-        _loadWallet();
+        Fluttertoast.showToast(msg: t.withdrawalRequestSubmitted);
+        _loadWallet(context);
       } else if (response['requiresOnboarding'] == true) {
-        Fluttertoast.showToast(msg: 'Please complete Stripe account setup');
+        Fluttertoast.showToast(msg: t.completeStripeAccountSetup);
       } else {
-        Fluttertoast.showToast(msg: response['message'] ?? 'Error');
+        Fluttertoast.showToast(msg: response['message'] ?? t.error);
       }
     }
   }
 
+  String _formatDate(DateTime date) {
+    final t = AppLocalizations.of(context);
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} ${t?.daysAgo ?? 'd ago'}';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} ${t?.hoursAgo ?? 'h ago'}';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} ${t?.minutesAgo ?? 'm ago'}';
+    } else {
+      return t?.justNow ?? 'Just now';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(t.myWallet),
+        elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: theme.iconTheme.color),
+            onPressed: () => _loadWallet(context),
+          ),
+          IconButton(
+            icon: Icon(Icons.analytics, color: theme.iconTheme.color),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FinancialDashboardScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: loading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
+          : wallet == null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet,
+                    size: 64,
+                    color: theme.colorScheme.onSurface.withOpacity(0.3),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    t.noWalletFound,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: () => _loadWallet(context),
+              color: theme.colorScheme.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildBalanceCard(),
+                    const SizedBox(height: 24),
+                    _buildActionButtons(),
+                    const SizedBox(height: 24),
+                    _buildTransactionsSection(),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
   Widget _buildActionButtons() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         Expanded(
           child: _buildActionCard(
             icon: Icons.arrow_downward,
-            label: 'Withdraw',
-            color: Colors.orange,
-            onTap: _requestWithdrawal,
+            label: t.withdraw,
+            color: AppColors.warning,
+            onTap: () => _requestWithdrawal(context),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildActionCard(
             icon: Icons.shopping_bag,
-            label: 'Boost',
-            color: Colors.purple,
+            label: t.boost,
+            color: theme.colorScheme.primary,
             onTap: () {
               Navigator.pushNamed(context, '/features/shop');
             },
@@ -165,8 +293,8 @@ class _WalletScreenState extends State<WalletScreen> {
         Expanded(
           child: _buildActionCard(
             icon: Icons.history,
-            label: 'History',
-            color: Colors.blue,
+            label: t.history,
+            color: AppColors.info,
             onTap: () {
               // TODO: Show transaction history
             },
@@ -182,6 +310,9 @@ class _WalletScreenState extends State<WalletScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -206,18 +337,21 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildBalanceCard() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.green.shade700, Colors.green.shade500],
+          colors: [theme.colorScheme.secondary, AppColors.secondaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.3),
+            color: theme.colorScheme.secondary.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -225,13 +359,13 @@ class _WalletScreenState extends State<WalletScreen> {
       ),
       child: Column(
         children: [
-          const Text(
-            'Total Balance',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+          Text(
+            t.totalBalance,
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 8),
           Text(
-            '\$${wallet!.balance.toStringAsFixed(2)}',
+            '${t.dollar}${wallet!.balance.toStringAsFixed(2)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -243,18 +377,18 @@ class _WalletScreenState extends State<WalletScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildBalanceStat(
-                'Pending',
-                '\$${wallet!.pendingBalance.toStringAsFixed(2)}',
+                t.pending,
+                '${t.dollar}${wallet!.pendingBalance.toStringAsFixed(2)}',
                 Colors.white70,
               ),
               _buildBalanceStat(
-                'Earned',
-                '\$${wallet!.totalEarned.toStringAsFixed(2)}',
+                t.earned,
+                '${t.dollar}${wallet!.totalEarned.toStringAsFixed(2)}',
                 Colors.white70,
               ),
               _buildBalanceStat(
-                'Withdrawn',
-                '\$${wallet!.totalWithdrawn.toStringAsFixed(2)}',
+                t.withdrawn,
+                '${t.dollar}${wallet!.totalWithdrawn.toStringAsFixed(2)}',
                 Colors.white70,
               ),
             ],
@@ -282,20 +416,30 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildTransactionsSection() {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (transactions.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: isDark ? AppColors.darkSurface : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           children: [
-            Icon(Icons.receipt, size: 48, color: Colors.grey.shade400),
+            Icon(
+              Icons.receipt,
+              size: 48,
+              color: theme.colorScheme.onSurface.withOpacity(0.3),
+            ),
             const SizedBox(height: 12),
             Text(
-              'No transactions yet',
-              style: TextStyle(color: Colors.grey.shade600),
+              t.noTransactionsYet,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
           ],
         ),
@@ -305,16 +449,21 @@ class _WalletScreenState extends State<WalletScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recent Transactions',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          t.recentTransactions,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 12),
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: transactions.length > 10 ? 10 : transactions.length,
-          separatorBuilder: (context, index) => const Divider(),
+          separatorBuilder: (context, index) =>
+              Divider(color: theme.dividerColor),
           itemBuilder: (context, index) {
             final tx = transactions[index];
             return ListTile(
@@ -328,26 +477,37 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
               title: Text(
                 tx.typeText,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               subtitle: Text(
                 tx.description ?? '',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
               trailing: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '${tx.amount >= 0 ? '+' : ''}\$${tx.amount.abs().toStringAsFixed(2)}',
+                    '${tx.amount >= 0 ? '+' : ''}${t.dollar}${tx.amount.abs().toStringAsFixed(2)}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: tx.type == 'withdraw' ? Colors.red : Colors.green,
+                      color: tx.type == 'withdraw'
+                          ? AppColors.danger
+                          : theme.colorScheme.secondary,
                     ),
                   ),
                   Text(
                     _formatDate(tx.createdAt),
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
                   ),
                 ],
               ),
@@ -359,86 +519,12 @@ class _WalletScreenState extends State<WalletScreen> {
             onPressed: () {
               // TODO: Show all transactions
             },
-            child: const Text('View All'),
+            child: Text(
+              t.viewAll,
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
           ),
       ],
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Wallet'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadWallet),
-          IconButton(
-            icon: const Icon(Icons.analytics),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const FinancialDashboardScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : wallet == null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet,
-                    size: 64,
-                    color: Colors.grey.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No wallet found',
-                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadWallet,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildBalanceCard(),
-                    const SizedBox(height: 24),
-                    _buildActionButtons(),
-                    const SizedBox(height: 24),
-                    _buildTransactionsSection(),
-                  ],
-                ),
-              ),
-            ),
     );
   }
 }

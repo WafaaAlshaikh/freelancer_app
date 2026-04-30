@@ -6,29 +6,8 @@ import 'dart:async';
 import '../../models/chat_model.dart';
 import '../../services/chat_service.dart';
 import '../../services/socket_service.dart';
+import '../../theme/app_theme.dart';
 import 'chat_screen.dart';
-
-class _C {
-  static const sidebarBg = Color(0xFF2D2B55);
-  static const sidebarText = Color(0xFFC8C6E8);
-  static const accent = Color(0xFF6C63FF);
-  static const accentDark = Color(0xFF4F46E5);
-  static const accentLight = Color(0xFFA78BFA);
-  static const accentBg = Color(0xFFEEF2FF);
-  static const green = Color(0xFF14A800);
-  static const greenBg = Color(0xFFECFDF5);
-  static const warning = Color(0xFFF59E0B);
-  static const warningBg = Color(0xFFFFFBEB);
-  static const danger = Color(0xFFEF4444);
-  static const info = Color(0xFF3B82F6);
-  static const infoBg = Color(0xFFEFF6FF);
-  static const pageBg = Color(0xFFF5F6F8);
-  static const card = Colors.white;
-  static const dark = Color(0xFF1F2937);
-  static const gray = Color(0xFF6B7280);
-  static const border = Color(0xFFE5E7EB);
-  static const borderLight = Color(0xFFF0F0F0);
-}
 
 class ChatsListScreen extends StatefulWidget {
   const ChatsListScreen({super.key});
@@ -147,14 +126,17 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: _C.pageBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Row(
         children: [
           SizedBox(
             width: 280,
             child: Container(
-              color: _C.sidebarBg,
+              color: AppColors.lightSidebar,
               child: SafeArea(
                 child: Column(
                   children: [
@@ -166,7 +148,6 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               ),
             ),
           ),
-
           Expanded(child: _buildMainArea()),
         ],
       ),
@@ -174,6 +155,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   Widget _buildSidebarHeader() {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
       child: Row(
@@ -182,7 +165,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: _C.accent,
+              color: theme.colorScheme.primary,
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -205,7 +188,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: _C.accent,
+                color: theme.colorScheme.primary,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
@@ -235,7 +218,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.only(left: 12),
-              child: Icon(Icons.search, size: 16, color: _C.sidebarText),
+              child: Icon(Icons.search, size: 16, color: AppColors.sidebarText),
             ),
             Expanded(
               child: TextField(
@@ -243,7 +226,10 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 style: const TextStyle(color: Colors.white, fontSize: 13),
                 decoration: const InputDecoration(
                   hintText: 'Search...',
-                  hintStyle: TextStyle(color: _C.sidebarText, fontSize: 13),
+                  hintStyle: TextStyle(
+                    color: AppColors.sidebarText,
+                    fontSize: 13,
+                  ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 10,
@@ -259,11 +245,16 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   Widget _buildSidebarList() {
+    final theme = Theme.of(context);
     final filtered = _filteredChats;
+
     if (loading) {
       return const Expanded(
         child: Center(
-          child: CircularProgressIndicator(color: _C.accent, strokeWidth: 2),
+          child: CircularProgressIndicator(
+            color: AppColors.accent,
+            strokeWidth: 2,
+          ),
         ),
       );
     }
@@ -276,13 +267,13 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               Icon(
                 Icons.chat_bubble_outline,
                 size: 40,
-                color: _C.sidebarText.withOpacity(0.3),
+                color: AppColors.sidebarText.withOpacity(0.3),
               ),
               const SizedBox(height: 12),
               Text(
                 'No conversations',
                 style: TextStyle(
-                  color: _C.sidebarText.withOpacity(0.5),
+                  color: AppColors.sidebarText.withOpacity(0.5),
                   fontSize: 13,
                 ),
               ),
@@ -301,6 +292,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   Widget _buildSidebarItem(ChatModel chat) {
+    final theme = Theme.of(context);
     final user = chat.otherUser;
     final isUnread = chat.unreadCount > 0;
 
@@ -333,7 +325,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: _C.accent.withOpacity(0.3),
+                  backgroundColor: theme.colorScheme.primary.withOpacity(0.3),
                   backgroundImage: user?.avatar?.isNotEmpty == true
                       ? NetworkImage(user!.avatar!)
                       : null,
@@ -358,9 +350,12 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: _C.green,
+                        color: theme.colorScheme.secondary,
                         shape: BoxShape.circle,
-                        border: Border.all(color: _C.sidebarBg, width: 1.5),
+                        border: Border.all(
+                          color: AppColors.lightSidebar,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -376,7 +371,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: isUnread ? FontWeight.w600 : FontWeight.w500,
-                      color: isUnread ? Colors.white : _C.sidebarText,
+                      color: isUnread ? Colors.white : AppColors.sidebarText,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -387,8 +382,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       color: isUnread
-                          ? _C.sidebarText.withOpacity(0.85)
-                          : _C.sidebarText.withOpacity(0.5),
+                          ? AppColors.sidebarText.withOpacity(0.85)
+                          : AppColors.sidebarText.withOpacity(0.5),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -405,7 +400,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     _formatTime(chat.lastMessageTime!),
                     style: TextStyle(
                       fontSize: 10,
-                      color: _C.sidebarText.withOpacity(0.4),
+                      color: AppColors.sidebarText.withOpacity(0.4),
                     ),
                   ),
                 const SizedBox(height: 4),
@@ -415,7 +410,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     height: 18,
                     padding: const EdgeInsets.symmetric(horizontal: 5),
                     decoration: BoxDecoration(
-                      color: _C.accent,
+                      color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: Center(
@@ -438,8 +433,13 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   Widget _buildMainArea() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (loading) {
-      return const Center(child: CircularProgressIndicator(color: _C.accent));
+      return Center(
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
+      );
     }
 
     if (_filteredChats.isEmpty) {
@@ -447,14 +447,12 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
     }
 
     return Scaffold(
-      backgroundColor: _C.pageBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Messages',
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: _C.card,
-        foregroundColor: _C.dark,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -464,13 +462,13 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               icon: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: _C.pageBg,
+                  color: theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.refresh_rounded,
                   size: 18,
-                  color: _C.gray,
+                  color: AppColors.gray,
                 ),
               ),
               onPressed: _loadChats,
@@ -479,12 +477,12 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: _C.border),
+          child: Container(height: 0.5, color: theme.dividerColor),
         ),
       ),
       body: RefreshIndicator(
         onRefresh: _loadChats,
-        color: _C.accent,
+        color: theme.colorScheme.primary,
         child: ListView.builder(
           padding: const EdgeInsets.all(12),
           itemCount: _filteredChats.length,
@@ -495,6 +493,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -503,28 +503,28 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             width: 90,
             height: 90,
             decoration: BoxDecoration(
-              color: _C.accentBg,
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(28),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.chat_bubble_outline_rounded,
               size: 40,
-              color: _C.accent,
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'No messages yet',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: _C.dark,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Start a conversation from a project',
-            style: TextStyle(fontSize: 14, color: _C.gray),
+            style: TextStyle(fontSize: 14, color: AppColors.gray),
           ),
           const SizedBox(height: 28),
           ElevatedButton.icon(
@@ -532,7 +532,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
             icon: const Icon(Icons.search_rounded, size: 16),
             label: const Text('Find Projects'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _C.accent,
+              backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
@@ -551,16 +551,20 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   Widget _buildChatCard(ChatModel chat) {
+    final theme = Theme.of(context);
     final user = chat.otherUser;
     final isUnread = chat.unreadCount > 0;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isUnread ? _C.accent.withOpacity(0.2) : _C.border,
+          color: isUnread
+              ? theme.colorScheme.primary.withOpacity(0.2)
+              : theme.dividerColor,
         ),
       ),
       child: InkWell(
@@ -590,7 +594,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 children: [
                   CircleAvatar(
                     radius: 26,
-                    backgroundColor: _C.accentBg,
+                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                     backgroundImage: user?.avatar?.isNotEmpty == true
                         ? NetworkImage(user!.avatar!)
                         : null,
@@ -599,10 +603,10 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                             user?.name?.isNotEmpty == true
                                 ? user!.name![0].toUpperCase()
                                 : '?',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w500,
-                              color: _C.accent,
+                              color: theme.colorScheme.primary,
                             ),
                           )
                         : null,
@@ -615,9 +619,9 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                         width: 12,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: _C.green,
+                          color: theme.colorScheme.secondary,
                           shape: BoxShape.circle,
-                          border: Border.all(color: _C.card, width: 2),
+                          border: Border.all(color: theme.cardColor, width: 2),
                         ),
                       ),
                     ),
@@ -638,7 +642,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                               fontWeight: isUnread
                                   ? FontWeight.w600
                                   : FontWeight.w500,
-                              color: _C.dark,
+                              color: theme.colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -649,7 +653,9 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                             _formatTime(chat.lastMessageTime!),
                             style: TextStyle(
                               fontSize: 11,
-                              color: isUnread ? _C.accent : _C.gray,
+                              color: isUnread
+                                  ? theme.colorScheme.primary
+                                  : AppColors.gray,
                               fontWeight: isUnread
                                   ? FontWeight.w500
                                   : FontWeight.normal,
@@ -667,7 +673,9 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
-                              color: isUnread ? _C.dark : _C.gray,
+                              color: isUnread
+                                  ? theme.colorScheme.onSurface
+                                  : AppColors.gray,
                               fontWeight: isUnread
                                   ? FontWeight.w500
                                   : FontWeight.normal,
@@ -682,7 +690,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: _C.accent,
+                              color: theme.colorScheme.primary,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(

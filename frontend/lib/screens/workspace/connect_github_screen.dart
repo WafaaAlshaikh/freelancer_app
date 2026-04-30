@@ -1,7 +1,10 @@
 // screens/workspace/connect_github_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
+import '../../theme/app_theme.dart';
 
 class ConnectGithubScreen extends StatefulWidget {
   final int contractId;
@@ -19,11 +22,17 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Connect GitHub Repository'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(t.connectGithubRepository),
+        elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -33,18 +42,18 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: AppColors.infoBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: AppColors.info.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info, color: Colors.blue.shade700),
+                  Icon(Icons.info, color: AppColors.info),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Connect your GitHub repository to track commits and show your progress to the client.',
-                      style: TextStyle(color: Colors.blue.shade800),
+                      t.connectGithubDescription,
+                      style: TextStyle(color: AppColors.info),
                     ),
                   ),
                 ],
@@ -52,46 +61,90 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
             ),
             const SizedBox(height: 24),
 
-            const Text(
-              'Repository URL',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              t.repositoryUrl,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _repoController,
+              style: TextStyle(color: theme.colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'https://github.com/username/repo',
-                prefixIcon: const Icon(Icons.link),
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+                prefixIcon: Icon(Icons.link, color: theme.colorScheme.primary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
                 ),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Example: https://github.com/flutter/flutter',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              t.repositoryUrlExample,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
             ),
 
             const SizedBox(height: 16),
 
-            const Text(
-              'Branch (Optional)',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              t.branchOptional,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _branchController,
+              style: TextStyle(color: theme.colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'main',
-                prefixIcon: const Icon(Icons.call_split),
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+                prefixIcon: Icon(
+                  Icons.call_split,
+                  color: theme.colorScheme.primary,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
                 ),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
               ),
             ),
 
@@ -110,9 +163,9 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
                 ),
                 child: _loading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Connect Repository',
-                        style: TextStyle(
+                    : Text(
+                        t.connectRepository,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -126,14 +179,15 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
   }
 
   Future<void> _connect() async {
+    final t = AppLocalizations.of(context)!;
     if (_repoController.text.isEmpty) {
-      Fluttertoast.showToast(msg: 'Please enter repository URL');
+      Fluttertoast.showToast(msg: t.pleaseEnterRepositoryUrl);
       return;
     }
 
     final repoUrl = _repoController.text.trim();
     if (!repoUrl.contains('github.com')) {
-      Fluttertoast.showToast(msg: 'Please enter a valid GitHub URL');
+      Fluttertoast.showToast(msg: t.pleaseEnterValidGithubUrl);
       return;
     }
 
@@ -148,10 +202,10 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
     setState(() => _loading = false);
 
     if (result['repo'] != null) {
-      Fluttertoast.showToast(msg: '✅ Repository connected');
+      Fluttertoast.showToast(msg: t.repositoryConnected);
       Navigator.pop(context, true);
     } else {
-      Fluttertoast.showToast(msg: result['message'] ?? 'Error');
+      Fluttertoast.showToast(msg: result['message'] ?? t.error);
     }
   }
 

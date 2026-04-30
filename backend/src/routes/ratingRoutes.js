@@ -6,6 +6,8 @@ import {
   getContractRatings,
   getUserRatings,
   checkCanRate,
+  addReviewReply,
+  markReviewHelpful,
 } from "../controllers/ratingController.js";
 
 const router = express.Router();
@@ -19,6 +21,9 @@ router.get("/can-rate/:contractId", checkCanRate);
 router.get("/contract/:contractId", getContractRatings);
 
 router.get("/user/:userId", getUserRatings);
+
+router.post("/:reviewId/reply", addReviewReply);
+router.post("/:reviewId/helpful", markReviewHelpful);
 
 router.post("/:id/helpful", async (req, res) => {
   try {

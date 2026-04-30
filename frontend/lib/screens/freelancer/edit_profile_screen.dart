@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/freelancer_model.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
@@ -11,17 +12,7 @@ import '../../widgets/skill_chip.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-
-class AppColors {
-  static const sidebarBg = Color(0xFF2D2B55);
-  static const sidebarText = Color(0xFFC8C6E8);
-  static const sidebarActive = Color(0xFF5B58E2);
-  static const accent = Color(0xFF6C63FF);
-  static const accentLight = Color(0xFFA78BFA);
-  static const green = Color(0xFF14A800);
-  static const pageBg = Color(0xFFF5F6F8);
-  static const cardBg = Colors.white;
-}
+import '../../theme/app_theme.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final FreelancerProfile profile;
@@ -124,6 +115,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     hourlyRateController = TextEditingController(
       text: widget.profile.hourlyRate?.toString() ?? '',
     );
+
     const allowedAvail = {
       'full_time',
       'part_time',
@@ -166,6 +158,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> pickImage() async {
+    final t = AppLocalizations.of(context)!;
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
@@ -177,13 +170,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         final response = await ApiService.uploadAvatar(bytes, fileName);
 
         if (response['avatar'] != null) {
-          setState(() {
-            avatarUrl = response['avatar'];
-          });
-          Fluttertoast.showToast(msg: "Avatar uploaded successfully");
+          setState(() => avatarUrl = response['avatar']);
+          Fluttertoast.showToast(msg: t.avatarUploaded);
         }
       } catch (e) {
-        Fluttertoast.showToast(msg: "Error uploading avatar");
+        Fluttertoast.showToast(msg: t.errorUploadingAvatar);
       } finally {
         setState(() => isUploadingAvatar = false);
       }
@@ -191,6 +182,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> pickCV() async {
+    final t = AppLocalizations.of(context)!;
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -209,9 +201,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         final fileName = result.files.single.name;
 
         if (bytes != null) {
-          print('Uploading CV: $fileName');
           final response = await ApiService.uploadCV(bytes, fileName);
-          print('Upload response: $response');
 
           if (response['profile'] != null) {
             final profileData = response['profile'];
@@ -227,11 +217,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 if (analysis['title'] != null && analysis['title'].isNotEmpty) {
                   titleController.text = analysis['title'];
                 }
-
                 if (analysis['bio'] != null && analysis['bio'].isNotEmpty) {
                   bioController.text = analysis['bio'];
                 }
-
                 if (analysis['skills'] != null) {
                   final extractedSkills = analysis['skills'];
                   if (extractedSkills is List) {
@@ -243,26 +231,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         .toList();
                   }
                 }
-
                 if (analysis['languages'] != null &&
                     analysis['languages'].isNotEmpty) {
                   languages = List<String>.from(analysis['languages']);
                 }
-
                 if (analysis['education'] != null &&
                     analysis['education'].isNotEmpty) {
                   education = List<Map<String, dynamic>>.from(
                     analysis['education'],
                   );
                 }
-
                 if (analysis['certifications'] != null &&
                     analysis['certifications'].isNotEmpty) {
                   certifications = List<Map<String, dynamic>>.from(
                     analysis['certifications'].map((c) => {'name': c}),
                   );
                 }
-
                 if (analysis['social_links'] != null) {
                   final social = analysis['social_links'];
                   if (social['github'] != null && social['github'].isNotEmpty) {
@@ -281,21 +265,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             });
 
             Fluttertoast.showToast(
-              msg: "✅ CV analyzed! ${skills.length} skills found",
+              msg: t.cvAnalyzed(skills.length),
               timeInSecForIosWeb: 3,
               gravity: ToastGravity.BOTTOM,
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
               textColor: Colors.white,
             );
           } else {
             Fluttertoast.showToast(
-              msg: response['message'] ?? "Error uploading CV",
+              msg: response['message'] ?? t.errorUploadingCV,
             );
           }
         }
       } catch (e) {
-        print('Error in pickCV: $e');
-        Fluttertoast.showToast(msg: "Error uploading CV: $e");
+        Fluttertoast.showToast(msg: '${t.errorUploadingCV}: $e');
       } finally {
         setState(() => isUploadingCV = false);
       }
@@ -303,9 +286,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> getCurrentLocation() async {
+    final t = AppLocalizations.of(context)!;
+
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      Fluttertoast.showToast(msg: "Location services are disabled");
+      Fluttertoast.showToast(msg: t.locationServicesDisabled);
       return;
     }
 
@@ -313,15 +298,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        Fluttertoast.showToast(msg: "Location permissions are denied");
+        Fluttertoast.showToast(msg: t.locationPermissionsDenied);
         return;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      Fluttertoast.showToast(
-        msg: "Location permissions are permanently denied",
-      );
+      Fluttertoast.showToast(msg: t.locationPermissionsDeniedForever);
       return;
     }
 
@@ -329,7 +312,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -352,11 +334,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           lng: position.longitude,
           address: address,
         );
-
-        Fluttertoast.showToast(msg: "Location updated successfully");
+        Fluttertoast.showToast(msg: t.locationUpdated);
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error getting location: $e");
+      Fluttertoast.showToast(msg: '${t.errorGettingLocation}: $e');
     }
   }
 
@@ -369,12 +350,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void removeSkill(int index) {
-    setState(() {
-      skills.removeAt(index);
-    });
-  }
-
+  void removeSkill(int index) => setState(() => skills.removeAt(index));
   void addLanguage() {
     if (languageController.text.isNotEmpty) {
       setState(() {
@@ -384,11 +360,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void removeLanguage(int index) {
-    setState(() {
-      languages.removeAt(index);
-    });
-  }
+  void removeLanguage(int index) => setState(() => languages.removeAt(index));
 
   void addEducation() {
     if (degreeController.text.isNotEmpty &&
@@ -406,11 +378,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void removeEducation(int index) {
-    setState(() {
-      education.removeAt(index);
-    });
-  }
+  void removeEducation(int index) => setState(() => education.removeAt(index));
 
   void addCertification() {
     if (certNameController.text.isNotEmpty) {
@@ -427,13 +395,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void removeCertification(int index) {
-    setState(() {
-      certifications.removeAt(index);
-    });
-  }
+  void removeCertification(int index) =>
+      setState(() => certifications.removeAt(index));
 
   Future<void> saveProfile() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => loading = true);
 
     try {
@@ -471,13 +437,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       };
 
       final response = await ApiService.updateProfile(data);
-
       if (response['message'] != null) {
         Fluttertoast.showToast(msg: response['message']);
         Navigator.pop(context, true);
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error saving profile");
+      Fluttertoast.showToast(msg: t.errorSavingProfile);
     } finally {
       setState(() => loading = false);
     }
@@ -489,6 +454,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String placeholder,
     required TextEditingController controller,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -496,38 +464,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         hintText: placeholder,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accent, width: 2),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
         ),
-        prefixIcon: Icon(icon, color: AppColors.accent),
+        prefixIcon: Icon(icon, color: theme.colorScheme.primary),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: isDark ? AppColors.darkSurface : Colors.grey.shade50,
       ),
+      style: TextStyle(color: theme.colorScheme.onSurface),
     );
   }
 
   Widget _buildSectionHeader(String title, {IconData? icon}) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           if (icon != null) ...[
-            Icon(icon, color: AppColors.accent, size: 20),
+            Icon(icon, color: theme.colorScheme.primary, size: 20),
             const SizedBox(width: 8),
           ],
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D2B55),
             ),
           ),
         ],
@@ -536,14 +509,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildInfoCard(Widget child) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -554,21 +530,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildAITag(IconData icon, String label) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.green.withOpacity(0.3)),
+        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppColors.green),
+          Icon(icon, size: 12, color: AppColors.secondary),
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
         ],
       ),
@@ -577,21 +558,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          "Edit Profile",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D2B55),
-          ),
+        title: Text(
+          t.editProfile,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.cardBg,
         elevation: 0,
-        foregroundColor: Colors.black,
         centerTitle: false,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -604,7 +585,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 60,
-                        backgroundColor: AppColors.accentLight.withOpacity(0.3),
+                        backgroundColor: theme.colorScheme.primary.withOpacity(
+                          0.3,
+                        ),
                         backgroundImage:
                             (avatarUrl != null && avatarUrl!.isNotEmpty)
                             ? NetworkImage(apiMediaUrl(avatarUrl))
@@ -614,10 +597,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 nameController.text.isNotEmpty
                                     ? nameController.text[0].toUpperCase()
                                     : "?",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 40,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.accent,
+                                  color: theme.colorScheme.primary,
                                 ),
                               )
                             : null,
@@ -630,7 +613,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.accent,
+                              color: theme.colorScheme.primary,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
                             ),
@@ -665,10 +648,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.upload_file, size: 18),
-                      label: Text(cvUrl != null ? "Update CV" : "Upload CV"),
+                      label: Text(cvUrl != null ? t.updateCV : t.uploadCV),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.accent,
-                        side: BorderSide(color: AppColors.accent),
+                        foregroundColor: theme.colorScheme.primary,
+                        side: BorderSide(color: theme.colorScheme.primary),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -687,14 +670,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.green.withOpacity(0.1),
-                      AppColors.accent.withOpacity(0.05),
+                      AppColors.secondary.withOpacity(0.1),
+                      theme.colorScheme.primary.withOpacity(0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.green.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppColors.secondary.withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -704,12 +689,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.green.withOpacity(0.15),
+                            color: AppColors.secondary.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             Icons.auto_awesome,
-                            color: AppColors.green,
+                            color: AppColors.secondary,
                             size: 20,
                           ),
                         ),
@@ -719,18 +704,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "AI Analysis Complete!",
+                                t.aiAnalysisComplete,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: AppColors.green,
+                                  color: AppColors.secondary,
                                 ),
                               ),
                               Text(
-                                "Extracted from your CV",
-                                style: TextStyle(
+                                t.extractedFromCV,
+                                style: theme.textTheme.bodySmall?.copyWith(
                                   fontSize: 11,
-                                  color: Colors.grey.shade600,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
                                 ),
                               ),
                             ],
@@ -746,21 +732,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         if (aiAnalysis!['title'] != null)
                           _buildAITag(Icons.work, aiAnalysis!['title']),
                         if (skills.isNotEmpty)
-                          _buildAITag(Icons.code, "${skills.length} skills"),
+                          _buildAITag(
+                            Icons.code,
+                            "${skills.length} ${t.skillsCount}",
+                          ),
                         if (languages.isNotEmpty)
                           _buildAITag(
                             Icons.language,
-                            "${languages.length} languages",
+                            "${languages.length} ${t.languagesCount}",
                           ),
                         if (education.isNotEmpty)
                           _buildAITag(
                             Icons.school,
-                            "${education.length} education",
+                            "${education.length} ${t.educationCount}",
                           ),
                         if (aiAnalysis!['confidence'] != null)
                           _buildAITag(
                             Icons.analytics,
-                            "Confidence: ${(aiAnalysis!['confidence'] * 100).toInt()}%",
+                            "${t.confidence}: ${(aiAnalysis!['confidence'] * 100).toInt()}%",
                           ),
                       ],
                     ),
@@ -773,121 +762,165 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(
-                    "Basic Information",
+                    t.basicInformation,
                     icon: Icons.person_outline,
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
-                      labelText: "Full Name",
+                      labelText: t.fullName,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.accent,
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
                           width: 2,
                         ),
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.person,
-                        color: AppColors.accent,
+                        color: theme.colorScheme.primary,
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: taglineController,
                     decoration: InputDecoration(
-                      labelText: "Tagline",
-                      hintText: "Short headline (shown to clients)",
+                      labelText: t.tagline,
+                      hintText: t.taglineHint,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.accent,
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
                           width: 2,
                         ),
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.short_text,
-                        color: AppColors.accent,
+                        color: theme.colorScheme.primary,
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: titleController,
                     decoration: InputDecoration(
-                      labelText: "Professional Title",
-                      hintText: "e.g., Senior Flutter Developer",
+                      labelText: t.professionalTitle,
+                      hintText: t.professionalTitleHint,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.accent,
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
                           width: 2,
                         ),
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.work,
-                        color: AppColors.accent,
+                        color: theme.colorScheme.primary,
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: bioController,
                     maxLines: 4,
                     decoration: InputDecoration(
-                      labelText: "Bio",
-                      hintText: "Tell us about yourself...",
+                      labelText: t.bio,
+                      hintText: t.bioHint,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.accent,
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
                           width: 2,
                         ),
                       ),
                       alignLabelWithHint: true,
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                 ],
               ),
@@ -898,43 +931,54 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(
-                    "Location",
+                    t.location,
                     icon: Icons.location_on_outlined,
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: locationController,
                     decoration: InputDecoration(
-                      labelText: "Address",
+                      labelText: t.address,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.accent,
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
                           width: 2,
                         ),
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.location_on,
-                        color: AppColors.accent,
+                        color: theme.colorScheme.primary,
                       ),
                       suffixIcon: IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.my_location,
-                          color: AppColors.accent,
+                          color: theme.colorScheme.primary,
                         ),
                         onPressed: getCurrentLocation,
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                   if (selectedLocation != null) ...[
                     const SizedBox(height: 12),
@@ -942,7 +986,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       height: 160,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                        ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
@@ -952,9 +1000,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           width: double.infinity,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              color: Colors.grey.shade100,
-                              child: const Center(
-                                child: Text("Map preview unavailable"),
+                              color: isDark
+                                  ? AppColors.darkSurface
+                                  : Colors.grey.shade100,
+                              child: Center(
+                                child: Text(t.mapPreviewUnavailable),
                               ),
                             );
                           },
@@ -970,7 +1020,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader("Skills", icon: Icons.code_outlined),
+                  _buildSectionHeader(t.skills, icon: Icons.code_outlined),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -978,37 +1028,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: skillController,
                           decoration: InputDecoration(
-                            hintText: "Add a skill",
+                            hintText: t.addSkill,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: AppColors.accent,
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.primary,
                                 width: 2,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                           onSubmitted: (_) => addSkill(),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.accent,
+                          color: theme.colorScheme.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
@@ -1034,8 +1091,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       padding: const EdgeInsets.all(12.0),
                       child: Center(
                         child: Text(
-                          "No skills added yet",
-                          style: TextStyle(color: Colors.grey.shade500),
+                          t.noSkillsAdded,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     ),
@@ -1048,7 +1107,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(
-                    "Languages",
+                    t.languages,
                     icon: Icons.language_outlined,
                   ),
                   const SizedBox(height: 8),
@@ -1058,37 +1117,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: languageController,
                           decoration: InputDecoration(
-                            hintText: "Add a language",
+                            hintText: t.addLanguage,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: AppColors.accent,
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.primary,
                                 width: 2,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                           onSubmitted: (_) => addLanguage(),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.accent,
+                          color: theme.colorScheme.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
@@ -1104,10 +1170,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     runSpacing: 8,
                     children: languages.asMap().entries.map((entry) {
                       return Chip(
-                        label: Text(entry.value),
+                        label: Text(
+                          entry.value,
+                          style: TextStyle(color: theme.colorScheme.onSurface),
+                        ),
                         onDeleted: () => removeLanguage(entry.key),
-                        deleteIconColor: Colors.red,
-                        backgroundColor: Colors.grey.shade100,
+                        deleteIconColor: AppColors.danger,
+                        backgroundColor: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade100,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -1119,8 +1190,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       padding: const EdgeInsets.all(12.0),
                       child: Center(
                         child: Text(
-                          "No languages added yet",
-                          style: TextStyle(color: Colors.grey.shade500),
+                          t.noLanguagesAdded,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     ),
@@ -1132,7 +1205,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader("Education", icon: Icons.school_outlined),
+                  _buildSectionHeader(t.education, icon: Icons.school_outlined),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -1140,17 +1213,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: degreeController,
                           decoration: InputDecoration(
-                            hintText: "Degree",
+                            hintText: t.degree,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1158,17 +1236,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: institutionController,
                           decoration: InputDecoration(
-                            hintText: "Institution",
+                            hintText: t.institution,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1177,23 +1260,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: yearController,
                           decoration: InputDecoration(
-                            hintText: "Year",
+                            hintText: t.year,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.accent,
+                          color: theme.colorScheme.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
@@ -1214,22 +1302,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                        ),
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.accent.withOpacity(0.1),
+                              color: theme.colorScheme.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.school,
                               size: 16,
-                              color: AppColors.accent,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -1246,19 +1340,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ),
                                 Text(
                                   edu['institution'] ?? '',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
+                                  style: theme.textTheme.bodySmall,
                                 ),
                                 if (edu['year'] != null &&
                                     edu['year'].isNotEmpty)
                                   Text(
                                     edu['year'],
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade500,
-                                    ),
+                                    style: theme.textTheme.bodySmall,
                                   ),
                               ],
                             ),
@@ -1280,8 +1368,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       padding: const EdgeInsets.all(12.0),
                       child: Center(
                         child: Text(
-                          "No education added yet",
-                          style: TextStyle(color: Colors.grey.shade500),
+                          t.noEducationAdded,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     ),
@@ -1294,7 +1384,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(
-                    "Certifications",
+                    t.certifications,
                     icon: Icons.verified_outlined,
                   ),
                   const SizedBox(height: 12),
@@ -1304,17 +1394,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: certNameController,
                           decoration: InputDecoration(
-                            hintText: "Certification name",
+                            hintText: t.certificationName,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1322,17 +1417,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: certIssuerController,
                           decoration: InputDecoration(
-                            hintText: "Issuer",
+                            hintText: t.issuer,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1341,23 +1441,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: TextField(
                           controller: certYearController,
                           decoration: InputDecoration(
-                            hintText: "Year",
+                            hintText: t.year,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade50,
                           ),
+                          style: TextStyle(color: theme.colorScheme.onSurface),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.accent,
+                          color: theme.colorScheme.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
@@ -1378,22 +1483,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                        ),
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.green.withOpacity(0.1),
+                              color: AppColors.secondary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.verified,
                               size: 16,
-                              color: AppColors.green,
+                              color: AppColors.secondary,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -1412,19 +1523,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     cert['issuer'].isNotEmpty)
                                   Text(
                                     cert['issuer'],
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
+                                    style: theme.textTheme.bodySmall,
                                   ),
                                 if (cert['year'] != null &&
                                     cert['year'].isNotEmpty)
                                   Text(
                                     cert['year'],
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade500,
-                                    ),
+                                    style: theme.textTheme.bodySmall,
                                   ),
                               ],
                             ),
@@ -1446,8 +1551,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       padding: const EdgeInsets.all(12.0),
                       child: Center(
                         child: Text(
-                          "No certifications added yet",
-                          style: TextStyle(color: Colors.grey.shade500),
+                          t.noCertificationsAdded,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     ),
@@ -1459,35 +1566,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(
-                    "Social & Professional Links",
-                    icon: Icons.link_outlined,
-                  ),
+                  _buildSectionHeader(t.socialLinks, icon: Icons.link_outlined),
                   const SizedBox(height: 8),
                   _buildSocialField(
                     icon: Icons.link,
-                    label: "Portfolio Website",
+                    label: t.portfolioWebsite,
                     placeholder: "https://yourportfolio.com",
                     controller: websiteController,
                   ),
                   const SizedBox(height: 14),
                   _buildSocialField(
                     icon: Icons.code,
-                    label: "GitHub",
+                    label: t.github,
                     placeholder: "https://github.com/username",
                     controller: githubController,
                   ),
                   const SizedBox(height: 14),
                   _buildSocialField(
                     icon: Icons.work,
-                    label: "LinkedIn",
+                    label: t.linkedin,
                     placeholder: "https://linkedin.com/in/username",
                     controller: linkedinController,
                   ),
                   const SizedBox(height: 14),
                   _buildSocialField(
                     icon: Icons.brush,
-                    label: "Behance / Dribbble",
+                    label: t.behance,
                     placeholder: "https://behance.net/username",
                     controller: behanceController,
                   ),
@@ -1500,7 +1604,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(
-                    "Availability",
+                    t.availability,
                     icon: Icons.schedule_outlined,
                   ),
                   const SizedBox(height: 8),
@@ -1511,42 +1615,47 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                     ),
-                    items: const [
+                    dropdownColor: theme.cardColor,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    items: [
                       DropdownMenuItem(
                         value: 'full_time',
-                        child: Text('Full-time'),
+                        child: Text(t.fullTime),
                       ),
                       DropdownMenuItem(
                         value: 'part_time',
-                        child: Text('Part-time'),
+                        child: Text(t.partTime),
                       ),
                       DropdownMenuItem(
                         value: 'as_needed',
-                        child: Text('As needed'),
+                        child: Text(t.asNeeded),
                       ),
                       DropdownMenuItem(
                         value: 'not_available',
-                        child: Text('Not available'),
+                        child: Text(t.notAvailable),
                       ),
                     ],
-                    onChanged: (v) {
-                      if (v != null) setState(() => _availability = v);
-                    },
+                    onChanged: (v) => setState(() => _availability = v!),
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: weeklyHoursController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: "Weekly hours (available)",
+                      labelText: t.weeklyHours,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: isDark
+                          ? AppColors.darkSurface
+                          : Colors.grey.shade50,
                     ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
                 ],
               ),
@@ -1560,26 +1669,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       controller: experienceController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: "Years of Experience",
+                        labelText: t.yearsOfExperience,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accent,
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary,
                             width: 2,
                           ),
                         ),
-                        suffixText: "years",
+                        suffixText: t.years,
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade50,
                       ),
+                      style: TextStyle(color: theme.colorScheme.onSurface),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -1588,26 +1708,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       controller: hourlyRateController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: "Hourly Rate",
+                        labelText: t.hourlyRate,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accent,
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary,
                             width: 2,
                           ),
                         ),
                         prefixText: "\$ ",
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: isDark
+                            ? AppColors.darkSurface
+                            : Colors.grey.shade50,
                       ),
+                      style: TextStyle(color: theme.colorScheme.onSurface),
                     ),
                   ),
                 ],
@@ -1622,7 +1753,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: ElevatedButton(
                 onPressed: loading ? null : saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1638,9 +1769,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        "Save Changes",
-                        style: TextStyle(
+                    : Text(
+                        t.saveChanges,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),

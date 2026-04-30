@@ -29,6 +29,7 @@ import WorkSubmission from "./WorkSubmission.js";
 import UserFavorite from "./UserFavorite.js";
 import FinancialTransaction from "./FinancialTransaction.js";
 import InterviewInvitation from "./InterviewInvitation.js";
+import ReviewHelpful from "./ReviewHelpful.js";
 
 User.hasOne(UserSubscription, { foreignKey: "user_id" });
 UserSubscription.belongsTo(User, { foreignKey: "user_id" });
@@ -156,6 +157,9 @@ User.hasMany(WorkSubmission, {
   as: "clientWorkSubmissions",
 });
 
+Rating.hasMany(ReviewHelpful, { foreignKey: "reviewId" });
+ReviewHelpful.belongsTo(Rating, { foreignKey: "reviewId" });
+
 export {
   sequelize,
   User,
@@ -186,4 +190,5 @@ export {
   UserFavorite,
   FinancialTransaction,
   InterviewInvitation,
+  ReviewHelpful,
 };
