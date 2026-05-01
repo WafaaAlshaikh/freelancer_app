@@ -198,6 +198,47 @@ const User = sequelize.define("User", {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  national_id: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: true,
+  },
+  national_id_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  phone_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  phone_verification_code: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  agreed_to_terms_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  ip_address: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  preferred_payment_method: {
+    type: DataTypes.ENUM("stripe", "paypal", "card"),
+    allowNull: true,
+  },
+  referral_source: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  terms_accepted_version: {
+    type: DataTypes.STRING,
+    defaultValue: "1.0",
+  },
   saved_filters: {
     type: DataTypes.TEXT,
     defaultValue: "[]",

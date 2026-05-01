@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF122543), Color(0xFF7C6FF7), Color(0xFF9B8FF7)],
+            colors: [Color(0xFF0D1C33), Color(0xFF122543), Color(0xFF3A5A8C)],
           ),
         ),
         child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 28),
+              padding: const EdgeInsets.only(bottom: 10),
               child: _buildLogo(),
             ),
             _buildRightCard(width: double.infinity),
@@ -98,56 +98,62 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLeftPanel() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLogo(),
-          const SizedBox(height: 36),
-          const Text(
-            'Welcome Back!',
-            style: TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              height: 1.1,
-            ),
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: _buildLogo(),
+        ),        
+        const Text(
+          'Welcome Back!',
+          style: TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            height: 1.1,
           ),
-          const SizedBox(height: 14),
-          const Text(
-            'Continue your freelancing journey',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
+        ),
+        const SizedBox(height: 14),
+        const Text(
+          'Continue your freelancing journey',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Connect with top clients, manage your projects, and grow your career on iPal - the leading freelancing platform.',
-            style: TextStyle(fontSize: 13, color: Colors.white60, height: 1.65),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Connect with top clients, manage your projects, and grow your career on iPal - the leading freelancing platform.',
+          style: TextStyle(fontSize: 13, color: Colors.white60, height: 1.65),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildLogo() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Image.asset(
-          'assets/images/logo.png',
-          width: 40,
-          height: 40,
-          fit: BoxFit.contain,
+  return Image.asset(
+    'assets/images/logoo.png',
+    width: 100,
+    height: 100,
+    fit: BoxFit.contain,
+    errorBuilder: (context, error, stackTrace) {
+      return Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(75),
         ),
-        const SizedBox(width: 10),
-      ],
-    );
-  }
+      );
+    },
+  );
+}
 
   Widget _buildRightCard({required double width}) {
     return Container(
@@ -208,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Forgot Password?',
                 style: TextStyle(
                   fontSize: 12,
-                  color: primaryPurple,
+                  color: Color(0xFF122543),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -222,8 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ElevatedButton(
               onPressed: loading ? null : login,
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryPurple,
-                disabledBackgroundColor: primaryPurple.withOpacity(0.7),
+                backgroundColor: Color(0xFF3A5A8C),
+                disabledBackgroundColor: Color(0xFF122543).withOpacity(0.7),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(50),
@@ -279,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextSpan(
                     text: 'Sign Up',
                     style: TextStyle(
-                      color: primaryPurple,
+                      color: Color(0xFF122543),
                       fontWeight: FontWeight.w600,
                     ),
                   ),

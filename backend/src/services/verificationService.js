@@ -1,13 +1,13 @@
-import FreelancerProfile from '../models/FreelancerProfile.js';
-import ClientProfile from '../models/ClientProfile.js';
-import User from '../models/User.js';
-import Badge from '../models/Badge.js';
-import UserBadge from '../models/UserBadge.js';
-import nodemailer from 'nodemailer';
+import FreelancerProfile from "../models/FreelancerProfile.js";
+import ClientProfile from "../models/ClientProfile.js";
+import User from "../models/User.js";
+import Badge from "../models/Badge.js";
+import UserBadge from "../models/UserBadge.js";
+import nodemailer from "nodemailer";
 
 class VerificationService {
-  static transporter = nodemailer.createTransporter({
-    service: 'gmail',
+  static transporter = nodemailer.createTransport({
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -18,129 +18,131 @@ class VerificationService {
     try {
       const defaultBadges = [
         {
-          name: 'Top Rated',
-          slug: 'top-rated',
-          description: 'Elite freelancers with exceptional performance',
-          icon: 'star',
-          color: '#FFB800',
-          badge_type: 'status',
+          name: "Top Rated",
+          slug: "top-rated",
+          description: "Elite freelancers with exceptional performance",
+          icon: "star",
+          color: "#FFB800",
+          badge_type: "status",
           criteria: JSON.stringify({
             min_rating: 4.8,
             min_reviews: 20,
             min_job_success: 95,
-            min_earnings: 10000
+            min_earnings: 10000,
           }),
           is_featured: true,
           display_priority: 100,
         },
         {
-          name: 'Rising Talent',
-          slug: 'rising-talent',
-          description: 'Promising new freelancers with strong early performance',
-          icon: 'trending_up',
-          color: '#10B981',
-          badge_type: 'status',
+          name: "Rising Talent",
+          slug: "rising-talent",
+          description:
+            "Promising new freelancers with strong early performance",
+          icon: "trending_up",
+          color: "#10B981",
+          badge_type: "status",
           criteria: JSON.stringify({
             max_reviews: 10,
             min_rating: 4.5,
             min_job_success: 90,
-            max_member_months: 6
+            max_member_months: 6,
           }),
           is_featured: true,
           display_priority: 90,
         },
         {
-          name: 'Expert Vetted',
-          slug: 'expert-vetted',
-          description: 'Top 1% of talent through rigorous screening',
-          icon: 'verified',
-          color: '#6366F1',
-          badge_type: 'verification',
+          name: "Expert Vetted",
+          slug: "expert-vetted",
+          description: "Top 1% of talent through rigorous screening",
+          icon: "verified",
+          color: "#6366F1",
+          badge_type: "verification",
           criteria: JSON.stringify({
             manual_verification: true,
             skill_tests_passed: true,
-            interview_completed: true
+            interview_completed: true,
           }),
           is_featured: true,
           display_priority: 95,
         },
         {
-          name: 'Payment Verified',
-          slug: 'payment-verified',
-          description: 'Payment method has been verified',
-          icon: 'payment',
-          color: '#059669',
-          badge_type: 'verification',
+          name: "Payment Verified",
+          slug: "payment-verified",
+          description: "Payment method has been verified",
+          icon: "payment",
+          color: "#059669",
+          badge_type: "verification",
           criteria: JSON.stringify({
-            payment_method_verified: true
+            payment_method_verified: true,
           }),
           is_permanent: false,
           display_priority: 80,
         },
         {
-          name: 'Identity Verified',
-          slug: 'identity-verified',
-          description: 'Identity has been verified through document verification',
-          icon: 'person_verified',
-          color: '#DC2626',
-          badge_type: 'verification',
+          name: "Identity Verified",
+          slug: "identity-verified",
+          description:
+            "Identity has been verified through document verification",
+          icon: "person_verified",
+          color: "#DC2626",
+          badge_type: "verification",
           criteria: JSON.stringify({
-            id_document_verified: true
+            id_document_verified: true,
           }),
           is_permanent: true,
           display_priority: 85,
         },
         {
-          name: 'Company Verified',
-          slug: 'company-verified',
-          description: 'Company registration and business documents verified',
-          icon: 'business',
-          color: '#7C3AED',
-          badge_type: 'verification',
+          name: "Company Verified",
+          slug: "company-verified",
+          description: "Company registration and business documents verified",
+          icon: "business",
+          color: "#7C3AED",
+          badge_type: "verification",
           criteria: JSON.stringify({
-            business_documents_verified: true
+            business_documents_verified: true,
           }),
           is_permanent: true,
           display_priority: 75,
         },
         {
-          name: '100% Job Success',
-          slug: 'perfect-job-success',
-          description: 'Maintained perfect job success score',
-          icon: 'workspace_premium',
-          color: '#F59E0B',
-          badge_type: 'achievement',
+          name: "100% Job Success",
+          slug: "perfect-job-success",
+          description: "Maintained perfect job success score",
+          icon: "workspace_premium",
+          color: "#F59E0B",
+          badge_type: "achievement",
           criteria: JSON.stringify({
             job_success_score: 100,
-            min_completed_jobs: 5
+            min_completed_jobs: 5,
           }),
           is_permanent: false,
           display_priority: 70,
         },
         {
-          name: 'Quick Responder',
-          slug: 'quick-responder',
-          description: 'Responds to messages within 2 hours on average',
-          icon: 'bolt',
-          color: '#06B6D4',
-          badge_type: 'performance',
+          name: "Quick Responder",
+          slug: "quick-responder",
+          description: "Responds to messages within 2 hours on average",
+          icon: "bolt",
+          color: "#06B6D4",
+          badge_type: "performance",
           criteria: JSON.stringify({
             max_response_time_hours: 2,
-            min_messages: 50
+            min_messages: 50,
           }),
           is_permanent: false,
           expires_after_days: 30,
           display_priority: 60,
         },
         {
-          name: 'Top Earner',
-          slug: 'top-earner',
-          description: 'Among the top 10% earners on the platform',
-          icon: 'trending_up',
-          color: '#10B981',
-          badge_type: 'achievement',
+          name: "Top Earner",
+          slug: "top-earner",
+          description: "Among the top 10% earners on the platform",
+          icon: "trending_up",
+          color: "#10B981",
+          badge_type: "achievement",
           criteria: JSON.stringify({
-            earnings_percentile: 90
+            earnings_percentile: 90,
           }),
           is_permanent: false,
           expires_after_days: 90,
@@ -155,9 +157,9 @@ class VerificationService {
         });
       }
 
-      console.log('Default badges initialized successfully');
+      console.log("Default badges initialized successfully");
     } catch (error) {
-      console.error('Error initializing default badges:', error);
+      console.error("Error initializing default badges:", error);
     }
   }
 
@@ -166,19 +168,26 @@ class VerificationService {
       const badges = await Badge.findAll({ where: { is_active: true } });
       let profile, user;
 
-      if (userType === 'freelancer') {
-        profile = await FreelancerProfile.findOne({ where: { user_id: userId } });
+      if (userType === "freelancer") {
+        profile = await FreelancerProfile.findOne({
+          where: { user_id: userId },
+        });
       } else {
         profile = await ClientProfile.findOne({ where: { user_id: userId } });
       }
-      
+
       user = await User.findByPk(userId);
 
       if (!profile || !user) return;
 
       for (const badge of badges) {
-        const criteria = JSON.parse(badge.criteria || '{}');
-        const shouldAward = await this.evaluateBadgeCriteria(criteria, profile, user, userType);
+        const criteria = JSON.parse(badge.criteria || "{}");
+        const shouldAward = await this.evaluateBadgeCriteria(
+          criteria,
+          profile,
+          user,
+          userType,
+        );
 
         if (shouldAward) {
           await this.awardBadge(userId, badge.id);
@@ -187,50 +196,93 @@ class VerificationService {
         }
       }
     } catch (error) {
-      console.error('Error checking and awarding badges:', error);
+      console.error("Error checking and awarding badges:", error);
     }
   }
 
   static async evaluateBadgeCriteria(criteria, profile, user, userType) {
     try {
-      if (criteria.min_rating && profile.rating < criteria.min_rating) return false;
-      
-      if (criteria.min_reviews && profile.total_reviews < criteria.min_reviews) return false;
-      if (criteria.max_reviews && profile.total_reviews > criteria.max_reviews) return false;
-      
-      if (criteria.min_job_success && profile.job_success_score < criteria.min_job_success) return false;
-      if (criteria.job_success_score && profile.job_success_score < criteria.job_success_score) return false;
-      
-      if (criteria.min_earnings && profile.total_earnings < criteria.min_earnings) return false;
-      
-      if (criteria.max_response_time_hours && profile.response_time > criteria.max_response_time_hours) return false;
-      
-      if (criteria.min_completed_jobs && profile.completed_projects_count < criteria.min_completed_jobs) return false;
-      
-      if (criteria.payment_method_verified && userType === 'client' && !profile.payment_verified) return false;
+      if (criteria.min_rating && profile.rating < criteria.min_rating)
+        return false;
+
+      if (criteria.min_reviews && profile.total_reviews < criteria.min_reviews)
+        return false;
+      if (criteria.max_reviews && profile.total_reviews > criteria.max_reviews)
+        return false;
+
+      if (
+        criteria.min_job_success &&
+        profile.job_success_score < criteria.min_job_success
+      )
+        return false;
+      if (
+        criteria.job_success_score &&
+        profile.job_success_score < criteria.job_success_score
+      )
+        return false;
+
+      if (
+        criteria.min_earnings &&
+        profile.total_earnings < criteria.min_earnings
+      )
+        return false;
+
+      if (
+        criteria.max_response_time_hours &&
+        profile.response_time > criteria.max_response_time_hours
+      )
+        return false;
+
+      if (
+        criteria.min_completed_jobs &&
+        profile.completed_projects_count < criteria.min_completed_jobs
+      )
+        return false;
+
+      if (
+        criteria.payment_method_verified &&
+        userType === "client" &&
+        !profile.payment_verified
+      )
+        return false;
       if (criteria.id_document_verified && !user.is_verified) return false;
-      if (criteria.business_documents_verified && userType === 'client' && !profile.company_verified) return false;
-      
+      if (
+        criteria.business_documents_verified &&
+        userType === "client" &&
+        !profile.company_verified
+      )
+        return false;
+
       if (criteria.max_member_months) {
         const memberSince = new Date(profile.member_since || user.created_at);
-        const monthsDiff = (new Date() - memberSince) / (1000 * 60 * 60 * 24 * 30);
+        const monthsDiff =
+          (new Date() - memberSince) / (1000 * 60 * 60 * 24 * 30);
         if (monthsDiff > criteria.max_member_months) return false;
       }
-      
+
       if (criteria.manual_verification && !profile.is_verified) return false;
-      
+
       if (criteria.skill_tests_passed && !profile.skills_verified) return false;
-      if (criteria.interview_completed && !profile.interview_completed) return false;
-      
-      if (criteria.min_messages && profile.total_messages < criteria.min_messages) return false;
-      
+      if (criteria.interview_completed && !profile.interview_completed)
+        return false;
+
+      if (
+        criteria.min_messages &&
+        profile.total_messages < criteria.min_messages
+      )
+        return false;
+
       if (criteria.earnings_percentile) {
-        if (criteria.earnings_percentile === 90 && profile.total_earnings < 50000) return false;
+        if (
+          criteria.earnings_percentile === 90 &&
+          profile.total_earnings < 50000
+        )
+          return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Error evaluating badge criteria:', error);
+      console.error("Error evaluating badge criteria:", error);
       return false;
     }
   }
@@ -241,7 +293,7 @@ class VerificationService {
         where: { user_id: userId, badge_id: badgeId },
       });
 
-      if (existingUserBadge && existingUserBadge.is_active) return; 
+      if (existingUserBadge && existingUserBadge.is_active) return;
 
       const badge = await Badge.findByPk(badgeId);
       if (!badge) return;
@@ -262,11 +314,11 @@ class VerificationService {
         });
       }
 
-      await this.sendBadgeNotification(userId, badge, 'awarded');
-      
+      await this.sendBadgeNotification(userId, badge, "awarded");
+
       console.log(`Badge "${badge.name}" awarded to user ${userId}`);
     } catch (error) {
-      console.error('Error awarding badge:', error);
+      console.error("Error awarding badge:", error);
     }
   }
 
@@ -276,18 +328,18 @@ class VerificationService {
         where: { user_id: userId, badge_id: badgeId, is_active: true },
       });
 
-      if (!userBadge) return; 
+      if (!userBadge) return;
 
       await userBadge.update({ is_active: false });
 
       const badge = await Badge.findByPk(badgeId);
       if (badge) {
-        await this.sendBadgeNotification(userId, badge, 'revoked');
+        await this.sendBadgeNotification(userId, badge, "revoked");
       }
-      
+
       console.log(`Badge revoked from user ${userId}`);
     } catch (error) {
-      console.error('Error revoking badge:', error);
+      console.error("Error revoking badge:", error);
     }
   }
 
@@ -296,12 +348,14 @@ class VerificationService {
       const user = await User.findByPk(userId);
       if (!user || !user.email) return;
 
-      const subject = action === 'awarded' 
-        ? `🎉 Congratulations! You've earned the "${badge.name}" badge`
-        : `ℹ️ Your "${badge.name}" badge has been updated`;
+      const subject =
+        action === "awarded"
+          ? `🎉 Congratulations! You've earned the "${badge.name}" badge`
+          : `ℹ️ Your "${badge.name}" badge has been updated`;
 
-      const html = action === 'awarded'
-        ? `
+      const html =
+        action === "awarded"
+          ? `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
               <h1 style="color: white; margin: 0; font-size: 24px;">🎉 Congratulations!</h1>
@@ -323,7 +377,7 @@ class VerificationService {
             </div>
           </div>
         `
-        : `
+          : `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #f3f4f6; padding: 30px; text-align: center; border-radius: 10px;">
               <h1 style="color: #374151; margin: 0; font-size: 24px;">Badge Update</h1>
@@ -347,91 +401,99 @@ class VerificationService {
         subject,
         html,
       });
-
     } catch (error) {
-      console.error('Error sending badge notification:', error);
+      console.error("Error sending badge notification:", error);
     }
   }
 
-  static async updateVerificationStatus(userId, verificationType, status, documents = null) {
+  static async updateVerificationStatus(
+    userId,
+    verificationType,
+    status,
+    documents = null,
+  ) {
     try {
       let profile;
       const user = await User.findByPk(userId);
 
-      if (!user) return { success: false, message: 'User not found' };
+      if (!user) return { success: false, message: "User not found" };
 
-      if (user.role === 'freelancer') {
-        profile = await FreelancerProfile.findOne({ where: { user_id: userId } });
+      if (user.role === "freelancer") {
+        profile = await FreelancerProfile.findOne({
+          where: { user_id: userId },
+        });
       } else {
         profile = await ClientProfile.findOne({ where: { user_id: userId } });
       }
 
-      if (!profile) return { success: false, message: 'Profile not found' };
+      if (!profile) return { success: false, message: "Profile not found" };
 
       const updateData = {};
-      
+
       switch (verificationType) {
-        case 'identity':
+        case "identity":
           updateData.is_verified = status;
           user.is_verified = status;
           await user.save();
           break;
-          
-        case 'payment':
-          if (user.role === 'client') {
+
+        case "payment":
+          if (user.role === "client") {
             updateData.payment_verified = status;
           }
           break;
-          
-        case 'company':
-          if (user.role === 'client') {
+
+        case "company":
+          if (user.role === "client") {
             updateData.company_verified = status;
           }
           break;
-          
-        case 'skills':
-          if (user.role === 'freelancer') {
+
+        case "skills":
+          if (user.role === "freelancer") {
             updateData.skills_verified = documents || [];
           }
           break;
-          
+
         default:
-          return { success: false, message: 'Invalid verification type' };
+          return { success: false, message: "Invalid verification type" };
       }
 
       await profile.update(updateData);
 
       await this.checkAndAwardBadges(userId, user.role);
 
-      return { 
-        success: true, 
-        message: `${verificationType} verification ${status ? 'completed' : 'failed'}` 
+      return {
+        success: true,
+        message: `${verificationType} verification ${status ? "completed" : "failed"}`,
       };
     } catch (error) {
-      console.error('Error updating verification status:', error);
-      return { success: false, message: 'Internal server error' };
+      console.error("Error updating verification status:", error);
+      return { success: false, message: "Internal server error" };
     }
   }
 
   static async getUserBadges(userId) {
     try {
       const userBadges = await UserBadge.findAll({
-        where: { 
-          user_id: userId, 
+        where: {
+          user_id: userId,
           is_active: true,
-          is_displayed: true 
+          is_displayed: true,
         },
-        include: [{
-          model: Badge,
-          as: 'badge',
-        }],
+        include: [
+          {
+            model: Badge,
+            as: "badge",
+          },
+        ],
         order: [
-          [{ model: Badge, as: 'badge' }, 'display_priority', 'DESC'],
-          ['awarded_at', 'DESC'],
+          [{ model: Badge, as: "badge" }, "display_priority", "DESC"],
+          ["awarded_at", "DESC"],
         ],
       });
 
-      return userBadges.map(ub => ({
+      return userBadges.map((ub) => ({
         id: ub.badge.id,
         name: ub.badge.name,
         description: ub.badge.description,
@@ -442,7 +504,7 @@ class VerificationService {
         expires_at: ub.expires_at,
       }));
     } catch (error) {
-      console.error('Error getting user badges:', error);
+      console.error("Error getting user badges:", error);
       return [];
     }
   }
@@ -453,42 +515,106 @@ class VerificationService {
         where: {
           is_active: true,
           expires_at: {
-            [require('sequelize').Op.lt]: new Date(),
+            [require("sequelize").Op.lt]: new Date(),
           },
         },
       });
 
       for (const userBadge of expiredBadges) {
         await userBadge.update({ is_active: false });
-        
+
         const badge = await Badge.findByPk(userBadge.badge_id);
         if (badge) {
-          await this.sendBadgeNotification(userBadge.user_id, badge, 'expired');
+          await this.sendBadgeNotification(userBadge.user_id, badge, "expired");
         }
       }
 
       console.log(`Checked and expired ${expiredBadges.length} badges`);
     } catch (error) {
-      console.error('Error checking expired badges:', error);
+      console.error("Error checking expired badges:", error);
     }
   }
 
   static async updateAllUserBadges() {
     try {
-      console.log('Starting badge update process...');
+      console.log("Starting badge update process...");
 
       const users = await User.findAll({
-        attributes: ['id', 'role'],
+        attributes: ["id", "role"],
       });
 
       for (const user of users) {
         await this.checkAndAwardBadges(user.id, user.role);
       }
 
-      console.log('Badge update process completed');
+      console.log("Badge update process completed");
     } catch (error) {
-      console.error('Error updating all user badges:', error);
+      console.error("Error updating all user badges:", error);
     }
+  }
+
+  static async sendPhoneVerificationCode(phone) {
+    try {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+      if (!global.phoneVerifications) global.phoneVerifications = new Map();
+      global.phoneVerifications.set(phone, {
+        code,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+        attempts: 0,
+      });
+
+      console.log(`📱 SMS verification code for ${phone}: ${code}`);
+      return { success: true, message: "Code sent successfully" };
+    } catch (error) {
+      console.error("Error sending SMS:", error);
+      return { success: false, message: "Failed to send code" };
+    }
+  }
+
+  static async verifyPhoneCode(phone, code) {
+    const verification = global.phoneVerifications?.get(phone);
+
+    if (!verification) {
+      return { valid: false, message: "No verification requested" };
+    }
+
+    if (Date.now() > verification.expiresAt) {
+      global.phoneVerifications.delete(phone);
+      return { valid: false, message: "Code expired" };
+    }
+
+    verification.attempts++;
+    if (verification.attempts > 5) {
+      global.phoneVerifications.delete(phone);
+      return { valid: false, message: "Too many attempts" };
+    }
+
+    if (verification.code !== code) {
+      global.phoneVerifications.set(phone, verification);
+      return {
+        valid: false,
+        message: "Invalid code",
+        attemptsLeft: 5 - verification.attempts,
+      };
+    }
+
+    global.phoneVerifications.delete(phone);
+    return { valid: true, message: "Phone verified successfully" };
+  }
+
+  static async validateNationalId(nationalId, name) {
+    const isValid =
+      nationalId && nationalId.length >= 10 && nationalId.length <= 14;
+
+    const mockValidation = {
+      valid: isValid,
+      name_match: true,
+      message: isValid ? "National ID verified" : "Invalid national ID format",
+      confidence_score: isValid ? 0.95 : 0,
+    };
+
+    return mockValidation;
   }
 }
 

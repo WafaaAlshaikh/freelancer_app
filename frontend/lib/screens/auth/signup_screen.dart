@@ -1,5 +1,8 @@
+// lib/screens/auth/signup_screen.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../services/api_service.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -9,35 +12,373 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends State<SignupScreen>
+    with SingleTickerProviderStateMixin {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+  final nationalIdController = TextEditingController();
+  final phoneController = TextEditingController();
+  final hourlyRateController = TextEditingController();
+  final companyNameController = TextEditingController();
+  final commercialRegisterController = TextEditingController();
+  final taxNumberController = TextEditingController();
+  final referralSourceController = TextEditingController();
 
   String role = 'client';
+  String clientType = 'individual';
   bool loading = false;
   bool obscurePassword = true;
+  bool obscureConfirmPassword = true;
+  bool agreedToTerms = false;
+
+  File? cvFile;
+  File? verificationDocument;
+  File? commercialRegisterImage;
+
+  final List<String> selectedSkills = [];
+  final TextEditingController skillController = TextEditingController();
+
+  bool phoneVerified = false;
+  bool showPhoneVerification = false;
+
+  bool nationalIdVerified = false;
+  bool checkingNationalId = false;
+
+  late TabController _tabController;
+  int _currentStep = 0;
+
+  final List<String> referralOptions = [
+  'Search Engine (Google, Bing)',
+  'Social Media (Facebook, LinkedIn, Instagram)',
+  'Friend / Referral',
+  'YouTube / Online Tutorials',
+  'Freelancer Community (Forums, Groups)',
+  'University / Course',
+  'Other',
+];
+
+  final List<String> popularSkills = [
+    'Flutter', 'React', 'Node.js', 'Python', 'UI/UX Design',
+    'Graphic Design', 'Content Writing', 'SEO', 'Digital Marketing',
+    'WordPress', 'PHP', 'Java', 'Swift', 'Kotlin', 'Django',
+    'MongoDB', 'PostgreSQL', 'AWS', 'Docker', 'Git',
+  ];
 
   static const Color primaryPurple = Color(0xFF5B5BD6);
   static const Color loginButtonColor = Color(0xFF122543);
+  static const Color primaryBlue = Color(0xFF3A5A8C);
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          _currentStep = _tabController.index;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    nationalIdController.dispose();
+    phoneController.dispose();
+    hourlyRateController.dispose();
+    companyNameController.dispose();
+    commercialRegisterController.dispose();
+    taxNumberController.dispose();
+    referralSourceController.dispose();
+    skillController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickCV() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (result != null) {
+        setState(() {
+          cvFile = File(result.files.single.path!);
+        });
+        Fluttertoast.showToast(msg: 'CV uploaded successfully');
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Error picking file: $e');
+    }
+  }
+
+  Future<void> _pickVerificationDocument() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+      if (result != null) {
+        setState(() {
+          verificationDocument = File(result.files.single.path!);
+        });
+        Fluttertoast.showToast(msg: 'Document uploaded');
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Error: $e');
+    }
+  }
+
+  Future<void> _pickCommercialRegister() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+      if (result != null) {
+        setState(() {
+          commercialRegisterImage = File(result.files.single.path!);
+        });
+        Fluttertoast.showToast(msg: 'Commercial register uploaded');
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Error: $e');
+    }
+  }
+
+  Future<void> _verifyPhone() async {
+    if (phoneController.text.isEmpty) {
+      Fluttertoast.showToast(msg: 'Enter phone number first');
+      return;
+    }
+    setState(() => loading = true);
+    final res = await ApiService.resendPhoneCode(phone: phoneController.text);
+    setState(() => loading = false);
+    if (res['success'] == true) {
+      setState(() => showPhoneVerification = true);
+      _showPhoneVerificationDialog();
+    } else {
+      Fluttertoast.showToast(msg: res['message'] ?? 'Failed to send code');
+    }
+  }
+
+  void _showPhoneVerificationDialog() {
+    TextEditingController codeController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Verify Phone Number'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Code sent to ${phoneController.text}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: codeController,
+              decoration: const InputDecoration(
+                hintText: 'Enter 6-digit code',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final res = await ApiService.verifyPhone(
+                phone: phoneController.text,
+                code: codeController.text,
+              );
+              if (res['success'] == true) {
+                setState(() => phoneVerified = true);
+                if (mounted) Navigator.pop(context);
+                Fluttertoast.showToast(msg: 'Phone verified!');
+              } else {
+                Fluttertoast.showToast(msg: res['message'] ?? 'Invalid code');
+              }
+            },
+            child: const Text('Verify'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkNationalId() async {
+    if (nationalIdController.text.isEmpty) return;
+    setState(() => checkingNationalId = true);
+    final res = await ApiService.verifyNationalId(
+      nationalId: nationalIdController.text,
+      name: nameController.text,
+    );
+    setState(() => checkingNationalId = false);
+    if (res['success'] == true) {
+      setState(() => nationalIdVerified = true);
+      Fluttertoast.showToast(msg: '✓ Valid National ID');
+    } else {
+      Fluttertoast.showToast(msg: res['message'] ?? 'Invalid National ID');
+    }
+  }
+
+  void _addSkill() {
+    if (skillController.text.isNotEmpty && !selectedSkills.contains(skillController.text)) {
+      setState(() {
+        selectedSkills.add(skillController.text);
+        skillController.clear();
+      });
+    }
+  }
+
+  void _removeSkill(String skill) {
+    setState(() {
+      selectedSkills.remove(skill);
+    });
+  }
+
+  bool _validateStep(int step) {
+    switch (step) {
+      case 0:
+        if (nameController.text.isEmpty) {
+          Fluttertoast.showToast(msg: 'Please enter your name');
+          return false;
+        }
+        if (emailController.text.isEmpty || !emailController.text.contains('@')) {
+          Fluttertoast.showToast(msg: 'Please enter valid email');
+          return false;
+        }
+        if (passwordController.text.length < 6) {
+          Fluttertoast.showToast(msg: 'Password must be at least 6 characters');
+          return false;
+        }
+        if (passwordController.text != confirmPasswordController.text) {
+          Fluttertoast.showToast(msg: 'Passwords do not match');
+          return false;
+        }
+        if (!agreedToTerms) {
+          Fluttertoast.showToast(msg: 'Please accept Terms & Conditions');
+          return false;
+        }
+        return true;
+      case 1:
+        if (role == 'client') {
+          if (clientType == 'business' && companyNameController.text.isEmpty) {
+            Fluttertoast.showToast(msg: 'Please enter company name');
+            return false;
+          }
+        }
+        if (phoneController.text.isNotEmpty && !phoneVerified) {
+          Fluttertoast.showToast(msg: 'Please verify your phone number');
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  void _nextStep() {
+    if (_validateStep(_currentStep) && _currentStep < 2) {
+      _tabController.animateTo(_currentStep + 1);
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep > 0) {
+      _tabController.animateTo(_currentStep - 1);
+    }
+  }
 
   void signup() async {
+    if (!_validateStep(_currentStep)) return;
     setState(() => loading = true);
-
     final res = await ApiService.signup(
-      nameController.text,
-      emailController.text,
-      passwordController.text,
-      role,
+      name: nameController.text,
+      email: emailController.text,
+      password: passwordController.text,
+      role: role,
+      nationalId: nationalIdController.text.isEmpty ? null : nationalIdController.text,
+      phone: phoneController.text.isEmpty ? null : phoneController.text,
+      clientType: clientType,
+      companyName: companyNameController.text.isEmpty ? null : companyNameController.text,
+      commercialRegisterNumber: commercialRegisterController.text.isEmpty ? null : commercialRegisterController.text,
+      taxNumber: taxNumberController.text.isEmpty ? null : taxNumberController.text,
+      hourlyRate: hourlyRateController.text.isEmpty ? null : double.tryParse(hourlyRateController.text),
+      skills: selectedSkills.isEmpty ? null : selectedSkills,
+      cvFile: cvFile,
+      verificationDocument: verificationDocument,
+      commercialRegisterImage: commercialRegisterImage,
+      agreedToTerms: agreedToTerms,
+      referralSource: referralSourceController.text.isEmpty ? null : referralSourceController.text,
     );
-
     setState(() => loading = false);
-
-    Fluttertoast.showToast(msg: res['message']);
-
-    if (res['user'] != null) {
-      Navigator.pushNamed(context, '/verify', arguments: emailController.text);
+    if (res['error'] != null) {
+      Fluttertoast.showToast(msg: res['error']);
+    } else {
+      Fluttertoast.showToast(msg: res['message'] ?? 'Account created!');
+      if (res['user'] != null && mounted) {
+        if (res['cvAnalysis'] != null && res['cvAnalysis']['has_analysis'] == true) {
+          _showCVAnalysisDialog(res['cvAnalysis']);
+        } else {
+          Navigator.pushNamed(context, '/verify', arguments: emailController.text);
+        }
+      }
     }
+  }
+
+  void _showCVAnalysisDialog(Map<String, dynamic> analysis) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome, color: primaryBlue),
+            SizedBox(width: 8),
+            Text('AI CV Analysis Complete'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('📝 Suggested Title: ${analysis['title'] ?? 'Not detected'}'),
+            const SizedBox(height: 8),
+            Text('🔧 Skills Found: ${analysis['skills_count'] ?? 0}'),
+            const SizedBox(height: 8),
+            Text('🎯 AI Confidence: ${((analysis['confidence'] ?? 0) * 100).toInt()}%'),
+            const SizedBox(height: 16),
+            const Text(
+              'Your profile has been enhanced with AI suggestions!',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (mounted) {
+                Navigator.pushNamed(context, '/verify', arguments: emailController.text);
+              }
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -51,7 +392,7 @@ class _SignupScreenState extends State<SignupScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF122543), Color(0xFF7C6FF7), Color(0xFF9B8FF7)],
+            colors: [Color(0xFF0D1C33), Color(0xFF122543), Color(0xFF3A5A8C)],
           ),
         ),
         child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
@@ -64,8 +405,7 @@ class _SignupScreenState extends State<SignupScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: _buildLeftPanel()),
-
-        _buildRightCard(width: 420),
+        Expanded(child: _buildRightCard()),
       ],
     );
   }
@@ -74,15 +414,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 28),
-              child: _buildLogo(),
-            ),
-            _buildRightCard(width: double.infinity),
-          ],
-        ),
+        child: _buildRightCard(),
       ),
     );
   }
@@ -95,7 +427,6 @@ class _SignupScreenState extends State<SignupScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildLogo(),
-          const SizedBox(height: 36),
           const Text(
             'Join iPal Today!',
             style: TextStyle(
@@ -119,38 +450,60 @@ class _SignupScreenState extends State<SignupScreen> {
             'Join thousands of freelancers and clients worldwide. Find work, hire talent, and get paid securely on iPal.',
             style: TextStyle(fontSize: 13, color: Colors.white60, height: 1.65),
           ),
+          const SizedBox(height: 24),
+          _buildProgressIndicator(),
         ],
       ),
     );
   }
 
-  Widget _buildLogo() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  Widget _buildProgressIndicator() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image.asset(
-          'assets/images/logo.png',
-          width: 40,
-          height: 40,
-          fit: BoxFit.contain,
+        Text(
+          'Step ${_currentStep + 1} of 3',
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
-        const SizedBox(width: 10),
-        const Text(
-          'iPal',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-            letterSpacing: 1.2,
-          ),
+        const SizedBox(height: 8),
+        Row(
+          children: List.generate(3, (index) {
+            return Expanded(
+              child: Container(
+                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: index <= _currentStep ? primaryBlue : Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _getStepTitle(),
+          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
         ),
       ],
     );
   }
 
-  Widget _buildRightCard({required double width}) {
+  String _getStepTitle() {
+    switch (_currentStep) {
+      case 0:
+        return 'Basic Information';
+      case 1:
+        return 'Verification & Professional Details';
+      case 2:
+        return 'Review & Submit';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildRightCard() {
     return Container(
-      width: width == double.infinity ? null : width,
       margin: const EdgeInsets.fromLTRB(20, 50, 50, 0),
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
       decoration: BoxDecoration(
@@ -164,13 +517,14 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Center(
-              child: Text(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
                 'Create Account',
                 style: TextStyle(
                   fontSize: 22,
@@ -178,120 +532,636 @@ class _SignupScreenState extends State<SignupScreen> {
                   color: Color(0xFF1A1A2E),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
+              if (_currentStep > 0)
+                TextButton(onPressed: _prevStep, child: const Text('Back')),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Fill in your details to get started',
+            style: TextStyle(fontSize: 13, color: Colors.black45),
+          ),
+          const SizedBox(height: 28),
 
-            const Center(
-              child: Text(
-                'Join iPal and start earning today',
-                style: TextStyle(fontSize: 13, color: Colors.black45),
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            _buildTextField(
-              controller: nameController,
-              hint: 'Full Name',
-              icon: Icons.person_outline,
-            ),
-            const SizedBox(height: 14),
-
-            _buildTextField(
-              controller: emailController,
-              hint: 'Email Address',
-              icon: Icons.email_outlined,
-            ),
-            const SizedBox(height: 14),
-
-            _buildTextField(
-              controller: passwordController,
-              hint: 'Password',
-              icon: Icons.lock_outline,
-              isPassword: true,
-            ),
-            const SizedBox(height: 14),
-
-            _buildRoleDropdown(),
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: loading ? null : signup,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryPurple,
-                  disabledBackgroundColor: primaryPurple.withOpacity(0.7),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                ),
-                child: loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 18),
-
-            _buildOrDivider(),
-            const SizedBox(height: 16),
-
-            Row(
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.55,
+            child: TabBarView(
+              controller: _tabController,
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                Expanded(
-                  child: _buildSocialButton(
-                    label: 'Google',
-                    icon: _googleIcon(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildSocialButton(
-                    label: 'Facebook',
-                    icon: _facebookIcon(),
-                  ),
-                ),
+                SingleChildScrollView(child: _buildBasicInfoTab()),
+                SingleChildScrollView(child: _buildVerificationTab()),
+                SingleChildScrollView(child: _buildReviewTab()),
               ],
             ),
-            const SizedBox(height: 22),
+          ),
 
-            Center(
-              child: GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/login'),
-                child: RichText(
-                  text: const TextSpan(
-                    text: "Already have an account? ",
-                    style: TextStyle(fontSize: 13, color: Colors.black45),
-                    children: [
-                      TextSpan(
-                        text: 'Login',
-                        style: TextStyle(
-                          color: primaryPurple,
-                          fontWeight: FontWeight.w600,
-                        ),
+          const SizedBox(height: 24),
+
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: loading ? null : (_currentStep < 2 ? _nextStep : signup),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBlue,
+                disabledBackgroundColor: primaryBlue.withOpacity(0.7),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50),
+                ),
+              ),
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
                       ),
-                    ],
-                  ),
+                    )
+                  : Text(
+                      _currentStep < 2 ? 'Continue' : 'Sign Up',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasicInfoTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextField(
+          controller: nameController,
+          hint: 'Full Name',
+          icon: Icons.person_outline,
+        ),
+        const SizedBox(height: 14),
+        _buildTextField(
+          controller: emailController,
+          hint: 'Email Address',
+          icon: Icons.email_outlined,
+        ),
+        const SizedBox(height: 14),
+        _buildTextField(
+          controller: passwordController,
+          hint: 'Password',
+          icon: Icons.lock_outline,
+          isPassword: true,
+          isConfirmPassword: false,
+        ),
+        const SizedBox(height: 14),
+        _buildTextField(
+          controller: confirmPasswordController,
+          hint: 'Confirm Password',
+          icon: Icons.lock_outline,
+          isPassword: true,
+          isConfirmPassword: true,
+        ),
+        const SizedBox(height: 14),
+        _buildRoleDropdown(),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Checkbox(
+              value: agreedToTerms,
+              onChanged: (val) => setState(() => agreedToTerms = val ?? false),
+              activeColor: primaryBlue,
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _showTermsDialog(),
+                child: const Text(
+                  'I agree to the Terms & Conditions and Privacy Policy',
+                  style: TextStyle(fontSize: 12),
                 ),
               ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildVerificationTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (role == 'freelancer') ...[
+          _buildFreelancerFields(),
+        ] else ...[
+          _buildClientFields(),
+        ],
+        const Divider(height: 24),
+        _buildPhoneVerificationField(),
+        const SizedBox(height: 14),
+        _buildNationalIdField(),
+        const SizedBox(height: 14),
+        _buildReferralField(),
+      ],
+    );
+  }
+
+  Widget _buildFreelancerFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Professional Information', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        _buildTextField(
+          controller: hourlyRateController,
+          hint: 'Hourly Rate (USD)',
+          icon: Icons.attach_money,
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 14),
+        const Text('Skills', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: selectedSkills.map((skill) => Chip(
+            label: Text(skill),
+            onDeleted: () => _removeSkill(skill),
+            deleteIcon: const Icon(Icons.close, size: 16),
+            backgroundColor: loginButtonColor.withOpacity(0.1),
+          )).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: skillController,
+                decoration: const InputDecoration(
+                  hintText: 'Add a skill',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onSubmitted: (_) => _addSkill(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: _addSkill,
+              icon: const Icon(Icons.add_circle, color: primaryBlue),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _pickCV,
+                icon: const Icon(Icons.upload_file, size: 18),
+                label: Text(cvFile == null ? 'Upload CV (Optional)' : 'CV Uploaded ✓'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (cvFile != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              cvFile!.path.split('/').last,
+              style: const TextStyle(fontSize: 11, color: Colors.green),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildClientFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Company Information', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSelectionCard(
+                title: 'Individual',
+                icon: Icons.person_outline,
+                isSelected: clientType == 'individual',
+                onTap: () => setState(() => clientType = 'individual'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildSelectionCard(
+                title: 'Business',
+                icon: Icons.business_outlined,
+                isSelected: clientType == 'business',
+                onTap: () => setState(() => clientType = 'business'),
+              ),
+            ),
+          ],
+        ),
+        if (clientType == 'business') ...[
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: companyNameController,
+            hint: 'Company Name',
+            icon: Icons.business_outlined,
+          ),
+          const SizedBox(height: 12),
+          _buildTextField(
+            controller: commercialRegisterController,
+            hint: 'Commercial Register Number',
+            icon: Icons.numbers_outlined,
+          ),
+          const SizedBox(height: 12),
+          _buildUploadCard(
+            title: 'Commercial Register',
+            subtitle: 'Upload your commercial registration document',
+            file: commercialRegisterImage,
+            onTap: _pickCommercialRegister,
+            icon: Icons.description_outlined,
+          ),
+        ],
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: taxNumberController,
+          hint: 'Tax Number (Optional)',
+          icon: Icons.receipt_outlined,
+        ),
+        const SizedBox(height: 16),
+        _buildUploadCard(
+          title: 'Identity Verification',
+          subtitle: clientType == 'business' 
+              ? 'Upload business license or company registration'
+              : 'Upload government ID or passport',
+          file: verificationDocument,
+          onTap: _pickVerificationDocument,
+          icon: Icons.verified_user_outlined,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectionCard({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(
+            color: isSelected ? primaryBlue : const Color(0xFFE0E0E0),
+            width: isSelected ? 2 : 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: isSelected ? primaryBlue : Colors.grey, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? primaryBlue : Colors.grey.shade700,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadCard({
+    required String title,
+    required String subtitle,
+    required File? file,
+    required VoidCallback onTap,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: primaryBlue, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: onTap,
+            icon: Icon(file != null ? Icons.check_circle : Icons.cloud_upload, size: 16, color: primaryBlue),
+            label: Text(
+              file != null ? 'File Uploaded' : 'Upload Document',
+              style: const TextStyle(fontSize: 12),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              side: const BorderSide(color: Color(0xFFE0E0E0)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhoneVerificationField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Phone Number (Optional but recommended)',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                controller: phoneController,
+                hint: '+1234567890',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (phoneController.text.isNotEmpty && !phoneVerified)
+              ElevatedButton(
+                onPressed: loading ? null : _verifyPhone,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlue,
+                  minimumSize: const Size(80, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                ),
+                child: loading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Verify'),
+              ),
+            if (phoneVerified)
+              const Icon(Icons.check_circle, color: Colors.green, size: 28),
+          ],
+        ),
+        if (phoneVerified)
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text('✓ Phone verified', style: TextStyle(color: Colors.green, fontSize: 11)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildNationalIdField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('National ID (Optional - Builds Trust)',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                controller: nationalIdController,
+                hint: 'National ID Number',
+                icon: Icons.credit_card_outlined,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (nationalIdController.text.isNotEmpty && !nationalIdVerified)
+              ElevatedButton(
+                onPressed: checkingNationalId ? null : _checkNationalId,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlue,
+                  minimumSize: const Size(80, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                ),
+                child: checkingNationalId
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Verify'),
+              ),
+            if (nationalIdVerified)
+              const Icon(Icons.check_circle, color: Colors.green, size: 28),
+          ],
+        ),
+        if (nationalIdVerified)
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text('✓ Identity verified', style: TextStyle(color: Colors.green, fontSize: 11)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildReferralField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('How did you hear about us?',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: referralSourceController.text.isEmpty ? null : referralSourceController.text,
+          hint: const Text('Select an option'),
+          items: referralOptions.map((option) {
+            return DropdownMenuItem(value: option, child: Text(option));
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              referralSourceController.text = value ?? '';
+            });
+          },
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(50)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            enabledBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: primaryBlue, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildReviewTile('Full Name', nameController.text),
+        _buildReviewTile('Email', emailController.text),
+        _buildReviewTile('Account Type', role == 'freelancer' ? 'Freelancer' : 'Client'),
+        if (role == 'freelancer') ...[
+          if (hourlyRateController.text.isNotEmpty)
+            _buildReviewTile('Hourly Rate', '\$${hourlyRateController.text}'),
+          if (selectedSkills.isNotEmpty)
+            _buildReviewTile('Skills', selectedSkills.join(', ')),
+          if (cvFile != null) _buildReviewTile('CV', 'Uploaded ✓'),
+        ],
+        if (role == 'client' && clientType == 'business') ...[
+          if (companyNameController.text.isNotEmpty)
+            _buildReviewTile('Company', companyNameController.text),
+          if (commercialRegisterController.text.isNotEmpty)
+            _buildReviewTile('Commercial Register', commercialRegisterController.text),
+        ],
+        const Divider(),
+        if (phoneController.text.isNotEmpty)
+          _buildReviewTile('Phone', phoneController.text, verified: phoneVerified),
+        if (nationalIdController.text.isNotEmpty)
+          _buildReviewTile('National ID', '••••${nationalIdController.text.substring(nationalIdController.text.length - 4)}',
+              verified: nationalIdVerified),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: primaryBlue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: primaryBlue),
+              const SizedBox(width: 8),
+              Expanded(
+                child: const Text(
+                  'Your information is secure and will be used only for verification purposes.',
+                  style: TextStyle(fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewTile(String label, String value, {bool verified = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ),
+          Expanded(child: Text(value)),
+          if (verified) const Icon(Icons.verified, color: Colors.green, size: 18),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terms & Conditions'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '1. You must be at least 18 years old to use this platform.\n\n'
+            '2. You agree to provide accurate and complete information.\n\n'
+            '3. You are responsible for maintaining the security of your account.\n\n'
+            '4. The platform reserves the right to suspend accounts that violate terms.\n\n'
+            '5. All transactions are subject to platform fees as described.\n\n'
+            '6. Disputes will be resolved through our dispute resolution process.\n\n'
+            '7. We collect and process data in accordance with our Privacy Policy.\n\n'
+            '8. You agree not to use the platform for any illegal activities.\n\n'
+            'By creating an account, you agree to these terms.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+    bool isConfirmPassword = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword ? (isConfirmPassword ? obscureConfirmPassword : obscurePassword) : false,
+      style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
+        prefixIcon: Icon(icon, color: const Color(0xFFBBBBBB), size: 20),
+        suffixIcon: isPassword
+            ? GestureDetector(
+                onTap: () => setState(() {
+                  if (isConfirmPassword) {
+                    obscureConfirmPassword = !obscureConfirmPassword;
+                  } else {
+                    obscurePassword = !obscurePassword;
+                  }
+                }),
+                child: Icon(
+                  (isConfirmPassword ? obscureConfirmPassword : obscurePassword)
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: const Color(0xFFBBBBBB),
+                  size: 20,
+                ),
+              )
+            : null,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(50),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(50),
+          borderSide: const BorderSide(color: primaryBlue, width: 1.5),
+        ),
+        filled: true,
+        fillColor: Colors.white,
       ),
     );
   }
@@ -309,6 +1179,7 @@ class _SignupScreenState extends State<SignupScreen> {
           value: role,
           icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFBBBBBB)),
           style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
+          isExpanded: true,
           items: ['client', 'freelancer']
               .map(
                 (e) => DropdownMenuItem(
@@ -316,17 +1187,13 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        e == 'client'
-                            ? Icons.business_outlined
-                            : Icons.person_outline,
-                        color: primaryPurple,
+                        e == 'client' ? Icons.business_outlined : Icons.person_outline,
+                        color: primaryBlue,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        e == 'client'
-                            ? 'Client (Hire Freelancers)'
-                            : 'Freelancer (Find Work)',
+                        e == 'client' ? 'Client (Hire Freelancers)' : 'Freelancer (Find Work)',
                         style: const TextStyle(fontSize: 14),
                       ),
                     ],
@@ -344,175 +1211,28 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool isPassword = false,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword ? obscurePassword : false,
-      style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
-        prefixIcon: Icon(icon, color: const Color(0xFFBBBBBB), size: 20),
-        suffixIcon: isPassword
-            ? GestureDetector(
-                onTap: () => setState(() => obscurePassword = !obscurePassword),
-                child: Icon(
-                  obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: const Color(0xFFBBBBBB),
-                  size: 20,
-                ),
-              )
-            : null,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: primaryPurple, width: 1.5),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-    );
-  }
-
-  Widget _buildOrDivider() {
+  Widget _buildLogo() {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Expanded(child: Divider(color: Color(0xFFEEEEEE), thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            'OR',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade400,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+        Image.asset(
+          'assets/images/logoo.png',
+          width: 100,
+          height: 100,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: const Icon(Icons.work, color: Colors.white, size: 40),
+            );
+          },
         ),
-        const Expanded(child: Divider(color: Color(0xFFEEEEEE), thickness: 1)),
       ],
     );
   }
-
-  Widget _buildSocialButton({required String label, required Widget icon}) {
-    return OutlinedButton.icon(
-      onPressed: () {},
-      icon: icon,
-      label: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF333333),
-        ),
-      ),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-        backgroundColor: Colors.white,
-      ),
-    );
-  }
-
-  Widget _googleIcon() {
-    return SizedBox(
-      width: 18,
-      height: 18,
-      child: CustomPaint(painter: _GoogleIconPainter()),
-    );
-  }
-
-  Widget _facebookIcon() {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1877F2),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Center(
-        child: Text(
-          'f',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-}
-
-class _GoogleIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-
-    final bluePaint = Paint()..color = const Color(0xFF4285F4);
-    final greenPaint = Paint()..color = const Color(0xFF34A853);
-    final yellowPaint = Paint()..color = const Color(0xFFFBBC05);
-    final redPaint = Paint()..color = const Color(0xFFEA4335);
-
-    final bluePath = Path()
-      ..moveTo(w, h * 0.5)
-      ..arcTo(Rect.fromLTWH(0, 0, w, h), -0.25, 1.0, false)
-      ..lineTo(w * 0.5, h * 0.5)
-      ..close();
-    canvas.drawPath(bluePath, bluePaint);
-
-    final greenPath = Path()
-      ..moveTo(w * 0.5, h)
-      ..arcTo(Rect.fromLTWH(0, 0, w, h), 0.75, 1.0, false)
-      ..lineTo(w * 0.5, h * 0.5)
-      ..close();
-    canvas.drawPath(greenPath, greenPaint);
-
-    final yellowPath = Path()
-      ..moveTo(0, h * 0.5)
-      ..arcTo(Rect.fromLTWH(0, 0, w, h), 1.75, 1.0, false)
-      ..lineTo(w * 0.5, h * 0.5)
-      ..close();
-    canvas.drawPath(yellowPath, yellowPaint);
-
-    final redPath = Path()
-      ..moveTo(w * 0.5, 0)
-      ..arcTo(Rect.fromLTWH(0, 0, w, h), -1.25, 1.0, false)
-      ..lineTo(w * 0.5, h * 0.5)
-      ..close();
-    canvas.drawPath(redPath, redPaint);
-
-    canvas.drawCircle(
-      Offset(w * 0.5, h * 0.5),
-      w * 0.3,
-      Paint()..color = Colors.white,
-    );
-
-    final gRect = Rect.fromLTWH(w * 0.5, h * 0.38, w * 0.42, h * 0.24);
-    canvas.drawRect(gRect, bluePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

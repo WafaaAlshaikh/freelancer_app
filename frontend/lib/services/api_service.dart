@@ -93,93 +93,221 @@ class ApiService {
     print('✅ ApiService initialized with baseUrl: $baseUrl');
   }
 
-  static Future<Map<String, dynamic>> signup(
-    String name,
-    String email,
-    String password,
-    String role,
-  ) async {
+  static Future<Map<String, dynamic>> signup({
+    required String name,
+    required String email,
+    required String password,
+    required String role,
+    String? nationalId,
+    String? phone,
+    String? clientType,
+    String? companyName,
+    String? commercialRegisterNumber,
+    String? taxNumber,
+    double? hourlyRate,
+    List<String>? skills,
+    File? cvFile,
+    File? verificationDocument,
+    File? commercialRegisterImage,
+    bool agreedToTerms = true,
+    String? referralSource,
+  }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$BASE_URL/auth/signup'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-          'role': role,
-        }),
-      );
+      final uri = Uri.parse('$baseUrl/auth/signup');
+      final request = http.MultipartRequest('POST', uri);
+      
+      request.fields['name'] = name;
+      request.fields['email'] = email;
+      request.fields['password'] = password;
+      request.fields['role'] = role;
+      request.fields['agreed_to_terms'] = agreedToTerms.toString();
+      request.fields['terms_version'] = '1.0';
 
-      final data = jsonDecode(response.body);
-
-      if (data['user'] != null && data['user']['id'] != null) {
-        await TokenStorage.saveUserId(data['user']['id']);
+      if (nationalId != null && nationalId.isNotEmpty) {
+        request.fields['national_id'] = nationalId;
+      }
+      if (phone != null && phone.isNotEmpty) {
+        request.fields['phone'] = phone;
+      }
+      if (referralSource != null && referralSource.isNotEmpty) {
+        request.fields['referral_source'] = referralSource;
       }
 
-      return data;
+      Future<void> addFile(String fieldName, File? file, String defaultFileName) async {
+        if (file == null) return;
+        
+        if (kIsWeb) {
+          try {
+            final bytes = await file.readAsBytes();
+            final fileName = file.path.split('/').last;
+            final extension = fileName.split('.').last;
+            MediaType contentType;
+            
+            if (extension.toLowerCase() == 'pdf') {
+              contentType = MediaType('application', 'pdf');
+            } else if (['jpg', 'jpeg'].contains(extension.toLowerCase())) {
+              contentType = MediaType('image', 'jpeg');
+            } else if (extension.toLowerCase() == 'png') {
+              contentType = MediaType('image', 'png');
+            } else {
+              contentType = MediaType('application', 'octet-stream');
+            }
+            
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                fieldName,
+                bytes,
+                filename: fileName,
+                contentType: contentType,
+              ),
+            );
+          } catch (e) {
+            print('Error adding file $fieldName: $e');
+          }
+        } else {
+          final filePath = file.path;
+          final extension = filePath.split('.').last;
+          MediaType contentType;
+          
+          if (extension.toLowerCase() == 'pdf') {
+            contentType = MediaType('application', 'pdf');
+          } else if (['jpg', 'jpeg'].contains(extension.toLowerCase())) {
+            contentType = MediaType('image', 'jpeg');
+          } else if (extension.toLowerCase() == 'png') {
+            contentType = MediaType('image', 'png');
+          } else {
+            contentType = MediaType('application', 'octet-stream');
+          }
+          
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              fieldName,
+              filePath,
+              contentType: contentType,
+            ),
+          );
+        }
+      }
+
+      if (role == 'freelancer') {
+        if (hourlyRate != null) {
+          request.fields['hourly_rate'] = hourlyRate.toString();
+        }
+        if (skills != null && skills.isNotEmpty) {
+          request.fields['skills'] = jsonEncode(skills);
+        }
+        await addFile('cv', cvFile, 'cv.pdf');
+      } else if (role == 'client') {
+        if (clientType != null && clientType.isNotEmpty) {
+          request.fields['client_type'] = clientType;
+        }
+        if (companyName != null && companyName.isNotEmpty) {
+          request.fields['company_name'] = companyName;
+        }
+        if (commercialRegisterNumber != null && commercialRegisterNumber.isNotEmpty) {
+          request.fields['commercial_register_number'] = commercialRegisterNumber;
+        }
+        if (taxNumber != null && taxNumber.isNotEmpty) {
+          request.fields['tax_number'] = taxNumber;
+        }
+        await addFile('verification_document', verificationDocument, 'verification.pdf');
+        await addFile('commercial_register', commercialRegisterImage, 'commercial_register.pdf');
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return data;
+      } else {
+        return {'error': data['message'] ?? 'Signup failed'};
+      }
     } catch (e) {
-      return {'message': 'Connection error: $e'};
+      print('Signup error: $e');
+      return {'error': e.toString()};
     }
   }
 
-  static Future<Map<String, dynamic>> verifyEmail(
-    String email,
-    String code,
-  ) async {
+  static Future<Map<String, dynamic>> verifyPhone({
+    required String phone,
+    required String code,
+  }) async {
     try {
       final response = await http.post(
-        Uri.parse('$BASE_URL/auth/verify'),
+        Uri.parse('$baseUrl/auth/verify-phone'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phone': phone, 'code': code}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> resendPhoneCode({
+    required String phone,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/resend-phone-code'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phone': phone}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyNationalId({
+    required String nationalId,
+    required String name,
+    String? userId,
+    String? countryCode,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/verify-national-id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'national_id': nationalId,
+          'name': name,
+          'userId': userId,
+          'country_code': countryCode,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+  static Future<Map<String, dynamic>> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyEmail(String email, String code) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/verify'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'code': code}),
       );
       return jsonDecode(response.body);
     } catch (e) {
-      return {'message': 'Connection error: $e'};
+      return {'error': e.toString()};
     }
   }
-
-  static Future<Map<String, dynamic>> login(
-    String email,
-    String password,
-  ) async {
-    try {
-      final url = Uri.parse('$baseUrl/auth/login');
-      print('🌐 Login URL: $url');
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
-      );
-
-      print('📡 Response status: ${response.statusCode}');
-      print('📡 Response body: ${response.body}');
-
-      final data = jsonDecode(response.body);
-
-      if (data['token'] != null) {
-        token = data['token'];
-        await TokenStorage.saveToken(data['token']);
-
-        if (data['user'] != null && data['user']['id'] != null) {
-          await TokenStorage.saveUserId(data['user']['id']);
-          print('✅ User ID saved: ${data['user']['id']}');
-        }
-
-        if (data['user'] != null && data['user']['role'] != null) {
-          await TokenStorage.saveUserRole(data['user']['role']);
-          print('✅ User role saved: ${data['user']['role']}');
-        }
-      }
-
-      return data;
-    } catch (e) {
-      print('❌ Login error: $e');
-      return {'message': 'Connection error: $e'};
-    }
-  }
-
+  
   static Future<void> logout() async {
     token = null;
     await TokenStorage.clearToken();

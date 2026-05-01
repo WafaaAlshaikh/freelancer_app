@@ -158,7 +158,7 @@ class _FreelancerAppState extends State<FreelancerApp> {
         return MaterialApp(
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
-          title: 'Freelancer Platform',
+          title: 'ipal ',
           locale: _locale,
           supportedLocales: const [Locale('en'), Locale('ar')],
           localizationsDelegates: const [

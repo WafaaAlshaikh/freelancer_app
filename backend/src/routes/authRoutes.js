@@ -1,22 +1,90 @@
+// backend/src/routes/authRoutes.js
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { User } from "../models/index.js";
-import { FreelancerProfile } from "../models/index.js";
-import { Wallet } from "../models/index.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import {
-  sendVerificationEmail,
-  sendResetPasswordEmail,
-  sendResetCodeEmail,
-} from "../utils/mailer.js";
+  User,
+  FreelancerProfile,
+  ClientProfile,
+  Wallet,
+} from "../models/index.js";
+import { sendVerificationEmail, sendResetCodeEmail } from "../utils/mailer.js";
+import VerificationService from "../services/verificationService.js";
+import AIService from "../services/aiService.js";
 
 dotenv.config();
 
 const router = express.Router();
 
-router.post("/signup", async (req, res) => {
-  const { name, email, password, role } = req.body;
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let uploadDir = "uploads/";
+    if (file.fieldname === "cv") {
+      uploadDir = "uploads/cvs/temp/";
+    } else if (file.fieldname === "verification_document") {
+      uploadDir = "uploads/verifications/";
+    } else if (file.fieldname === "commercial_register") {
+      uploadDir = "uploads/commercial_registers/";
+    }
+
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|jpg|jpeg|png|doc|docx/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase(),
+    );
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Only PDF, images, and documents are allowed"));
+  },
+}).fields([
+  { name: "cv", maxCount: 1 },
+  { name: "verification_document", maxCount: 1 },
+  { name: "commercial_register", maxCount: 1 },
+]);
+
+router.post("/signup", upload, async (req, res) => {
+  const {
+    name,
+    email,
+    password,
+    role,
+    national_id,
+    phone,
+    agreed_to_terms,
+    terms_version,
+    preferred_payment_method,
+    referral_source,
+    hourly_rate,
+    skills,
+    client_type,
+    company_name,
+    commercial_register_number,
+    tax_number,
+  } = req.body;
+
+  const ip_address =
+    req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
 
   try {
     const existingUser = await User.findOne({ where: { email } });
@@ -24,9 +92,29 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    let nationalIdValidation = null;
+    if (national_id) {
+      nationalIdValidation = await VerificationService.validateNationalId(
+        national_id,
+        name,
+      );
+      if (!nationalIdValidation.valid) {
+        return res.status(400).json({
+          message: nationalIdValidation.message,
+          national_id_valid: false,
+        });
+      }
+    }
+
+    let phoneValid = false;
+    if (phone) {
+      await VerificationService.sendPhoneVerificationCode(phone);
+      phoneValid = true;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000);
+    const emailVerificationCode = Math.floor(100000 + Math.random() * 900000);
 
     const newUser = await User.create({
       name,
@@ -34,40 +122,206 @@ router.post("/signup", async (req, res) => {
       password: hashedPassword,
       role: role || "client",
       is_verified: false,
-      verification_code: verificationCode,
+      verification_code: emailVerificationCode,
+      national_id: national_id || null,
+      national_id_verified: nationalIdValidation?.valid || false,
+      phone: phone || null,
+      phone_verified: false,
+      agreed_to_terms_at: agreed_to_terms === "true" ? new Date() : null,
+      ip_address,
+      preferred_payment_method: preferred_payment_method || null,
+      referral_source: referral_source || null,
+      terms_accepted_version: terms_version || "1.0",
     });
 
-    if (role === "freelancer") {
-      await FreelancerProfile.create({
-        UserId: newUser.id,
-        title: "",
-        bio: "",
-        location: "",
-        experience_years: 0,
-        skills: "[]",
-        rating: 0,
-      });
+    let cvAnalysis = null;
+    let verificationDocUrl = null;
+    let commercialRegisterUrl = null;
 
-      await Wallet.create({
+    if (req.files) {
+      if (req.files.cv && req.files.cv[0]) {
+        verificationDocUrl = req.files.cv[0].path;
+      }
+      if (
+        req.files.verification_document &&
+        req.files.verification_document[0]
+      ) {
+        verificationDocUrl = req.files.verification_document[0].path;
+      }
+      if (req.files.commercial_register && req.files.commercial_register[0]) {
+        commercialRegisterUrl = req.files.commercial_register[0].path;
+      }
+    }
+
+    if (role === "freelancer") {
+      let profileData = {
         UserId: newUser.id,
-        balance: 0,
+        hourly_rate: hourly_rate ? parseFloat(hourly_rate) : null,
+      };
+
+      if (req.files?.cv && req.files.cv[0]) {
+        try {
+          const cvFilePath = req.files.cv[0].path;
+          const cvText = await AIService.extractTextFromPDF(cvFilePath);
+          cvAnalysis = await AIService.analyzeCV(cvText);
+
+          if (cvAnalysis) {
+            profileData.title = cvAnalysis.professional_info?.title || "";
+            profileData.bio = `${cvAnalysis.bio || ""}\n\nAI Analysis Confidence: ${(cvAnalysis.confidence_score * 100).toFixed(0)}%`;
+            profileData.skills = JSON.stringify(
+              cvAnalysis.professional_info?.skills || [],
+            );
+            profileData.cv_url = cvFilePath;
+            profileData.cv_text = cvText;
+
+            if (cvAnalysis.professional_info?.languages) {
+              profileData.languages = JSON.stringify(
+                cvAnalysis.professional_info.languages,
+              );
+            }
+            if (cvAnalysis.education) {
+              profileData.education = JSON.stringify(cvAnalysis.education);
+            }
+            if (cvAnalysis.professional_info?.certifications) {
+              profileData.certifications = JSON.stringify(
+                cvAnalysis.professional_info.certifications,
+              );
+            }
+          }
+        } catch (aiError) {
+          console.error("AI analysis failed:", aiError);
+        }
+      }
+
+      if (skills) {
+        try {
+          const skillsArray =
+            typeof skills === "string" ? JSON.parse(skills) : skills;
+          if (skillsArray.length > 0) {
+            profileData.skills = JSON.stringify(skillsArray);
+          }
+        } catch (e) {}
+      }
+
+      await FreelancerProfile.create(profileData);
+    } else if (role === "client") {
+      await ClientProfile.create({
+        UserId: newUser.id,
+        company_name: company_name || null,
+        client_type: client_type || "individual",
+        commercial_register_number: commercial_register_number || null,
+        commercial_register_image: commercialRegisterUrl,
+        verification_document_url: verificationDocUrl,
+        tax_number: tax_number || null,
       });
     }
 
-    await sendVerificationEmail(email, verificationCode);
+    await Wallet.create({ UserId: newUser.id, balance: 0 });
+
+    await sendVerificationEmail(email, emailVerificationCode);
+
+    let smsSent = false;
+    if (phone) {
+      const smsResult =
+        await VerificationService.sendPhoneVerificationCode(phone);
+      smsSent = smsResult.success;
+    }
+
+    console.log(`✅ User created with ID: ${newUser.id}`);
 
     res.status(201).json({
-      message: "✅ User created! Verification code sent to email",
+      message: "✅ Account created successfully! Please verify your email.",
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        phone: newUser.phone,
+        national_id_verified: newUser.national_id_verified,
       },
+      requiresVerification: true,
+      emailSent: true,
+      smsSent: smsSent,
+      cvAnalysis: cvAnalysis
+        ? {
+            has_analysis: true,
+            title: cvAnalysis.professional_info?.title,
+            skills_count: cvAnalysis.professional_info?.skills?.length || 0,
+            confidence: cvAnalysis.confidence_score,
+          }
+        : null,
     });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Signup error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+router.post("/verify-phone", async (req, res) => {
+  const { phone, code } = req.body;
+
+  try {
+    const verification = await VerificationService.verifyPhoneCode(phone, code);
+
+    if (verification.valid) {
+      await User.update(
+        { phone_verified: true, phone_verification_code: null },
+        { where: { phone } },
+      );
+      res.json({ success: true, message: "Phone verified successfully" });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: verification.message,
+        attemptsLeft: verification.attemptsLeft,
+      });
+    }
+  } catch (err) {
+    console.error("Phone verification error:", err);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/resend-phone-code", async (req, res) => {
+  const { phone } = req.body;
+
+  try {
+    const result = await VerificationService.sendPhoneVerificationCode(phone);
+    if (result.success) {
+      res.json({ success: true, message: "Verification code sent" });
+    } else {
+      res.status(500).json({ success: false, message: "Failed to send code" });
+    }
+  } catch (err) {
+    console.error("Resend code error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/verify-national-id", async (req, res) => {
+  const { national_id, name, userId } = req.body;
+
+  try {
+    const validation = await VerificationService.validateNationalId(
+      national_id,
+      name,
+    );
+
+    if (validation.valid && userId) {
+      await User.update(
+        { national_id_verified: true },
+        { where: { id: userId } },
+      );
+    }
+
+    res.json({
+      success: validation.valid,
+      message: validation.message,
+      confidence: validation.confidence_score,
+    });
+  } catch (err) {
+    console.error("National ID verification error:", err);
+    res.status(500).json({ message: "Verification service error" });
   }
 });
 
@@ -77,9 +331,7 @@ router.post("/verify", async (req, res) => {
   try {
     const user = await User.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: "User not found" });
-
     if (user.is_verified) return res.json({ message: "User already verified" });
-
     if (user.verification_code != code) {
       return res.status(400).json({ message: "Invalid verification code" });
     }
@@ -111,15 +363,22 @@ router.post("/login", async (req, res) => {
     }
 
     if (!user.is_verified) {
-      return res
-        .status(403)
-        .json({ message: "Please verify your email first" });
+      return res.status(403).json({
+        message: "Please verify your email first",
+        requiresVerification: true,
+        email: user.email,
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "❌ Invalid credentials" });
     }
+
+    await user.update({
+      last_login: new Date(),
+      login_count: (user.login_count || 0) + 1,
+    });
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -134,6 +393,9 @@ router.post("/login", async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+        is_verified: user.is_verified,
+        phone_verified: user.phone_verified,
+        national_id_verified: user.national_id_verified,
       },
     });
   } catch (error) {
@@ -198,11 +460,9 @@ router.post("/verify-reset-code", async (req, res) => {
     console.log("Current time:", new Date());
 
     if (!user.reset_password_code) {
-      return res
-        .status(400)
-        .json({
-          message: "No reset request found. Please request a new code.",
-        });
+      return res.status(400).json({
+        message: "No reset request found. Please request a new code.",
+      });
     }
 
     if (new Date() > new Date(user.reset_password_expires)) {

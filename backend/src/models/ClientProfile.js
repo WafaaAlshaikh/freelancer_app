@@ -98,6 +98,26 @@ const ClientProfile = sequelize.define("ClientProfile", {
 
   last_profile_update: { type: DataTypes.DATE, allowNull: true },
   member_since: { type: DataTypes.DATE, allowNull: true },
+  verification_document_url: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  client_type: {
+    type: DataTypes.ENUM("individual", "small_business", "enterprise"),
+    defaultValue: "individual",
+  },
+  commercial_register_number: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  commercial_register_image: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  tax_number: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 });
 
 export default ClientProfile;
