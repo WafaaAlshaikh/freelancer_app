@@ -165,7 +165,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get rateApp => 'قيم التطبيق على المتجر';
 
   @override
-  String get about => 'عن التطبيق';
+  String get about => 'نبذة';
 
   @override
   String get selectLanguage => 'اختر اللغة';
@@ -183,7 +183,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noImage => 'لا توجد صورة';
 
   @override
-  String get reviews => 'التقييمات';
+  String get reviews => 'مراجعات';
 
   @override
   String get analytics => 'الإحصائيات';
@@ -249,7 +249,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get replyAddedSuccess => 'تم إضافة الرد بنجاح';
 
   @override
-  String get project => 'المشروع';
+  String get project => 'مشروع';
 
   @override
   String get sellerResponse => 'رد البائع';
@@ -297,7 +297,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noDescription => 'لا يوجد وصف';
 
   @override
-  String get days => 'يوم';
+  String get days => 'أيام';
 
   @override
   String get remote => 'عن بعد';
@@ -593,7 +593,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get linkedin => 'LinkedIn';
 
   @override
-  String get behance => 'Behance / Dribbble';
+  String get behance => 'بيهانس';
 
   @override
   String get availability => 'التوفر';
@@ -608,10 +608,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get asNeeded => 'حسب الحاجة';
 
   @override
-  String get notAvailable => 'غير متوفر';
+  String get notAvailable => 'غير متاح';
 
   @override
-  String get weeklyHours => 'الساعات الأسبوعية (المتاحة)';
+  String get weeklyHours => 'ساعات أسبوعياً';
 
   @override
   String get yearsOfExperience => 'سنوات الخبرة';
@@ -801,7 +801,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inProgress => 'قيد التنفيذ';
 
   @override
-  String get completed => 'مكتملة';
+  String get completed => 'مكتمل';
 
   @override
   String get pending => 'قيد الانتظار';
@@ -820,7 +820,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get submit => 'إرسال';
 
   @override
-  String get message => 'رسالة إلى';
+  String get message => 'رسالة';
 
   @override
   String get client => 'عميل';
@@ -939,7 +939,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get estHours => 'الساعات المقدرة';
 
   @override
-  String get hours => 'ساعة';
+  String get hours => 'ساعات';
 
   @override
   String get baseRate => 'السعر الأساسي';
@@ -1173,7 +1173,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addFiles => 'إضافة ملفات';
 
   @override
-  String get links => 'الروابط';
+  String get links => 'روابط';
 
   @override
   String get pleaseAddAtLeastOneFileOrLink =>
@@ -2026,7 +2026,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get timeline => 'الجدول الزمني';
 
   @override
-  String get invitationSent => 'تم إرسال الدعوة';
+  String get invitationSent => 'تم إرسال الدعوة إلى';
 
   @override
   String get declined => 'مرفوضة';
@@ -2179,7 +2179,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get acceptanceRate => 'نسبة القبول';
 
   @override
-  String get completionRate => 'نسبة الإكمال';
+  String get completionRate => 'نسبة الإنجاز';
 
   @override
   String get avgResponse => 'متوسط الرد';
@@ -2621,4 +2621,627 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sortBy => 'ترتيب حسب';
+
+  @override
+  String get postNewProject => 'نشر مشروع جديد';
+
+  @override
+  String get templates => 'القوالب';
+
+  @override
+  String get projectDetailsHint =>
+      'املأ التفاصيل أدناه. سيقوم الذكاء الاصطناعي بتحليل واقتراح تحسينات';
+
+  @override
+  String get autoSaveHint => 'يتم حفظ تقدمك تلقائياً على هذا الجهاز';
+
+  @override
+  String get draftRestored => 'تم الاستمرار من المسودة المحفوظة';
+
+  @override
+  String get templateApplied => 'تم تطبيق القالب — يمكنك التعديل قبل النشر';
+
+  @override
+  String get clearDraft => 'مسح المسودة؟';
+
+  @override
+  String get clearDraftConfirmation => 'هل تريد حذف مسودة المشروع المحفوظة؟';
+
+  @override
+  String get draftCleared => 'تم مسح المسودة';
+
+  @override
+  String get projectTemplates => 'قوالب المشاريع';
+
+  @override
+  String get templateHint => 'املأ الحقول مسبقاً — يمكنك التعديل قبل النشر';
+
+  @override
+  String get clearSavedDraft => 'مسح المسودة المحفوظة';
+
+  @override
+  String get projectCreatedSuccess => '✅ تم إنشاء المشروع بنجاح';
+
+  @override
+  String get errorCreatingProject => 'خطأ في إنشاء المشروع';
+
+  @override
+  String get projectTitle => 'عنوان المشروع';
+
+  @override
+  String get projectTitleHint => 'مثال: بناء تطبيق متجر إلكتروني';
+
+  @override
+  String get requiredField => 'الرجاء إدخال قيمة';
+
+  @override
+  String get projectDescription => 'وصف المشروع';
+
+  @override
+  String get projectDescriptionHint =>
+      'صف مشروعك بالتفصيل...\n- ماذا تحتاج؟\n- ما هي توقعاتك؟\n- أي متطلبات محددة؟';
+
+  @override
+  String get durationDays => 'المدة (أيام)';
+
+  @override
+  String get selectCategory => 'اختر تصنيفاً';
+
+  @override
+  String get postProject => 'نشر المشروع';
+
+  @override
+  String get milestonesAddedHint => 'تم إضافة المراحل المقترحة إلى العرض';
+
+  @override
+  String get open => 'مفتوح';
+
+  @override
+  String get aiRecommendations => 'توصيات الذكاء الاصطناعي';
+
+  @override
+  String get totalSpent => 'إجمالي المصروفات';
+
+  @override
+  String get compareFreelancers => 'مقارنة المستقلين';
+
+  @override
+  String get switchToCardView => 'التبديل إلى عرض البطاقات';
+
+  @override
+  String get switchToDetailedView => 'التبديل إلى عرض الجدول';
+
+  @override
+  String get analyzingFreelancers => 'جاري تحليل المستقلين...';
+
+  @override
+  String get comparingFreelancersDesc => 'مقارنة المهارات والخبرة والأداء';
+
+  @override
+  String get noFreelancersToCompare => 'لا يوجد مستقلين للمقارنة';
+
+  @override
+  String get selectAtLeastTwoFreelancers =>
+      'اختر مستقلين على الأقل لبدء المقارنة';
+
+  @override
+  String get goBack => 'العودة';
+
+  @override
+  String get aiRecommendation => 'توصية الذكاء الاصطناعي';
+
+  @override
+  String get matchWithProject => 'تطابق مع مشروعك';
+
+  @override
+  String get aiPick => 'اختيار الذكاء';
+
+  @override
+  String get overallRatingDescription => 'التقييم العام والأداء';
+
+  @override
+  String get skillsMatchDescription => 'تطابق المهارات مع مشروعك';
+
+  @override
+  String get experienceDescription => 'سنوات الخبرة وعدد المشاريع';
+
+  @override
+  String get reliabilityDescription => 'نسبة الإنجاز والتسليم في الوقت المحدد';
+
+  @override
+  String get communicationDescription => 'وقت الاستجابة والتقييمات';
+
+  @override
+  String get valueDescription => 'نسبة الجودة إلى السعر';
+
+  @override
+  String get skillsMatch => 'تطابق المهارات';
+
+  @override
+  String get withYourProject => 'مع مشروعك';
+
+  @override
+  String get ofProjectsCompleted => 'من المشاريع المكتملة';
+
+  @override
+  String get onTimeDelivery => 'التسليم في الوقت';
+
+  @override
+  String get ofDeadlinesMet => 'من المواعيد النهائية الملتزم بها';
+
+  @override
+  String get responseTime => 'وقت الاستجابة';
+
+  @override
+  String get averageResponse => 'متوسط الرد';
+
+  @override
+  String get projectsCompleted => 'المشاريع المكتملة';
+
+  @override
+  String get totalProjects => 'إجمالي المشاريع';
+
+  @override
+  String get inTheField => 'في المجال';
+
+  @override
+  String get hr => 'س';
+
+  @override
+  String get topSkills => 'أفضل المهارات';
+
+  @override
+  String get viewProfile => 'عرض الملف الشخصي';
+
+  @override
+  String get hire => 'توظيف';
+
+  @override
+  String get hour => 'ساعة';
+
+  @override
+  String get prj => 'مشروع';
+
+  @override
+  String get performanceComparison => 'مقارنة الأداء';
+
+  @override
+  String get ratingsComparison => 'مقارنة التقييمات';
+
+  @override
+  String get comprehensiveAnalysis => 'التحليل الشامل';
+
+  @override
+  String get overall => 'عام';
+
+  @override
+  String get reliability => 'الموثوقية';
+
+  @override
+  String get value => 'القيمة';
+
+  @override
+  String get viewCharts => 'عرض المخططات';
+
+  @override
+  String get deleteProject => 'حذف المشروع';
+
+  @override
+  String get deleteProjectConfirmation => 'هل أنت متأكد من حذف هذا المشروع؟';
+
+  @override
+  String get projectStatusLabel => 'الحالة';
+
+  @override
+  String get acceptingProposals => 'قبول العروض';
+
+  @override
+  String get projectInProgress => 'المشروع قيد التنفيذ';
+
+  @override
+  String get completeProject => 'إكمال المشروع';
+
+  @override
+  String get posted => 'تاريخ النشر';
+
+  @override
+  String get views => 'مشاهدة';
+
+  @override
+  String get contractDetails => 'تفاصيل العقد';
+
+  @override
+  String get interviewLimitReached =>
+      'تم الوصول إلى الحد الأقصى لدعوات المقابلة الشهرية';
+
+  @override
+  String noInterviewInvitationsLeft(int lim) {
+    return 'لا توجد دعوات مقابلة متبقية هذا الشهر ($lim/شهر). قم بترقية خطتك لإرسال المزيد.';
+  }
+
+  @override
+  String interviewInvitationsLeft(int rem, int lim) {
+    return '$rem من $lim دعوة مقابلة متبقية هذا الشهر';
+  }
+
+  @override
+  String proposalStatusUpdated(String status) {
+    return 'تم تحديث حالة العرض إلى $status';
+  }
+
+  @override
+  String get errorUpdatingProposal => 'خطأ في تحديث العرض';
+
+  @override
+  String get proposalDataNotFound => 'بيانات العرض غير موجودة';
+
+  @override
+  String get missingProjectOrFreelancerData =>
+      'بيانات المشروع أو المستقل غير موجودة';
+
+  @override
+  String get projectProposals => 'عروض المشروع';
+
+  @override
+  String get aiRecommendedFreelancers =>
+      'المستقلون الموصى بهم من الذكاء الاصطناعي';
+
+  @override
+  String get match => 'تطابق';
+
+  @override
+  String get inviteToProject => 'دعوة للمشروع';
+
+  @override
+  String get whenFreelancersSubmitProposals =>
+      'عندما يقدم المستقلون عروضهم، ستظهر هنا';
+
+  @override
+  String get negotiate => 'تفاوض';
+
+  @override
+  String get interview => 'مقابلة';
+
+  @override
+  String get manualChooseTimes => 'يدوي (اختيار الأوقات)';
+
+  @override
+  String get smartAIOptimized => 'ذكي (محسن بالذكاء الاصطناعي)';
+
+  @override
+  String get noDescriptionProvided => 'لا يوجد وصف';
+
+  @override
+  String get delivery => 'التسليم';
+
+  @override
+  String get generatingSOW => 'جاري إنشاء نطاق العمل...';
+
+  @override
+  String get generateSOW => 'إنشاء نطاق العمل';
+
+  @override
+  String get creating => 'جاري الإنشاء...';
+
+  @override
+  String get viewContract => 'عرض العقد';
+
+  @override
+  String get viewContractComingSoon => 'عرض العقد - قريباً';
+
+  @override
+  String get proposalAccepted => 'تم قبول العرض';
+
+  @override
+  String get contractCreatedMessage =>
+      'تم إنشاء عقد. يمكنك الآن التواصل مع المستقل.';
+
+  @override
+  String get proposalRejected => 'تم رفض العرض';
+
+  @override
+  String get proposalRejectedMessage =>
+      'تم رفض هذا العرض. يمكنك التواصل مع المستقل إذا لزم الأمر.';
+
+  @override
+  String get failedToCreateContract => 'فشل في إنشاء العقد';
+
+  @override
+  String get aiInterviewInvitationMessage =>
+      'قام الذكاء الاصطناعي بتحليل التوفر واقترح الأوقات المثالية. الرجاء اختيار الوقت المناسب لك.';
+
+  @override
+  String get smartInterviewInvitationSent =>
+      '✅ تم إرسال دعوة المقابلة الذكية إلى المستقل!';
+
+  @override
+  String get aiSuggestedTimesSent =>
+      'تم إرسال الأوقات المقترحة من الذكاء الاصطناعي';
+
+  @override
+  String get aiTimesSentDescription =>
+      'تم إرسال الأوقات المحسنة من الذكاء الاصطناعي إلى المستقل. سيقوم باختيار الوقت المناسب له.';
+
+  @override
+  String get scheduleInterview => 'جدولة المقابلة';
+
+  @override
+  String get selectPreferredTimes => 'اختر 1-3 أوقات مفضلة للمقابلة';
+
+  @override
+  String get addTime => 'إضافة وقت';
+
+  @override
+  String get optionalMessageHint => 'أضف رسالة للمستقل (اختياري)';
+
+  @override
+  String get sendInvitation => 'إرسال الدعوة';
+
+  @override
+  String get interviewInvitationMessage =>
+      'أود إجراء مقابلة معك لهذا المشروع. الرجاء اختيار الوقت المناسب لك.';
+
+  @override
+  String get interviewInvitationSent => '✅ تم إرسال دعوة المقابلة!';
+
+  @override
+  String get errorSendingInvitation => 'خطأ في إرسال الدعوة';
+
+  @override
+  String get gotIt => 'حسناً';
+
+  @override
+  String get clearFilter => 'مسح الفلتر';
+
+  @override
+  String get showAllContracts => 'عرض كل العقود';
+
+  @override
+  String get noActiveContracts => 'لا توجد عقود نشطة';
+
+  @override
+  String get noDraftContracts => 'لا توجد مسودات عقود';
+
+  @override
+  String get noCompletedContracts => 'لا توجد عقود مكتملة';
+
+  @override
+  String get noSignedContracts => 'لا توجد عقود موقعة';
+
+  @override
+  String get active => 'نشط';
+
+  @override
+  String get draft => 'مسودة';
+
+  @override
+  String get back => 'رجوع';
+
+  @override
+  String get ratingsAndReviews => 'التقييمات والمراجعات';
+
+  @override
+  String get viewAllReviews => 'عرض جميع المراجعات';
+
+  @override
+  String get seeMore => 'عرض المزيد';
+
+  @override
+  String get topRated => 'الأعلى تقييماً';
+
+  @override
+  String get risingTalent => 'موهبة صاعدة';
+
+  @override
+  String get acceptingWork => 'متاح للعمل';
+
+  @override
+  String get limited => 'محدود';
+
+  @override
+  String get done => 'مكتمل';
+
+  @override
+  String get hireForProject => 'توظيف للمشروع';
+
+  @override
+  String get contact => 'تواصل';
+
+  @override
+  String get atAGlance => 'لمحة سريعة';
+
+  @override
+  String get portfolio => 'أعمال سابقة';
+
+  @override
+  String get response => 'الرد';
+
+  @override
+  String get hourly => 'بالساعة';
+
+  @override
+  String get commitment => 'الالتزام';
+
+  @override
+  String get skillsAndExpertise => 'المهارات والخبرات';
+
+  @override
+  String get categories => 'التصنيفات';
+
+  @override
+  String get memberSince => 'عضو منذ';
+
+  @override
+  String get profileViews => 'مشاهدات الملف';
+
+  @override
+  String get workExperience => 'الخبرات العملية';
+
+  @override
+  String get website => 'الموقع الإلكتروني';
+
+  @override
+  String get gitHub => 'جيت هاب';
+
+  @override
+  String get linkedIn => 'لينكد إن';
+
+  @override
+  String get dribbble => 'دريبل';
+
+  @override
+  String get twitter => 'تويتر';
+
+  @override
+  String get featured => 'مميز';
+
+  @override
+  String get recentlyDelivered => 'المشاريع المكتملة مؤخراً';
+
+  @override
+  String get deliveredProject => 'مشروع مكتمل';
+
+  @override
+  String get delivered => 'تم التسليم';
+
+  @override
+  String get clientReviews => 'مراجعات العملاء';
+
+  @override
+  String get couldNotLoadProfile => 'لا يمكن تحميل هذا الملف الشخصي';
+
+  @override
+  String get errorLoadingProfile => 'خطأ في تحميل الملف الشخصي';
+
+  @override
+  String get failedToStartChat => 'فشل في بدء المحادثة';
+
+  @override
+  String get freelancerProfile => 'ملف المستقل الشخصي';
+
+  @override
+  String get professionalFreelancer => 'مستقل محترف';
+
+  @override
+  String get findFreelancers => 'البحث عن مستقلين';
+
+  @override
+  String get searchFreelancers => 'ابحث عن مستقلين...';
+
+  @override
+  String get noFreelancersFound => 'لم يتم العثور على مستقلين';
+
+  @override
+  String get tryDifferentFilters => 'جرب فلاتر مختلفة';
+
+  @override
+  String get freelancersFound => 'مستقل تم العثور عليه';
+
+  @override
+  String get selected => 'مختار';
+
+  @override
+  String get activeFilters => 'الفلاتر النشطة';
+
+  @override
+  String get clearAll => 'مسح الكل';
+
+  @override
+  String get allSkills => 'كل المهارات';
+
+  @override
+  String get minRating => 'الحد الأدنى للتقييم';
+
+  @override
+  String get minExperience => 'الحد الأدنى للخبرة';
+
+  @override
+  String get maxHourlyRate => 'الحد الأقصى للسعر بالساعة';
+
+  @override
+  String get lowestFirst => 'الأقل أولاً';
+
+  @override
+  String get highestFirst => 'الأعلى أولاً';
+
+  @override
+  String get mostFirst => 'الأكثر أولاً';
+
+  @override
+  String get filters => 'فلاتر';
+
+  @override
+  String get hireRequestSent => 'تم إرسال طلب التوظيف!';
+
+  @override
+  String get compare => 'مقارنة';
+
+  @override
+  String get skill => 'مهارة';
+
+  @override
+  String get sendOfferTo => 'إرسال عرض إلى';
+
+  @override
+  String get offerAmountOptional => 'قيمة العرض (اختياري)';
+
+  @override
+  String get enterAmount => 'أدخل المبلغ';
+
+  @override
+  String get messageOptional => 'رسالة (اختياري)';
+
+  @override
+  String get writeMessageHere => 'اكتب رسالتك هنا...';
+
+  @override
+  String get sendOffer => 'إرسال العرض';
+
+  @override
+  String get offerSentSuccessfully => 'تم إرسال العرض بنجاح!';
+
+  @override
+  String get noOpenProjects => 'لا توجد مشاريع مفتوحة';
+
+  @override
+  String get createProjectNow => 'إنشاء مشروع الآن';
+
+  @override
+  String get hireFreelancer => 'توظيف مستقل';
+
+  @override
+  String get sendCustomOfferToFreelancer => 'إرسال عرض عمل مخصص لهذا المستقل';
+
+  @override
+  String get sendMessage => 'إرسال رسالة';
+
+  @override
+  String get discussBeforeHiring => 'ناقش التفاصيل قبل التوظيف';
+
+  @override
+  String get scheduleVideoCallInterview => 'جدولة مكالمة فيديو';
+
+  @override
+  String get offers => 'العروض';
+
+  @override
+  String get noOffersYet => 'لا توجد عروض بعد';
+
+  @override
+  String get whenYouReceiveOffers => 'عندما تستلم عروض عمل، ستظهر هنا';
+
+  @override
+  String get offerAccepted => 'تم قبول العرض';
+
+  @override
+  String get offerDeclined => 'تم رفض العرض';
+
+  @override
+  String get accept => 'قبول';
+
+  @override
+  String get createProjectFirst => 'قم بإنشاء مشروع أولاً لتوظيف المستقلين';
+
+  @override
+  String get createProject => 'إنشاء مشروع';
 }

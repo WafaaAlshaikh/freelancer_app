@@ -1064,5 +1064,601 @@
   "maxBudget": "Max Budget",
   "minDuration": "Min Duration",
   "maxDuration": "Max Duration",
-  "sortBy": "Sort By"
+  "sortBy": "Sort By",
+"postNewProject": "Post New Project",
+"draftSaved": "Draft saved",
+"templates": "Templates",
+"projectDetails": "Project Details",
+"projectDetailsHint": "Fill in the details below. AI will analyze and suggest improvements.",
+"autoSaveHint": "Your progress is saved automatically on this device.",
+"draftRestored": "Continued from your saved draft",
+"templateApplied": "Template applied — edit and post when ready",
+"clearDraft": "Clear draft?",
+"clearDraftConfirmation": "Remove the saved project draft from this device?",
+"clear": "Clear",
+"draftCleared": "Draft cleared",
+"projectTemplates": "Project templates",
+"templateHint": "Prefill fields — still edit before posting.",
+"clearSavedDraft": "Clear saved draft",
+"projectCreatedSuccess": "✅ Project created successfully",
+"errorCreatingProject": "Error creating project",
+"projectTitle": "Project Title",
+"projectTitleHint": "e.g., Build an E-commerce App",
+"requiredField": "Please enter a value",
+"projectDescription": "Project Description",
+"projectDescriptionHint": "Describe your project in detail...\n- What do you need?\n- What are your expectations?\n- Any specific requirements?",
+"budget": "Budget ($)",
+"durationDays": "Duration (days)",
+"days": "days",
+"selectCategory": "Select a category",
+"requiredSkills": "Required Skills",
+"postProject": "Post Project",
+"invalidNumber": "Invalid number",
+"milestonesAddedHint": "Suggested milestones added to proposal",
+"open":"Open",
+"aiRecommendations":"Ai Recommendations",
+"totalSpent":"Total Spent",
+
+
+  "@_comments": "Compare Freelancers Screen Translations",
+  "compareFreelancers": "Compare Freelancers",
+  "@compareFreelancers": {
+    "description": "Title for compare freelancers screen"
+  },
+  "switchToCardView": "Switch to Card View",
+  "@switchToCardView": {
+    "description": "Button tooltip to switch to card view"
+  },
+  "switchToDetailedView": "Switch to Detailed View",
+  "@switchToDetailedView": {
+    "description": "Button tooltip to switch to detailed table view"
+  },
+  "analyzingFreelancers": "Analyzing freelancers...",
+  "@analyzingFreelancers": {
+    "description": "Loading message when analyzing freelancers"
+  },
+  "comparingFreelancersDesc": "Comparing skills, experience, and performance",
+  "@comparingFreelancersDesc": {
+    "description": "Subtitle while loading comparison data"
+  },
+  "noFreelancersToCompare": "No freelancers to compare",
+  "@noFreelancersToCompare": {
+    "description": "Empty state message when no freelancers available"
+  },
+  "selectAtLeastTwoFreelancers": "Select at least 2 freelancers to start comparing",
+  "@selectAtLeastTwoFreelancers": {
+    "description": "Instruction when no freelancers selected"
+  },
+  "goBack": "Go Back",
+  "@goBack": {
+    "description": "Button text to go back"
+  },
+  "aiRecommendation": "AI Recommendation",
+  "@aiRecommendation": {
+    "description": "Label for AI recommendation banner"
+  },
+  "matchWithProject": "match with your project",
+  "@matchWithProject": {
+    "description": "Text showing match percentage with project"
+  },
+  "aiPick": "AI Pick",
+  "@aiPick": {
+    "description": "Badge label for AI recommended freelancer"
+  },
+  "overallRatingDescription": "Overall rating and performance",
+  "@overallRatingDescription": {
+    "description": "Description for overall rating metric"
+  },
+  "skillsMatchDescription": "Skills match with your project",
+  "@skillsMatchDescription": {
+    "description": "Description for skills match metric"
+  },
+  "experienceDescription": "Years of experience & project count",
+  "@experienceDescription": {
+    "description": "Description for experience metric"
+  },
+  "reliabilityDescription": "Completion rate & on-time delivery",
+  "@reliabilityDescription": {
+    "description": "Description for reliability metric"
+  },
+  "communicationDescription": "Response time & feedback",
+  "@communicationDescription": {
+    "description": "Description for communication metric"
+  },
+  "valueDescription": "Price vs quality ratio",
+  "@valueDescription": {
+    "description": "Description for value metric"
+  },
+  "skillsMatch": "Skills Match",
+  "@skillsMatch": {
+    "description": "Label for skills match statistic"
+  },
+  "withYourProject": "with your project",
+  "@withYourProject": {
+    "description": "Subtitle for skills match"
+  },
+  "completionRate": "Completion Rate",
+  "@completionRate": {
+    "description": "Label for completion rate statistic"
+  },
+  "ofProjectsCompleted": "of projects completed",
+  "@ofProjectsCompleted": {
+    "description": "Subtitle for completion rate"
+  },
+  "onTimeDelivery": "On-Time Delivery",
+  "@onTimeDelivery": {
+    "description": "Label for on-time delivery statistic"
+  },
+  "ofDeadlinesMet": "of deadlines met",
+  "@ofDeadlinesMet": {
+    "description": "Subtitle for on-time delivery"
+  },
+  "responseTime": "Response Time",
+  "@responseTime": {
+    "description": "Label for response time statistic"
+  },
+  "averageResponse": "average response",
+  "@averageResponse": {
+    "description": "Subtitle for response time"
+  },
+  "projectsCompleted": "Projects Completed",
+  "@projectsCompleted": {
+    "description": "Label for completed projects statistic"
+  },
+  "totalProjects": "total projects",
+  "@totalProjects": {
+    "description": "Subtitle for completed projects"
+  },
+  "inTheField": "in the field",
+  "@inTheField": {
+    "description": "Subtitle for experience years"
+  },
+  "hourlyRate": "Hourly Rate",
+  "@hourlyRate": {
+    "description": "Label for hourly rate"
+  },
+  "hr": "hr",
+  "@hr": {
+    "description": "Abbreviation for hour"
+  },
+  "budget": "budget",
+  "@budget": {
+    "description": "Label for budget"
+  },
+  "topSkills": "Top Skills",
+  "@topSkills": {
+    "description": "Section title for top skills"
+  },
+  "viewProfile": "View Profile",
+  "@viewProfile": {
+    "description": "Button text to view freelancer profile"
+  },
+  "hire": "Hire",
+  "@hire": {
+    "description": "Button text to hire freelancer"
+  },
+  "outOf5": "out of 5",
+  "@outOf5": {
+    "description": "Text showing rating out of 5"
+  },
+  "hour": "hour",
+  "@hour": {
+    "description": "Singular form of hour"
+  },
+  "hours": "hours",
+  "@hours": {
+    "description": "Plural form of hours"
+  },
+  "prj": "prj",
+  "@prj": {
+    "description": "Abbreviation for project(s)"
+  },
+  "performanceComparison": "Performance Comparison",
+  "@performanceComparison": {
+    "description": "Title for performance comparison chart"
+  },
+  "ratingsComparison": "Ratings Comparison",
+  "@ratingsComparison": {
+    "description": "Title for ratings comparison chart"
+  },
+  "comprehensiveAnalysis": "Comprehensive Analysis",
+  "@comprehensiveAnalysis": {
+    "description": "Title for comprehensive analysis section"
+  },
+  "overall": "Overall",
+  "@overall": {
+    "description": "Metric name for overall rating"
+  },
+  "skills": "Skills",
+  "@skills": {
+    "description": "Metric name for skills"
+  },
+  "experience": "Experience",
+  "@experience": {
+    "description": "Metric name for experience"
+  },
+  "reliability": "Reliability",
+  "@reliability": {
+    "description": "Metric name for reliability"
+  },
+  "communication": "Communication",
+  "@communication": {
+    "description": "Metric name for communication"
+  },
+  "value": "Value",
+  "@value": {
+    "description": "Metric name for value for money"
+  },
+  "overallRating": "Overall Rating",
+  "@overallRating": {
+    "description": "Label for overall rating statistic"
+  },
+  "viewCharts": "View Charts",
+  "@viewCharts": {
+    "description": "FAB text to view comparison charts"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Tooltip for refresh button"
+  },
+
+
+  "@_comments": "Project Details Screen Translations",
+  "deleteProject": "Delete Project",
+  "@deleteProject": {
+    "description": "Title for delete project dialog"
+  },
+  "deleteProjectConfirmation": "Are you sure you want to delete this project?",
+  "@deleteProjectConfirmation": {
+    "description": "Confirmation message for deleting a project"
+  },
+  "projectStatusLabel": "Status",
+  "@projectStatusLabel": {
+    "description": "Label for project status"
+  },
+  "acceptingProposals": "Accepting proposals",
+  "@acceptingProposals": {
+    "description": "Status text when project is accepting proposals"
+  },
+  "projectInProgress": "Project in progress",
+  "@projectInProgress": {
+    "description": "Status text when project is in progress"
+  },
+  "completeProject": "Complete Project",
+  "@completeProject": {
+    "description": "Button text to complete a project"
+  },
+  "posted": "Posted",
+  "@posted": {
+    "description": "Label for project posted date"
+  },
+  "views": "views",
+  "@views": {
+    "description": "Label for view count"
+  },
+  "contractDetails": "Contract Details",
+  "@contractDetails": {
+    "description": "Title for contract details section"
+  },
+
+  "@_comments2": "Project Proposals Screen Translations",
+  "interviewLimitReached": "Monthly interview invitation limit reached",
+  "@interviewLimitReached": {
+    "description": "Message when interview limit is reached"
+  },
+  "noInterviewInvitationsLeft": "No interview invitations left this month ({lim}/mo). Upgrade your plan to invite more.",
+  "@noInterviewInvitationsLeft": {
+    "description": "Message when no interview invitations left",
+    "placeholders": {
+      "lim": {
+        "type": "int",
+        "description": "The limit of interview invitations"
+      }
+    }
+  },
+  "interviewInvitationsLeft": "{rem} of {lim} interview invitations left this month",
+  "@interviewInvitationsLeft": {
+    "description": "Message showing remaining interview invitations",
+    "placeholders": {
+      "rem": {
+        "type": "int",
+        "description": "Remaining interview invitations"
+      },
+      "lim": {
+        "type": "int",
+        "description": "Total limit of interview invitations"
+      }
+    }
+  },
+  "proposalStatusUpdated": "Proposal {status} updated successfully",
+  "@proposalStatusUpdated": {
+    "description": "Message when proposal status is updated",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "description": "The new status of the proposal"
+      }
+    }
+  },
+  "errorUpdatingProposal": "Error updating proposal",
+  "@errorUpdatingProposal": {
+    "description": "Error message when updating proposal fails"
+  },
+  "proposalDataNotFound": "Proposal data not found",
+  "@proposalDataNotFound": {
+    "description": "Error message when proposal data is not found"
+  },
+  "missingProjectOrFreelancerData": "Missing project or freelancer data",
+  "@missingProjectOrFreelancerData": {
+    "description": "Error message when project or freelancer data is missing"
+  },
+  "projectProposals": "Project Proposals",
+  "@projectProposals": {
+    "description": "Title for project proposals screen"
+  },
+  "aiRecommendedFreelancers": "AI Recommended Freelancers",
+  "@aiRecommendedFreelancers": {
+    "description": "Title for AI recommended freelancers section"
+  },
+  "match": "Match",
+  "@match": {
+    "description": "Label for match percentage"
+  },
+  "invitationSent": "Invitation sent to",
+  "@invitationSent": {
+    "description": "Message when invitation is sent"
+  },
+  "inviteToProject": "Invite to Project",
+  "@inviteToProject": {
+    "description": "Button text to invite freelancer to project"
+  },
+  "whenFreelancersSubmitProposals": "When freelancers submit proposals, they will appear here",
+  "@whenFreelancersSubmitProposals": {
+    "description": "Empty state message for proposals"
+  },
+  "negotiate": "Negotiate",
+  "@negotiate": {
+    "description": "Button text to negotiate with freelancer"
+  },
+  "interview": "Interview",
+  "@interview": {
+    "description": "Label for interview feature"
+  },
+  "manualChooseTimes": "Manual (Choose Times)",
+  "@manualChooseTimes": {
+    "description": "Option for manual time selection"
+  },
+  "smartAIOptimized": "Smart (AI Optimized)",
+  "@smartAIOptimized": {
+    "description": "Option for AI optimized time selection"
+  },
+  "noDescriptionProvided": "No description provided",
+  "@noDescriptionProvided": {
+    "description": "Message when no description is provided"
+  },
+  "delivery": "Delivery",
+  "@delivery": {
+    "description": "Label for delivery time"
+  },
+  "generatingSOW": "Generating SOW...",
+  "@generatingSOW": {
+    "description": "Loading message when generating SOW"
+  },
+  "generateSOW": "Generate SOW",
+  "@generateSOW": {
+    "description": "Button text to generate SOW"
+  },
+  "creating": "Creating...",
+  "@creating": {
+    "description": "Loading message when creating something"
+  },
+  "viewContract": "View Contract",
+  "@viewContract": {
+    "description": "Button text to view contract"
+  },
+  "viewContractComingSoon": "View Contract - Coming Soon",
+  "@viewContractComingSoon": {
+    "description": "Message for coming soon feature"
+  },
+  "proposalAccepted": "Proposal Accepted",
+  "@proposalAccepted": {
+    "description": "Title when proposal is accepted"
+  },
+  "contractCreatedMessage": "A contract has been created. You can now communicate with the freelancer.",
+  "@contractCreatedMessage": {
+    "description": "Message when contract is created"
+  },
+  "proposalRejected": "Proposal Rejected",
+  "@proposalRejected": {
+    "description": "Title when proposal is rejected"
+  },
+  "proposalRejectedMessage": "This proposal has been rejected. You can still contact the freelancer if needed.",
+  "@proposalRejectedMessage": {
+    "description": "Message when proposal is rejected"
+  },
+  "failedToCreateContract": "Failed to create contract",
+  "@failedToCreateContract": {
+    "description": "Error message when contract creation fails"
+  },
+  "aiInterviewInvitationMessage": "AI has analyzed availability and suggested optimal times. Please select the time that works best for you.",
+  "@aiInterviewInvitationMessage": {
+    "description": "Message for AI interview invitation"
+  },
+  "smartInterviewInvitationSent": "✅ Smart interview invitation sent to freelancer!",
+  "@smartInterviewInvitationSent": {
+    "description": "Success message when smart interview invitation is sent"
+  },
+  "aiSuggestedTimesSent": "AI Suggested Times Sent",
+  "@aiSuggestedTimesSent": {
+    "description": "Title for AI suggested times dialog"
+  },
+  "aiTimesSentDescription": "The following AI-optimized times have been sent to the freelancer. They will select one that works for them.",
+  "@aiTimesSentDescription": {
+    "description": "Description for AI times sent dialog"
+  },
+  "scheduleInterview": "Schedule Interview",
+  "@scheduleInterview": {
+    "description": "Title for schedule interview dialog"
+  },
+  "selectPreferredTimes": "Select 1-3 preferred times for the interview",
+  "@selectPreferredTimes": {
+    "description": "Instruction for selecting interview times"
+  },
+  "addTime": "Add Time",
+  "@addTime": {
+    "description": "Button to add interview time"
+  },
+  "optionalMessageHint": "Add a message for the freelancer (optional)",
+  "@optionalMessageHint": {
+    "description": "Hint for optional message field"
+  },
+  "sendInvitation": "Send Invitation",
+  "@sendInvitation": {
+    "description": "Button to send interview invitation"
+  },
+  "interviewInvitationMessage": "I would like to interview you for this project. Please select a time that works for you.",
+  "@interviewInvitationMessage": {
+    "description": "Default message for interview invitation"
+  },
+  "interviewInvitationSent": "✅ Interview invitation sent!",
+  "@interviewInvitationSent": {
+    "description": "Success message when interview invitation is sent"
+  },
+  "errorSendingInvitation": "Error sending invitation",
+  "@errorSendingInvitation": {
+    "description": "Error message when sending invitation fails"
+  },
+  "at": "at",
+  "@at": {
+    "description": "Preposition for time (e.g., at 10:00 AM)"
+  },
+  "gotIt": "Got it",
+  "@gotIt": {
+    "description": "Button text to acknowledge"
+  },
+
+  "clearFilter" : "Clear Filter ",
+  "showAllContracts": " Show All Contracts ",
+  "noActiveContracts":"No Active Contracts",
+  "noDraftContracts":"No Draft Contracts",
+  "noCompletedContracts":"No Completed Contracts",
+  "noSignedContracts":"No Signed Contracts",
+
+  "active":"Active",
+"draft":"Draft",
+"back":"Back",
+
+"ratingsAndReviews": "Ratings & Reviews",
+  "viewAllReviews": "View All Reviews",
+  "seeMore": "See more",
+  "verified": "Verified",
+  "topRated": "Top rated",
+  "risingTalent": "Rising talent",
+  "acceptingWork": "Accepting work",
+  "limited": "Limited",
+  "done": "done",
+  "message": "Message",
+  "hireForProject": "Hire for project",
+  "contact": "Contact",
+  "atAGlance": "At a glance",
+  "completed": "Completed",
+  "reviews": "reviews",
+  "active": "Active",
+  "portfolio": "Portfolio",
+  "response": "Response",
+  "rating": "Rating",
+  "experience": "Experience",
+  "years": "yrs",
+  "hourly": "Hourly",
+  "hour": "hr",
+  "availability": "Availability",
+  "commitment": "Commitment",
+  "weeklyHours": "Weekly hours",
+  "hours": "h",
+  "skillsAndExpertise": "Skills & expertise",
+  "languages": "Languages",
+  "categories": "Categories",
+  "about": "About",
+  "memberSince": "Member since",
+  "profileViews": "Profile views",
+  "workExperience": "Work experience",
+  "education": "Education",
+  "certifications": "Certifications",
+  "links": "Links",
+  "website": "Website",
+  "gitHub": "GitHub",
+  "linkedIn": "LinkedIn",
+  "behance": "Behance",
+  "dribbble": "Dribbble",
+  "twitter": "Twitter",
+  "project": "Project",
+  "featured": "Featured",
+  "recentlyDelivered": "Recently delivered projects",
+  "deliveredProject": "Delivered project",
+  "delivered": "Delivered",
+  "clientReviews": "Client reviews",
+  "client": "Client",
+  "couldNotLoadProfile": "Could not load this profile.",
+  "retry": "Retry",
+  "profile": "Profile",
+  "fullTime": "Full-time",
+  "partTime": "Part-time",
+  "asNeeded": "As needed",
+  "notAvailable": "Not available",
+  "errorLoadingProfile": "Error loading profile",
+  "failedToStartChat": "Failed to start chat",
+  "freelancerProfile": "Freelancer profile",
+  "professionalFreelancer": "Professional Freelancer",
+  "findFreelancers": "Find Freelancers",
+  "searchFreelancers": "Search freelancers...",
+  "noFreelancersFound": "No freelancers found",
+  "tryDifferentFilters": "Try different filters",
+  "freelancersFound": "freelancers found",
+  "selected": "selected",
+  "activeFilters": "Active filters",
+  "clearAll": "Clear all",
+  "allSkills": "All skills",
+  "minRating": "Minimum rating",
+  "minExperience": "Minimum experience",
+  "maxHourlyRate": "Maximum hourly rate",
+  "lowestFirst": "Lowest first",
+  "highestFirst": "Highest first",
+  "mostFirst": "Most first",
+  "sortBy": "Sort by",
+  "filters": "Filters",
+  "apply": "Apply",
+  "hireRequestSent": "Hire request sent!",
+  "hr": "hr",
+  "prj": "prj",
+  "compare": "Compare",
+"skill": "Skill",
+"sendOfferTo": "Send Offer to",
+  "offerAmountOptional": "Offer Amount (Optional)",
+  "enterAmount": "Enter amount",
+  "messageOptional": "Message (Optional)",
+  "writeMessageHere": "Write your message here...",
+  "sendOffer": "Send Offer",
+  "offerSentSuccessfully": "Offer sent successfully!",
+  "noOpenProjects": "You don't have any open projects",
+  "createProjectNow": "Create Project Now",
+  "hireFreelancer": "Hire Freelancer",
+  "sendCustomOfferToFreelancer": "Send a custom job offer to this freelancer",
+  "sendMessage": "Send Message",
+  "discussBeforeHiring": "Discuss details before hiring",
+  "scheduleVideoCallInterview": "Schedule a video call interview",
+  "offers": "Offers",
+  "noOffersYet": "No offers yet",
+  "whenYouReceiveOffers": "When you receive job offers, they will appear here",
+  "offerAccepted": "Offer accepted",
+  "offerDeclined": "Offer declined",
+  "decline": "Decline",
+  "accept": "Accept",
+  "noOpenProjects": "No open projects",
+  "createProjectFirst": "Create a project first to hire freelancers",
+  "createProject": "Create Project"
+
 }
+
+
+
+

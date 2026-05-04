@@ -269,13 +269,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          t.advancedSearch,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
+        automaticallyImplyLeading: false,
         elevation: 0,
         backgroundColor: theme.scaffoldBackgroundColor,
         foregroundColor: theme.colorScheme.onSurface,

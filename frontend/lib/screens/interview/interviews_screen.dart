@@ -150,9 +150,17 @@ class _InterviewsScreenState extends State<InterviewsScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: t.back,
+        ),
         title: Text(
           t.interviews,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         elevation: 0,
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -181,115 +189,111 @@ class _InterviewsScreenState extends State<InterviewsScreen>
             tooltip: t.calendar,
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(120),
-          child: Column(
-            children: [
-              if (_stats != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatChip(t.total, _stats!.total, AppColors.gray),
-                      _buildStatChip(
-                        t.pending,
-                        _stats!.pending,
-                        AppColors.warning,
-                      ),
-                      _buildStatChip(
-                        t.accepted,
-                        _stats!.accepted,
-                        AppColors.success,
-                      ),
-                      _buildStatChip(
-                        t.completed,
-                        _stats!.completed,
-                        AppColors.info,
-                      ),
-                    ],
-                  ),
-                ),
-              SizedBox(
-                height: 45,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _statusFilters.length,
-                  itemBuilder: (context, index) {
-                    final filter = _statusFilters[index];
-                    final isSelected = _selectedStatus == filter['value'];
-                    final color = filter['color'] as Color;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(filter['label'] as String),
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setState(() {
-                            _selectedStatus = filter['value'] as String;
-                            _loadData(context);
-                          });
-                        },
-                        avatar: Icon(
-                          filter['icon'] as IconData,
-                          size: 16,
-                          color: isSelected ? Colors.white : color,
-                        ),
-                        backgroundColor: isDark
-                            ? AppColors.darkSurface
-                            : Colors.grey.shade100,
-                        selectedColor: color,
-                        labelStyle: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        bottomOpacity: 0,
       ),
-      body: _loading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: theme.colorScheme.primary,
-              ),
-            )
-          : _invitations.isEmpty
-          ? _buildEmptyState(isClient)
-          : RefreshIndicator(
-              onRefresh: _refresh,
-              color: theme.colorScheme.primary,
+      body: Column(
+        children: [
+          if (_stats != null)
+            SizedBox(
+              height: 48,
               child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _invitations.length,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _statusFilters.length,
                 itemBuilder: (context, index) {
-                  final invitation = _invitations[index];
-                  return _buildInterviewCard(invitation);
+                  final filter = _statusFilters[index];
+                  final isSelected = _selectedStatus == filter['value'];
+                  final color = filter['color'] as Color;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(filter['label'] as String),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedStatus = filter['value'] as String;
+                          _loadData(context);
+                        });
+                      },
+                      avatar: Icon(
+                        filter['icon'] as IconData,
+                        size: 16,
+                        color: isSelected ? Colors.white : color,
+                      ),
+                      backgroundColor: isSelected
+                          ? color
+                          : (isDark
+                                ? AppColors.darkSurface
+                                : Colors.grey.shade100),
+                      selectedColor: color,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : theme.colorScheme.onSurface,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      side: isSelected
+                          ? BorderSide.none
+                          : BorderSide(color: color.withOpacity(0.3), width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: isSelected ? 2 : 0,
+                      shadowColor: color.withOpacity(0.3),
+                    ),
+                  );
                 },
               ),
             ),
+
+          const SizedBox(height: 4),
+
+          Expanded(
+            child: _loading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary,
+                    ),
+                  )
+                : _invitations.isEmpty
+                ? _buildEmptyState(isClient)
+                : RefreshIndicator(
+                    onRefresh: _refresh,
+                    color: theme.colorScheme.primary,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _invitations.length,
+                      itemBuilder: (context, index) {
+                        final invitation = _invitations[index];
+                        return _buildInterviewCard(invitation);
+                      },
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildStatChip(String label, int value, Color color) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
+  Widget _buildStatChip(String label, int value, Color color, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
+        ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -297,16 +301,19 @@ class _InterviewsScreenState extends State<InterviewsScreen>
           Text(
             value.toString(),
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: color,
+              shadows: [Shadow(color: color.withOpacity(0.3), blurRadius: 2)],
             ),
           ),
+          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
         ],
@@ -317,7 +324,6 @@ class _InterviewsScreenState extends State<InterviewsScreen>
   Widget _buildEmptyState(bool isClient) {
     final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Center(
       child: Column(
@@ -354,13 +360,13 @@ class _InterviewsScreenState extends State<InterviewsScreen>
             Padding(
               padding: const EdgeInsets.only(top: 24),
               child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/client/projects');
-                },
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/client/projects'),
                 icon: const Icon(Icons.work),
                 label: Text(t.browseYourProjects),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secondary,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,

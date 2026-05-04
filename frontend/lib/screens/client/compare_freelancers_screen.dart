@@ -1,10 +1,14 @@
 // lib/screens/client/compare_freelancers_screen.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:fl_chart/fl_chart.dart' as fl;
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:freelancer_platform/screens/chat/chat_screen.dart';
+import 'package:freelancer_platform/screens/client/hire_freelancer_dialog.dart';
+import 'package:freelancer_platform/services/chat_service.dart';
 import '../../services/api_service.dart';
+import '../../l10n/app_localizations.dart';
+import '../../theme/app_theme.dart';
 
 class CompareFreelancersScreen extends StatefulWidget {
   final int projectId;
@@ -30,61 +34,53 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   late TabController _tabController;
   int? _recommendedFreelancerId;
 
-  final List<MetricOption> _metrics = [
-    MetricOption(
-      id: 0,
-      title: 'Overall',
-      icon: Icons.star,
-      color: Colors.amber,
-      description: 'Overall rating and performance',
-    ),
-    MetricOption(
-      id: 1,
-      title: 'Skills',
-      icon: Icons.code,
-      color: Colors.blue,
-      description: 'Skills match with your project',
-    ),
-    MetricOption(
-      id: 2,
-      title: 'Experience',
-      icon: Icons.work,
-      color: Colors.green,
-      description: 'Years of experience & project count',
-    ),
-    MetricOption(
-      id: 3,
-      title: 'Reliability',
-      icon: Icons.verified,
-      color: Colors.purple,
-      description: 'Completion rate & on-time delivery',
-    ),
-    MetricOption(
-      id: 4,
-      title: 'Communication',
-      icon: Icons.chat,
-      color: Colors.orange,
-      description: 'Response time & feedback',
-    ),
-    MetricOption(
-      id: 5,
-      title: 'Value',
-      icon: Icons.attach_money,
-      color: Colors.teal,
-      description: 'Price vs quality ratio',
-    ),
-  ];
-
-  static const Color _primary = Color(0xFF6366F1);
-  static const Color _primaryDark = Color(0xFF4F46E5);
-  static const Color _success = Color(0xFF10B981);
-  static const Color _warning = Color(0xFFF59E0B);
-  static const Color _danger = Color(0xFFEF4444);
-  static const Color _info = Color(0xFF3B82F6);
-  static const Color _dark = Color(0xFF1F2937);
-  static const Color _gray = Color(0xFF6B7280);
-  static const Color _lightGray = Color(0xFFF9FAFB);
-  static const Color _border = Color(0xFFE5E7EB);
+  List<MetricOption> _getMetrics(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    return [
+      MetricOption(
+        id: 0,
+        title: t.overall,
+        icon: Icons.star,
+        color: Colors.amber,
+        description: t.overallRatingDescription,
+      ),
+      MetricOption(
+        id: 1,
+        title: t.skills,
+        icon: Icons.code,
+        color: Colors.blue,
+        description: t.skillsMatchDescription,
+      ),
+      MetricOption(
+        id: 2,
+        title: t.experience,
+        icon: Icons.work,
+        color: Colors.green,
+        description: t.experienceDescription,
+      ),
+      MetricOption(
+        id: 3,
+        title: t.reliability,
+        icon: Icons.verified,
+        color: Colors.purple,
+        description: t.reliabilityDescription,
+      ),
+      MetricOption(
+        id: 4,
+        title: t.communication,
+        icon: Icons.chat,
+        color: Colors.orange,
+        description: t.communicationDescription,
+      ),
+      MetricOption(
+        id: 5,
+        title: t.value,
+        icon: Icons.attach_money,
+        color: Colors.teal,
+        description: t.valueDescription,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -123,7 +119,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
         setState(() => _loading = false);
       }
     } catch (e) {
-      print('Error loading comparison data: $e');
+      debugPrint('Error loading comparison data: $e');
       setState(() => _loading = false);
     }
   }
@@ -156,27 +152,37 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
     return bestId;
   }
 
+  bool _isDarkMode() {
+    return Theme.of(context).brightness == Brightness.dark;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final isDark = _isDarkMode();
+    final metrics = _getMetrics(context);
+
     return Scaffold(
-      backgroundColor: _lightGray,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text(
-          'Compare Freelancers',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          t.compareFreelancers,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        foregroundColor: isDark ? AppColors.darkTextPrimary : Colors.black,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(50),
-          child: _buildMetricSelector(),
+          child: _buildMetricSelector(metrics),
         ),
         actions: [
           IconButton(
             icon: Icon(
               _showDetailedComparison ? Icons.grid_view : Icons.compare_arrows,
-              color: _primary,
+              color: AppColors.accent,
             ),
             onPressed: () {
               setState(() {
@@ -184,13 +190,13 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
               });
             },
             tooltip: _showDetailedComparison
-                ? 'Switch to Card View'
-                : 'Switch to Detailed View',
+                ? t.switchToCardView
+                : t.switchToDetailedView,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
-            tooltip: 'Refresh',
+            tooltip: t.refresh,
           ),
         ],
       ),
@@ -206,7 +212,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildComparisonView(),
+                      _buildComparisonView(metrics),
                       _buildDetailedTableView(),
                     ],
                   ),
@@ -216,13 +222,37 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showComparisonChart(),
         icon: const Icon(Icons.bar_chart),
-        label: const Text('View Charts'),
-        backgroundColor: _primary,
+        label: Text(t.viewCharts),
+        backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.primaryDark,
       ),
     );
   }
 
+  String _getMetricLabel(String key) {
+    final t = AppLocalizations.of(context)!;
+    switch (key) {
+      case 'overall':
+        return t.overall;
+      case 'skills':
+        return t.skills;
+      case 'experience':
+        return t.experience;
+      case 'reliability':
+        return t.reliability;
+      case 'communication':
+        return t.communication;
+      case 'value':
+        return t.value;
+      default:
+        return key;
+    }
+  }
+
   Widget _buildLoadingState() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = _isDarkMode();
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -231,11 +261,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_primary, _primaryDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Center(
@@ -247,13 +273,19 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'Analyzing freelancers...',
-            style: TextStyle(fontSize: 16, color: _gray),
+            t.analyzingFreelancers,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Comparing skills, experience, and performance',
-            style: TextStyle(fontSize: 12, color: _gray),
+            t.comparingFreelancersDesc,
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? AppColors.darkTextHint : AppColors.gray,
+            ),
           ),
         ],
       ),
@@ -261,32 +293,45 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   }
 
   Widget _buildEmptyState() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = _isDarkMode();
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.compare_arrows, size: 80, color: Colors.grey.shade300),
+          Icon(
+            Icons.compare_arrows,
+            size: 80,
+            color: isDark ? AppColors.darkTextHint : Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
-            'No freelancers to compare',
+            t.noFreelancersToCompare,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: isDark ? AppColors.darkTextPrimary : Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Select at least 2 freelancers to start comparing',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            t.selectAtLeastTwoFreelancers,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : Colors.grey.shade500,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back),
-            label: const Text('Go Back'),
+            label: Text(t.goBack),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primary,
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.primaryDark,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -298,19 +343,25 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
     );
   }
 
-  Widget _buildMetricSelector() {
+  Widget _buildMetricSelector(List<MetricOption> metrics) {
+    final isDark = _isDarkMode();
+
     return Container(
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: _border)),
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? AppColors.primaryDark : AppColors.border,
+          ),
+        ),
       ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _metrics.length,
+        itemCount: metrics.length,
         itemBuilder: (context, index) {
-          final metric = _metrics[index];
+          final metric = metrics[index];
           final isSelected = _selectedMetric == metric.id;
           return GestureDetector(
             onTap: () => setState(() => _selectedMetric = metric.id),
@@ -320,7 +371,11 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
               decoration: BoxDecoration(
                 color: isSelected ? metric.color : Colors.transparent,
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: isSelected ? metric.color : _border),
+                border: Border.all(
+                  color: isSelected
+                      ? metric.color
+                      : (isDark ? AppColors.primaryDark : AppColors.border),
+                ),
               ),
               child: Row(
                 children: [
@@ -333,7 +388,11 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                   Text(
                     metric.title,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : _dark,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.dark),
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -349,6 +408,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   }
 
   Widget _buildAIRecommendationBanner() {
+    final t = AppLocalizations.of(context)!;
     final recommended = _freelancers.firstWhere(
       (f) => f.id == _recommendedFreelancerId,
       orElse: () => _freelancers.first,
@@ -358,15 +418,11 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_primary, _primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _primary.withOpacity(0.3),
+            color: AppColors.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -391,9 +447,9 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'AI Recommendation',
-                  style: TextStyle(
+                Text(
+                  t.aiRecommendation,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -408,7 +464,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                   ),
                 ),
                 Text(
-                  '${recommended.skillsMatch}% match with your project',
+                  '${recommended.skillsMatch}% ${t.matchWithProject}',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
                     fontSize: 12,
@@ -426,7 +482,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
             child: Text(
               '${recommended.overallScore}%',
               style: TextStyle(
-                color: _primary,
+                color: AppColors.accent,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -437,7 +493,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
     );
   }
 
-  Widget _buildComparisonView() {
+  Widget _buildComparisonView(List<MetricOption> metrics) {
     return AnimationLimiter(
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -451,7 +507,12 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
             child: SlideAnimation(
               verticalOffset: 50,
               child: FadeInAnimation(
-                child: _buildComparisonCard(freelancer, index, isRecommended),
+                child: _buildComparisonCard(
+                  freelancer,
+                  index,
+                  isRecommended,
+                  metrics,
+                ),
               ),
             ),
           );
@@ -464,8 +525,11 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
     FreelancerComparison f,
     int rank,
     bool isRecommended,
+    List<MetricOption> metrics,
   ) {
-    final metric = _metrics[_selectedMetric];
+    final t = AppLocalizations.of(context)!;
+    final isDark = _isDarkMode();
+    final metric = metrics[_selectedMetric];
     final metricValue = _getMetricValue(f, _selectedMetric);
     final maxValue = _getMaxValue(_selectedMetric);
     final percentage = (metricValue / maxValue) * 100;
@@ -476,31 +540,44 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
-        border: isRecommended ? Border.all(color: _primary, width: 2) : null,
+        border: isRecommended
+            ? Border.all(color: AppColors.accent, width: 2)
+            : null,
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isRecommended
-                    ? [_primary, _primaryDark]
-                    : rank == 0
-                    ? [Colors.amber.shade400, Colors.amber.shade600]
-                    : [Colors.grey.shade400, Colors.grey.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: isRecommended
+                  ? AppColors.primaryGradient
+                  : rank == 0
+                  ? const LinearGradient(
+                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : LinearGradient(
+                      colors: isDark
+                          ? [
+                              AppColors.darkTextSecondary,
+                              AppColors.darkTextHint,
+                            ]
+                          : [Colors.grey.shade400, Colors.grey.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
               ),
@@ -521,7 +598,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: isRecommended
-                            ? _primary
+                            ? AppColors.accent
                             : rank == 0
                             ? Colors.amber
                             : Colors.grey,
@@ -542,7 +619,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.primaryDark,
                           ),
                         )
                       : null,
@@ -574,21 +651,21 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.auto_awesome,
                                     size: 12,
-                                    color: _primary,
+                                    color: AppColors.accent,
                                   ),
-                                  SizedBox(width: 4),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    'AI Pick',
-                                    style: TextStyle(
+                                    t.aiPick,
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: _primary,
+                                      color: AppColors.accent,
                                     ),
                                   ),
                                 ],
@@ -627,7 +704,9 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: _dark,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.dark,
                           ),
                         ),
                       ],
@@ -657,7 +736,9 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: safePercentage / 100,
-                    backgroundColor: _border,
+                    backgroundColor: isDark
+                        ? AppColors.primaryDark
+                        : AppColors.border,
                     valueColor: AlwaysStoppedAnimation(metric.color),
                     minHeight: 8,
                   ),
@@ -671,69 +752,77 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
             child: Column(
               children: [
                 _buildStatRow(
-                  'Overall Rating',
+                  t.overallRating,
                   f.rating.toStringAsFixed(1),
                   Icons.star,
                   Colors.amber,
-                  'out of 5',
+                  t.outOf5,
+                  isDark,
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
-                  'Skills Match',
+                  t.skillsMatch,
                   '${f.skillsMatch}%',
                   Icons.code,
                   Colors.blue,
-                  'with your project',
+                  t.withYourProject,
+                  isDark,
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
-                  'Completion Rate',
+                  t.completionRate,
                   '${f.completionRate}%',
                   Icons.check_circle,
-                  _success,
-                  'of projects completed',
+                  AppColors.success,
+                  t.ofProjectsCompleted,
+                  isDark,
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
-                  'On-Time Delivery',
+                  t.onTimeDelivery,
                   '${f.onTimeDelivery}%',
                   Icons.access_time,
-                  _info,
-                  'of deadlines met',
+                  AppColors.info,
+                  t.ofDeadlinesMet,
+                  isDark,
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
-                  'Response Time',
+                  t.responseTime,
                   f.responseTimeHours <= 1
-                      ? '< 1 hour'
-                      : '${f.responseTimeHours} hours',
+                      ? '< 1 ${t.hour}'
+                      : '${f.responseTimeHours} ${t.hours}',
                   Icons.chat_bubble,
                   Colors.orange,
-                  'average response',
+                  t.averageResponse,
+                  isDark,
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
-                  'Projects Completed',
+                  t.projectsCompleted,
                   '${f.completedProjects}',
                   Icons.work,
-                  _success,
-                  'total projects',
+                  AppColors.success,
+                  t.totalProjects,
+                  isDark,
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
-                  'Experience',
-                  '${f.experienceYears} years',
+                  t.experience,
+                  '${f.experienceYears} ${t.years}',
                   Icons.trending_up,
                   Colors.green,
-                  'in the field',
+                  t.inTheField,
+                  isDark,
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
-                  'Hourly Rate',
-                  '\$${f.hourlyRate.toStringAsFixed(0)}/hr',
+                  t.hourlyRate,
+                  '\$${f.hourlyRate.toStringAsFixed(0)}/${t.hr}',
                   Icons.attach_money,
                   Colors.teal,
-                  'budget: \$${f.projectBudget}',
+                  '${t.budget}: \$${f.projectBudget}',
+                  isDark,
                 ),
               ],
             ),
@@ -745,12 +834,14 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Top Skills',
+                  Text(
+                    t.topSkills,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _gray,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.gray,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -764,12 +855,15 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: _primary.withOpacity(0.1),
+                          color: AppColors.accent.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           skill,
-                          style: TextStyle(fontSize: 12, color: _primary),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.accent,
+                          ),
                         ),
                       );
                     }).toList(),
@@ -786,10 +880,10 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                   child: OutlinedButton.icon(
                     onPressed: () => _viewProfile(f.id),
                     icon: const Icon(Icons.person, size: 18),
-                    label: const Text('View Profile'),
+                    label: Text(t.viewProfile),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _primary,
-                      side: const BorderSide(color: _primary),
+                      foregroundColor: AppColors.accent,
+                      side: BorderSide(color: AppColors.accent),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -797,14 +891,32 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _startChatFromCompare(f.id, f.name, f.avatar),
+                    icon: const Icon(Icons.chat, size: 18),
+                    label: Text(t.message),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.info,
+                      side: BorderSide(color: AppColors.info),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _hireFreelancer(f.id),
                     icon: const Icon(Icons.how_to_reg, size: 18),
-                    label: const Text('Hire'),
+                    label: Text(t.hire),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _success,
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -821,13 +933,16 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   }
 
   Widget _buildDetailedTableView() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = _isDarkMode();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       scrollDirection: Axis.horizontal,
       child: DataTable(
         columnSpacing: 20,
         headingRowColor: WidgetStateProperty.resolveWith(
-          (states) => _primary.withOpacity(0.1),
+          (states) => AppColors.accent.withOpacity(0.1),
         ),
         columns: [
           const DataColumn(
@@ -867,39 +982,39 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
         ],
         rows: [
           _buildDataRow(
-            'Overall Rating',
+            t.overallRating,
             _freelancers.map((f) => '${f.rating}/5').toList(),
           ),
           _buildDataRow(
-            'Skills Match',
+            t.skillsMatch,
             _freelancers.map((f) => '${f.skillsMatch}%').toList(),
           ),
           _buildDataRow(
-            'Completion Rate',
+            t.completionRate,
             _freelancers.map((f) => '${f.completionRate}%').toList(),
           ),
           _buildDataRow(
-            'On-Time Delivery',
+            t.onTimeDelivery,
             _freelancers.map((f) => '${f.onTimeDelivery}%').toList(),
           ),
           _buildDataRow(
-            'Response Time',
+            t.responseTime,
             _freelancers.map((f) => '${f.responseTimeHours}h').toList(),
           ),
           _buildDataRow(
-            'Projects',
+            t.projectsCompleted,
             _freelancers.map((f) => '${f.completedProjects}').toList(),
           ),
           _buildDataRow(
-            'Experience',
+            t.experience,
             _freelancers.map((f) => '${f.experienceYears}y').toList(),
           ),
           _buildDataRow(
-            'Hourly Rate',
+            t.hourlyRate,
             _freelancers.map((f) => '\$${f.hourlyRate}').toList(),
           ),
           _buildDataRow(
-            'Reviews',
+            t.reviews,
             _freelancers.map((f) => '${f.totalReviews}').toList(),
           ),
         ],
@@ -931,6 +1046,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
     IconData icon,
     Color color,
     String subtitle,
+    bool isDark,
   ) {
     return Row(
       children: [
@@ -951,7 +1067,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: _gray,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -967,7 +1083,13 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Text(subtitle, style: TextStyle(fontSize: 11, color: _gray)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? AppColors.darkTextHint : AppColors.gray,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -1021,24 +1143,25 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   }
 
   String _getMetricDisplay(FreelancerComparison f, int metricId) {
+    final t = AppLocalizations.of(context)!;
     switch (metricId) {
       case 0:
         return '${f.rating.toStringAsFixed(1)}/5';
       case 1:
         return '${f.skillsMatch}%';
       case 2:
-        return '${f.experienceYears}y, ${f.completedProjects}prj';
+        return '${f.experienceYears}y, ${f.completedProjects}${t.prj}';
       case 3:
         return '${f.completionRate}%';
       case 4:
-        return f.responseTimeHours <= 1 ? '<1h' : '${f.responseTimeHours}h';
+        return f.responseTimeHours <= 1
+            ? '<1${t.hour}'
+            : '${f.responseTimeHours}${t.hours}';
       case 5:
         if (f.hourlyRate == 0) return '0%';
         final value =
             (f.rating * 20 + f.completionRate * 0.3) / (f.hourlyRate / 10);
-
         if (value.isNaN || value.isInfinite) return '0%';
-
         return '${value.toInt()}%';
       default:
         return '${f.rating}/5';
@@ -1046,9 +1169,13 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   }
 
   void _showComparisonChart() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = _isDarkMode();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1065,25 +1192,32 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: isDark ? AppColors.darkTextHint : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Performance Comparison',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                t.performanceComparison,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.dark,
+                ),
               ),
               const SizedBox(height: 20),
               Expanded(
                 child: ListView(
                   controller: scrollController,
                   children: [
-                    const Text(
-                      'Ratings Comparison',
+                    Text(
+                      t.ratingsComparison,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.dark,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1097,11 +1231,14 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                     ),
                     const SizedBox(height: 24),
 
-                    const Text(
-                      'Skills Match',
+                    Text(
+                      t.skillsMatch,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.dark,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1117,11 +1254,14 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                     ),
                     const SizedBox(height: 24),
 
-                    const Text(
-                      'Completion Rate',
+                    Text(
+                      t.completionRate,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.dark,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1132,16 +1272,19 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                             .map((f) => f.completionRate.toDouble())
                             .toList(),
                         _freelancers.map((f) => f.name).toList(),
-                        _success,
+                        AppColors.success,
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    const Text(
-                      'Comprehensive Analysis',
+                    Text(
+                      t.comprehensiveAnalysis,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.dark,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1158,6 +1301,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
 
   Widget _buildBarChart(List<double> values, List<String> labels, Color color) {
     final maxY = values.reduce((a, b) => a > b ? a : b) * 1.2;
+    final isDark = _isDarkMode();
 
     return BarChart(
       BarChartData(
@@ -1174,7 +1318,12 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       labels[index],
-                      style: const TextStyle(fontSize: 10),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.gray,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   );
@@ -1190,7 +1339,12 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: const TextStyle(fontSize: 10),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.gray,
+                  ),
                 );
               },
               reservedSize: 40,
@@ -1208,7 +1362,7 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
           drawVerticalLine: false,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: Colors.grey.shade200,
+              color: isDark ? AppColors.primaryDark : Colors.grey.shade200,
               strokeWidth: 1,
               dashArray: [5, 5],
             );
@@ -1217,8 +1371,12 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
         borderData: FlBorderData(
           show: true,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade300),
-            left: BorderSide(color: Colors.grey.shade300),
+            bottom: BorderSide(
+              color: isDark ? AppColors.primaryDark : Colors.grey.shade300,
+            ),
+            left: BorderSide(
+              color: isDark ? AppColors.primaryDark : Colors.grey.shade300,
+            ),
           ),
         ),
         barGroups: List.generate(values.length, (index) {
@@ -1239,15 +1397,18 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   }
 
   Widget _buildRadarChart() {
+    final isDark = _isDarkMode();
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
           'Radar chart will be implemented here',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(
+            color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+          ),
         ),
       ),
     );
@@ -1258,7 +1419,62 @@ class _CompareFreelancersScreenState extends State<CompareFreelancersScreen>
   }
 
   void _hireFreelancer(int userId) {
-    Navigator.pop(context, userId);
+    final freelancer = _freelancers.firstWhere(
+      (f) => f.id == userId,
+      orElse: () => _freelancers.first,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => HireFreelancerDialog(
+        freelancerId: userId,
+        freelancerName: freelancer.name,
+        onSuccess: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Offer sent to ${freelancer.name}!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _startChatFromCompare(
+    int userId,
+    String userName,
+    String? avatar,
+  ) async {
+    try {
+      final chatResult = await ChatService.getOrCreateChat(userId);
+
+      int chatId;
+      if (chatResult['success'] == true && chatResult['chatId'] != null) {
+        chatId = chatResult['chatId'] as int;
+      } else {
+        chatId = 0;
+      }
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              chatId: chatId,
+              otherUserId: userId,
+              otherUserName: userName,
+              otherUserAvatar: avatar,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error starting chat: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not start chat: $e')));
+    }
   }
 }
 

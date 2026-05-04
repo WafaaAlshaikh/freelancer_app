@@ -16,55 +16,164 @@ class ContractService {
     freelancerId,
     clientId,
     agreed_amount,
+    project,
+    milestones,
   }) {
-    const date = new Date().toLocaleDateString("en-US");
-    const safeAmount = agreed_amount || 0;
+    const date = new Date().toLocaleDateString("ar-SA");
+    const totalMilestones = milestones.length;
+
+    const milestonesTable = milestones
+      .map(
+        (m, i) => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${m.title}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${m.description || "-"}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${m.percentage}%</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">$${m.amount.toFixed(2)}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${new Date(m.due_date).toLocaleDateString()}</td>
+    </tr>
+  `,
+      )
+      .join("");
 
     return `
     <!DOCTYPE html>
     <html>
     <head>
+      <meta charset="UTF-8">
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        body { font-family: 'Arial', sans-serif; line-height: 1.6; margin: 40px; }
         h1 { color: #14A800; text-align: center; }
-        h2 { color: #333; margin-top: 20px; }
-        .signature { margin-top: 50px; }
+        h2 { color: #333; margin-top: 25px; }
+        .contract-header { border-bottom: 2px solid #14A800; margin-bottom: 20px; }
+        .amount { font-size: 24px; color: #14A800; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th { background-color: #14A800; color: white; padding: 10px; }
+        td { padding: 8px; border: 1px solid #ddd; }
+        .signature { margin-top: 40px; }
+        .signature-line { display: flex; justify-content: space-between; margin-top: 30px; }
         .terms { margin: 20px 0; }
-        .terms p { margin: 10px 0; }
+        .project-details { background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; }
       </style>
     </head>
     <body>
-      <h1>FREELANCE CONTRACT AGREEMENT</h1>
+      <div class="contract-header">
+        <h1>🇸🇦 عقد عمل حر - Freelance Contract</h1>
+        <p style="text-align: center;">تاريخ العقد: ${date}</p>
+      </div>
       
-      <p><strong>Date:</strong> ${date}</p>
+      <h2>📋 معلومات المشروع</h2>
+      <div class="project-details">
+        <p><strong>اسم المشروع:</strong> ${project?.title || `Project #${projectId}`}</p>
+        <p><strong>وصف المشروع:</strong> ${project?.description || "تم الاتفاق على التفاصيل بين الطرفين"}</p>
+        <p><strong>تصنيف المشروع:</strong> ${this.getCategoryArabic(project?.category)}</p>
+        <p><strong>المدة المتوقعة:</strong> ${project?.duration || 30} يوم</p>
+      </div>
       
-      <h2>Parties</h2>
-      <p><strong>Client ID:</strong> ${clientId}</p>
-      <p><strong>Freelancer ID:</strong> ${freelancerId}</p>
+      <h2>💰 القيمة المالية</h2>
+      <p>قيمة العقد الإجمالية: <span class="amount">$${agreed_amount.toFixed(2)}</span></p>
+      <p>سيتم الدفع عبر محفظة المنصة الإلكترونية وفقاً للمراحل المحددة أدناه.</p>
       
-      <h2>Project Details</h2>
-      <p><strong>Project ID:</strong> ${projectId}</p>
-      <p><strong>Contract Amount:</strong> $${safeAmount}</p>
+      <h2>📊 مراحل العمل (Milestones)</h2>
+      <table>
+        <thead>
+          <table>
+            <th>#</th>
+            <th>المرحلة</th>
+            <th>الوصف</th>
+            <th>النسبة</th>
+            <th>المبلغ</th>
+            <th>تاريخ التسليم</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${milestonesTable}
+        </tbody>
+      </table>
       
-      <h2>Terms and Conditions</h2>
+      <h2>📜 بنود وأحكام العقد</h2>
       <div class="terms">
-        <p><strong>1. Scope of Work:</strong> The Freelancer agrees to complete the project as described in the project details.</p>
-        <p><strong>2. Payment:</strong> The Client agrees to pay the total amount of $${safeAmount} according to the milestone schedule.</p>
-        <p><strong>3. Delivery:</strong> The Freelancer agrees to deliver the work according to the agreed timeline.</p>
-        <p><strong>4. Intellectual Property:</strong> Upon full payment, all rights transfer to the Client.</p>
-        <p><strong>5. Confidentiality:</strong> Both parties agree to keep all project information confidential.</p>
+        <p><strong>أولاً: التزامات الطرف الأول (العميل)</strong></p>
+        <ul>
+          <li>توفير جميع المتطلبات والمستندات اللازمة في الوقت المناسب.</li>
+          <li>الرد على استفسارات المستقل خلال 24 ساعة.</li>
+          <li>الموافقة على المراحل المنجزة وإطلاق الدفعات المستحقة.</li>
+          <li>عدم المطالبة بأعمال إضافية خارج نطاق العقد دون اتفاق مسبق.</li>
+        </ul>
+        
+        <p><strong>ثانياً: التزامات الطرف الثاني (المستقل)</strong></p>
+        <ul>
+          <li>تنفيذ العمل بجودة عالية وفقاً للمواصفات المتفق عليها.</li>
+          <li>الالتزام بالجدول الزمني المحدد لكل مرحلة.</li>
+          <li>تقديم تقارير دورية عن تقدم العمل.</li>
+          <li>تسليم جميع ملفات المصدر والمواد النهائية للعميل.</li>
+        </ul>
+        
+        <p><strong>ثالثاً: سياسة الإلغاء والاسترداد</strong></p>
+        <ul>
+          <li>في حال إلغاء العقد من قبل العميل، يتم دفع قيمة المراحل المنجزة فقط.</li>
+          <li>في حال إلغاء العقد من قبل المستقل، يتم رد كامل المبلغ المدفوع.</li>
+          <li>يحق لأي من الطرفين إنهاء العقد بشرط إشعار الآخر قبل 7 أيام.</li>
+        </ul>
+        
+        <p><strong>رابعاً: ملكية الملكية الفكرية</strong></p>
+        <ul>
+          <li>تنتقل ملكية العمل النهائي إلى العميل بعد استلامه واستكمال جميع الدفعات.</li>
+          <li>يحق للمستقل إضافة العمل إلى محفظته مع ذكر اسم العميل (بعد الموافقة).</li>
+        </ul>
+        
+        <p><strong>خامساً: السرية</strong></p>
+        <ul>
+          <li>يلتزم الطرف الثاني بعدم الإفصاح عن أي معلومات خاصة بالمشروع.</li>
+          <li>يلتزم الطرف الثاني بعدم استخدام بيانات العميل لأي غرض خارج نطاق العمل.</li>
+        </ul>
+        
+        <p><strong>سادساً: حل النزاعات</strong></p>
+        <ul>
+          <li>يتم اللجوء إلى إدارة المنصة للتحكيم في حال نشوب أي نزاع.</li>
+          <li>يخضع العقد لأحكام القوانين والأنظمة السعودية.</li>
+        </ul>
       </div>
       
-      <h2>Signatures</h2>
+      <h2>✍️ توقيع الأطراف</h2>
       <div class="signature">
-        <p>_________________________ : Client Signature</p>
-        <p>_________________________ : Freelancer Signature</p>
+        <div class="signature-line">
+          <div>
+            <p><strong>الطرف الأول (العميل):</strong></p>
+            <p>الاسم: _________________________</p>
+            <p>التوقيع: _________________________</p>
+            <p>التاريخ: _________________________</p>
+          </div>
+          <div>
+            <p><strong>الطرف الثاني (المستقل):</strong></p>
+            <p>الاسم: _________________________</p>
+            <p>التوقيع: _________________________</p>
+            <p>التاريخ: _________________________</p>
+          </div>
+        </div>
       </div>
       
-      <p><small>This contract was generated electronically on the platform.</small></p>
+      <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #999;">
+        <p>تم إنشاء هذه الاتفاقية إلكترونياً عبر المنصة. يعد التوقيع الإلكتروني نافذاً قانونياً.</p>
+        <p>للاتصال: support@platform.com | جميع الحقوق محفوظة © ${new Date().getFullYear()}</p>
+      </div>
     </body>
     </html>
   `;
+  }
+
+  static getCategoryArabic(category) {
+    const categories = {
+      web_development: "تطوير مواقع وتطبيقات ويب",
+      mobile_app: "تطبيقات الجوال",
+      design: "تصميم واجهات وجرافيك",
+      marketing: "تسويق رقمي",
+      writing: "كتابة وترجمة",
+      data: "تحليل بيانات وذكاء اصطناعي",
+      other: "أخرى",
+    };
+    return categories[category] || "أخرى";
   }
 
   static async signContractByFreelancer(contractId, freelancerId) {
@@ -939,95 +1048,48 @@ Use professional legal language but make it clear and readable.
     freelancerId,
     clientId,
     agreed_amount,
-    milestones = null,
+    customMilestones = null,
   ) {
     try {
-      console.log("📝 Creating contract draft for:", {
-        projectId,
-        freelancerId,
-        clientId,
-        agreed_amount,
-      });
-
       const existingContract = await Contract.findOne({
         where: { ProjectId: projectId },
       });
 
       if (existingContract) {
-        console.log("⚠️ Contract already exists:", existingContract.id);
-        return existingContract;
+        throw new Error("Contract already exists for this project");
       }
 
-      const defaultMilestones = [
-        {
-          title: "Project Start",
-          description: "Begin work on project",
-          amount: Math.round(agreed_amount * 0.3),
-          due_date: new Date(
-            Date.now() + 7 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
-          status: "pending",
-          progress: 0,
-        },
-        {
-          title: "Milestone 1",
-          description: "First deliverable",
-          amount: Math.round(agreed_amount * 0.4),
-          due_date: new Date(
-            Date.now() + 14 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
-          status: "pending",
-          progress: 0,
-        },
-        {
-          title: "Final Delivery",
-          description: "Complete project",
-          amount: Math.round(agreed_amount * 0.3),
-          due_date: new Date(
-            Date.now() + 21 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
-          status: "pending",
-          progress: 0,
-        },
-      ];
+      const project = await Project.findByPk(projectId);
 
-      const chosenMilestones =
-        Array.isArray(milestones) && milestones.length > 0
-          ? milestones
-          : defaultMilestones;
+      let milestones;
+      if (customMilestones && customMilestones.length > 0) {
+        milestones = customMilestones;
+      } else {
+        milestones = this.generateMilestones(agreed_amount, project);
+      }
 
       const contractDocument = this.generateContractDocument({
         projectId,
         freelancerId,
         clientId,
         agreed_amount,
-        milestones: chosenMilestones,
+        project,
+        milestones,
       });
 
       const contract = await Contract.create({
         ProjectId: projectId,
         FreelancerId: freelancerId,
         ClientId: clientId,
-        agreed_amount: agreed_amount,
+        agreed_amount,
         contract_document: contractDocument,
         status: "draft",
         terms: "Standard terms and conditions apply.",
-        milestones: JSON.stringify(chosenMilestones),
-      });
-
-      console.log("✅ Contract created with ID:", contract.id);
-
-      await NotificationService.createNotification({
-        userId: freelancerId,
-        type: "contract_created",
-        title: "New Contract Ready",
-        body: "A contract has been created for you. Please review and sign.",
-        data: { contractId: contract.id, screen: "contract" },
+        milestones: JSON.stringify(milestones),
       });
 
       return contract;
     } catch (error) {
-      console.error("❌ Error in createContractDraft:", error);
       throw error;
     }
   }
@@ -1081,6 +1143,183 @@ Use professional legal language but make it clear and readable.
       );
     }
     return contract;
+  }
+
+  static generateMilestones(agreed_amount, project) {
+    const category = project?.category || "other";
+    const duration = project?.duration || 30;
+    const budget = agreed_amount;
+
+    switch (category) {
+      case "web_development":
+        return [
+          {
+            title: "Requirements & Design",
+            description:
+              "Gather requirements, create wireframes and design mockups",
+            amount: budget * 0.2,
+            percentage: 20,
+            due_date: new Date(
+              Date.now() + duration * 0.2 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Frontend Development",
+            description: "Implement UI components and frontend logic",
+            amount: budget * 0.3,
+            percentage: 30,
+            due_date: new Date(
+              Date.now() + duration * 0.5 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Backend & API Integration",
+            description: "Develop backend APIs and integrate with frontend",
+            amount: budget * 0.3,
+            percentage: 30,
+            due_date: new Date(
+              Date.now() + duration * 0.75 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Testing & Deployment",
+            description: "QA testing, bug fixes, and production deployment",
+            amount: budget * 0.2,
+            percentage: 20,
+            due_date: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+            status: "pending",
+          },
+        ];
+
+      case "mobile_app":
+        return [
+          {
+            title: "Project setup & UI Design",
+            amount: budget * 0.25,
+            percentage: 25,
+            due_date: new Date(
+              Date.now() + duration * 0.25 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Core Features Development",
+            amount: budget * 0.4,
+            percentage: 40,
+            due_date: new Date(
+              Date.now() + duration * 0.6 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Testing & Store Submission",
+            amount: budget * 0.35,
+            percentage: 35,
+            due_date: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+            status: "pending",
+          },
+        ];
+
+      case "design":
+        return [
+          {
+            title: "Research & Moodboard",
+            amount: budget * 0.2,
+            percentage: 20,
+            due_date: new Date(
+              Date.now() + duration * 0.2 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Wireframes & Prototypes",
+            amount: budget * 0.3,
+            percentage: 30,
+            due_date: new Date(
+              Date.now() + duration * 0.5 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "High-Fidelity Designs",
+            amount: budget * 0.3,
+            percentage: 30,
+            due_date: new Date(
+              Date.now() + duration * 0.75 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Revisions & Final Delivery",
+            amount: budget * 0.2,
+            percentage: 20,
+            due_date: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+            status: "pending",
+          },
+        ];
+
+      case "marketing":
+        return [
+          {
+            title: "Strategy & Research",
+            amount: budget * 0.25,
+            percentage: 25,
+            due_date: new Date(
+              Date.now() + duration * 0.25 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Content Creation",
+            amount: budget * 0.4,
+            percentage: 40,
+            due_date: new Date(
+              Date.now() + duration * 0.6 * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          },
+          {
+            title: "Campaign Launch & Report",
+            amount: budget * 0.35,
+            percentage: 35,
+            due_date: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+            status: "pending",
+          },
+        ];
+
+      default:
+        const milestoneCount = Math.min(
+          5,
+          Math.max(2, Math.floor(duration / 10)),
+        );
+        const milestones = [];
+        let accumulatedPercentage = 0;
+
+        for (let i = 0; i < milestoneCount; i++) {
+          const isLast = i === milestoneCount - 1;
+          const percentage = isLast
+            ? 100 - accumulatedPercentage
+            : Math.floor(100 / milestoneCount);
+
+          milestones.push({
+            title: `Milestone ${i + 1}`,
+            description: `Complete phase ${i + 1} of the project`,
+            amount: budget * (percentage / 100),
+            percentage: percentage,
+            due_date: new Date(
+              Date.now() +
+                ((i + 1) / milestoneCount) * duration * 24 * 60 * 60 * 1000,
+            ),
+            status: "pending",
+          });
+
+          accumulatedPercentage += percentage;
+        }
+        return milestones;
+    }
   }
 }
 

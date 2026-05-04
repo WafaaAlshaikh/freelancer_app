@@ -28,6 +28,8 @@ import {
   getClientProfile,
   createContractFromProposalDirect,
   createWallet,
+  sendOfferToFreelancer,
+  getOpenProjectsForHiring,
 } from "../controllers/clientController.js";
 
 const router = express.Router();
@@ -36,6 +38,12 @@ router.use(protect);
 router.use(authorizeRoles("client"));
 
 router.get("/dashboard/stats", getDashboardStats);
+router.get(
+  "/projects/open",
+  protect,
+  authorizeRoles("client"),
+  getOpenProjectsForHiring,
+);
 
 router.get("/projects", getMyProjects);
 router.post("/projects", createProject);
@@ -62,7 +70,7 @@ router.post(
 
 router.get("/wallet", getWallet);
 router.post("/wallet/withdraw", requestWithdrawal);
-router.post('/wallet/create', createWallet);
+router.post("/wallet/create", createWallet);
 
 router.post("/contracts/:contractId/create-checkout", createCheckoutSession);
 router.get("/payment/success", handlePaymentSuccess);
@@ -90,4 +98,12 @@ router.post(
   authorizeRoles("client"),
   createContractFromProposalDirect,
 );
+
+router.post(
+  "/offers/send",
+  protect,
+  authorizeRoles("client"),
+  sendOfferToFreelancer,
+);
+
 export default router;

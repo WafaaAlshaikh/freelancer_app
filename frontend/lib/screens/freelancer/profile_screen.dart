@@ -13,6 +13,7 @@ import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.da
 import 'package:freelancer_platform/screens/freelancer/edit_profile_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/financial_dashboard_screen.dart';
+import 'package:freelancer_platform/screens/freelancer/offers_screen.dart';
 import 'package:freelancer_platform/screens/notifications/notifications_screen.dart';
 import 'package:freelancer_platform/screens/rating/reviews_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/skill_tests_screen.dart';
@@ -313,6 +314,7 @@ class _Sidebar extends StatelessWidget {
     _SidebarItem(icon: Icons.favorite_border, labelKey: 'favorites'),
     _SidebarItem(icon: Icons.attach_money, labelKey: 'financial'),
     _SidebarItem(icon: Icons.filter_alt, labelKey: 'advancedSearch'),
+    _SidebarItem(icon: Icons.mail_outline, labelKey: 'offers', badge: 0),
   ];
 
   @override
@@ -323,9 +325,13 @@ class _Sidebar extends StatelessWidget {
     final sidebarColor = isDark
         ? AppTheme.AppColors.darkSidebar
         : AppTheme.AppColors.lightSidebar;
+
     final sidebarTextColor = isDark
         ? AppTheme.AppColors.darkTextSecondary
-        : AppTheme.AppColors.lightTextSecondary;
+        : Colors.white70;
+
+    final sidebarTextColorActive = Colors.white;
+    final badgeColor = AppTheme.AppColors.accent;
 
     return Container(
       width: 220,
@@ -334,20 +340,10 @@ class _Sidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            padding: const EdgeInsets.fromLTRB(27, 15, 20, 2),
             child: Row(
               children: [
-                Image.asset('assets/images/logo.png', height: 32, width: 32),
-                const SizedBox(width: 8),
-                Text(
-                  'IPAL',
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
+                Image.asset('assets/images/logoo.png', height: 50, width: 50),
               ],
             ),
           ),
@@ -368,7 +364,7 @@ class _Sidebar extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: theme.colorScheme.primary,
+                    backgroundColor: AppTheme.AppColors.accent,
                     backgroundImage: avatarUrl.isNotEmpty
                         ? NetworkImage(avatarUrl)
                         : null,
@@ -378,7 +374,7 @@ class _Sidebar extends StatelessWidget {
                                 ? profile!.name![0].toUpperCase()
                                 : 'F',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.AppColors.primaryDark,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -403,7 +399,7 @@ class _Sidebar extends StatelessWidget {
                         Text(
                           profile?.title ?? 'Developer',
                           style: TextStyle(
-                            color: theme.colorScheme.primary,
+                            color: AppTheme.AppColors.accent,
                             fontSize: 11,
                           ),
                           maxLines: 1,
@@ -440,13 +436,13 @@ class _Sidebar extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? theme.colorScheme.primary.withOpacity(0.25)
+                          ? AppTheme.AppColors.accent.withOpacity(0.25)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: isActive
                           ? Border(
                               left: BorderSide(
-                                color: theme.colorScheme.primary,
+                                color: AppTheme.AppColors.accent,
                                 width: 3,
                               ),
                             )
@@ -457,7 +453,9 @@ class _Sidebar extends StatelessWidget {
                         Icon(
                           item.icon,
                           size: 18,
-                          color: isActive ? Colors.white : sidebarTextColor,
+                          color: isActive
+                              ? sidebarTextColorActive
+                              : sidebarTextColor,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -465,7 +463,9 @@ class _Sidebar extends StatelessWidget {
                             label,
                             style: TextStyle(
                               fontSize: 13,
-                              color: isActive ? Colors.white : sidebarTextColor,
+                              color: isActive
+                                  ? sidebarTextColorActive
+                                  : sidebarTextColor,
                               fontWeight: isActive
                                   ? FontWeight.w500
                                   : FontWeight.normal,
@@ -480,8 +480,8 @@ class _Sidebar extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: item.badgeGreen
-                                  ? theme.colorScheme.secondary
-                                  : theme.colorScheme.primary,
+                                  ? AppTheme.AppColors.secondary
+                                  : badgeColor,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -538,6 +538,8 @@ class _Sidebar extends StatelessWidget {
         return t.financial;
       case 'advancedSearch':
         return t.advancedSearch;
+      case 'offers':
+        return t.offers;
       default:
         return key;
     }
@@ -552,19 +554,19 @@ class _Sidebar extends StatelessWidget {
     final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
     final defaultColor = isDark
         ? AppTheme.AppColors.darkTextSecondary
-        : AppTheme.AppColors.lightTextSecondary;
+        : Colors.white70;
+
     final label = labelKey == 'settings' ? t!.settings : t!.logout;
+    final finalColor = color ?? defaultColor;
 
     return Row(
       children: [
-        Icon(icon, size: 16, color: color ?? defaultColor),
+        Icon(icon, size: 16, color: finalColor),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: color ?? defaultColor),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: finalColor)),
       ],
     );
   }
@@ -1176,6 +1178,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   List<Map<String, dynamic>> portfolioItems = [];
   int _unreadNotificationsCount = 0;
   int _selectedNavIndex = 0;
+  int _unreadOffersCount = 0;
 
   bool loadingProfile = true;
   bool loadingProjects = true;
@@ -1194,6 +1197,17 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
     super.initState();
     _loadAllData();
     _loadUnreadNotificationsCount();
+  }
+
+  Future<void> _loadUnreadOffersCount() async {
+    try {
+      final count = await ApiService.getUnreadOffersCount();
+      setState(() {
+        _unreadOffersCount = count;
+      });
+    } catch (e) {
+      debugPrint('Error loading offers count: $e');
+    }
   }
 
   Future<void> _loadUnreadNotificationsCount() async {
@@ -1216,6 +1230,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       fetchActiveContracts(),
       fetchPortfolio(),
       _loadUsage(),
+      _loadUnreadOffersCount(),
     ]);
   }
 
@@ -1705,10 +1720,19 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   Widget _buildTopBar() {
     final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final topBarColor = isDark
+        ? AppTheme.AppColors.darkBackground
+        : AppTheme.AppColors.lightSidebar;
+
+    final textColor = Colors.white;
+    final iconColor = Colors.white70;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: topBarColor,
         border: Border(
           bottom: BorderSide(color: theme.dividerColor, width: 0.5),
         ),
@@ -1717,28 +1741,29 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
         children: [
           Text(
             t!.profile,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
           ),
           const Spacer(),
           IconButton(
-            icon: Icon(Icons.search, color: theme.iconTheme.color),
+            icon: Icon(Icons.search, color: iconColor),
             onPressed: () => setState(() => _selectedNavIndex = 1),
           ),
           IconButton(
-            icon: Icon(Icons.star_border, color: theme.iconTheme.color),
+            icon: Icon(Icons.star_border, color: iconColor),
             tooltip: t.upgrade,
             onPressed: () => Navigator.pushNamed(context, '/subscription/my'),
           ),
           Stack(
             children: [
               IconButton(
-                icon: Icon(
-                  Icons.chat_bubble_outline,
-                  color: theme.iconTheme.color,
-                ),
+                icon: Icon(Icons.chat_bubble_outline, color: iconColor),
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => ChatsListScreen()),
+                  MaterialPageRoute(builder: (_) => const ChatsListScreen()),
                 ),
               ),
               if (_unreadMessages > 0)
@@ -1767,10 +1792,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
           Stack(
             children: [
               IconButton(
-                icon: Icon(
-                  Icons.notifications_none,
-                  color: theme.iconTheme.color,
-                ),
+                icon: Icon(Icons.notifications_none, color: iconColor),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1804,7 +1826,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
             ],
           ),
           PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
+            icon: Icon(Icons.more_vert, color: iconColor),
             onSelected: (value) {
               switch (value) {
                 case 'wallet':
@@ -1833,7 +1855,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
                 case 'affiliate':
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => AffiliateScreen()),
+                    MaterialPageRoute(builder: (_) => const AffiliateScreen()),
                   );
                   break;
                 case 'settings':
@@ -2791,6 +2813,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   }
 
   Widget _buildBody() {
+    print('🟢 _buildBody called, index: $_selectedNavIndex');
     switch (_selectedNavIndex) {
       case 0:
         return _buildHomeTabWithRightPanel();
@@ -2809,7 +2832,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       case 7:
         return AdvancedSearchScreen();
       case 8:
-        return const ChatsListScreen();
+        print('🟢 Going to OffersScreen');
+        return const OffersScreen();
       case 9:
         return const SkillTestsScreen();
       default:
@@ -2848,7 +2872,14 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
         children: [
           _Sidebar(
             selectedIndex: _selectedNavIndex,
-            onItemTap: (i) => setState(() => _selectedNavIndex = i),
+            onItemTap: (i) {
+              print('🟡 onItemTap called with index: $i');
+              print('🟡 Current _selectedNavIndex: $_selectedNavIndex');
+              setState(() {
+                _selectedNavIndex = i;
+              });
+              print('🟡 New _selectedNavIndex: $_selectedNavIndex');
+            },
             profile: profile,
             avatarUrl: avatarUrl,
             onEditProfile: navigateToEditProfile,

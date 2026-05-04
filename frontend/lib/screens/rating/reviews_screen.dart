@@ -443,7 +443,7 @@ class _ReviewsScreenState extends State<ReviewsScreen>
                   margin: const EdgeInsets.only(top: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard2 : Colors.grey.shade50,
+                    color: isDark ? AppColors.darkCard : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -687,7 +687,7 @@ class _ReviewsScreenState extends State<ReviewsScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard2 : AppColors.infoBg,
+        color: isDark ? AppColors.darkCard : AppColors.infoBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

@@ -212,10 +212,7 @@ class _FinancialDashboardScreenState extends State<FinancialDashboardScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          t.financialDashboard,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        automaticallyImplyLeading: false,
         elevation: 0,
         backgroundColor: theme.scaffoldBackgroundColor,
         foregroundColor: theme.colorScheme.onSurface,

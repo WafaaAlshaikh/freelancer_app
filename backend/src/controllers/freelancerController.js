@@ -333,7 +333,6 @@ export const updateProfile = async (req, res) => {
           try {
             body[field] = JSON.parse(body[field]);
           } catch {
-            /* keep string */
           }
         }
         if (Array.isArray(body[field]) || typeof body[field] === "object") {
@@ -931,6 +930,564 @@ export const getAISuggestedProjects = async (req, res) => {
       success: false,
       suggestions: [],
       message: "Could not generate AI suggestions",
+    });
+  }
+};
+
+export const searchFreelancers = async (req, res) => {
+  try {
+    const {
+      q = "",
+      skill = "",
+      minRating = 0,
+      maxHourlyRate = 500,
+      minExperience = 0,
+      sortBy = "rating",
+      page = 1,
+      limit = 20,
+    } = req.query;
+
+    console.log("🔍 Search params:", {
+      q,
+      skill,
+      minRating,
+      maxHourlyRate,
+      minExperience,
+      sortBy,
+      page,
+      limit,
+    });
+
+    let whereClause = { role: "freelancer" };
+
+    if (q) {
+      whereClause.name = { [Op.like]: `%${q}%` };
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const { count, rows: users } = await User.findAndCountAll({
+      where: whereClause,
+      attributes: [
+        "id",
+        "name",
+        "email",
+        "avatar",
+        "role",
+        "bio",
+        "location",
+        "createdAt",
+      ],
+      limit: parseInt(limit),
+      offset: offset,
+      order: [["createdAt", "DESC"]],
+    });
+
+    const userIds = users.map((u) => u.id);
+
+    let profiles = [];
+    if (userIds.length > 0) {
+      profiles = await FreelancerProfile.findAll({
+        where: { UserId: { [Op.in]: userIds } },
+      });
+    }
+
+    const profileMap = new Map();
+    profiles.forEach((profile) => {
+      profileMap.set(profile.UserId, profile);
+    });
+
+    let freelancers = users.map((user) => {
+      const profile = profileMap.get(user.id);
+
+      let skills = [];
+      if (profile?.skills) {
+        try {
+          skills =
+            typeof profile.skills === "string"
+              ? JSON.parse(profile.skills)
+              : profile.skills;
+        } catch (e) {
+          skills = [];
+        }
+      }
+
+      return {
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+        title: profile?.title || "Professional Freelancer",
+        rating: profile?.rating || 0,
+        skills: skills,
+        experience: profile?.experience_years || 0,
+        completedProjects: profile?.completed_projects_count || 0,
+        hourlyRate: profile?.hourly_rate || 0,
+        bio: user.bio || profile?.bio || "",
+        location: user.location || profile?.location || "",
+      };
+    });
+
+    if (skill) {
+      freelancers = freelancers.filter((f) =>
+        f.skills.some((s) => s.toLowerCase().includes(skill.toLowerCase())),
+      );
+    }
+
+    if (minRating > 0) {
+      freelancers = freelancers.filter(
+        (f) => f.rating >= parseFloat(minRating),
+      );
+    }
+
+    if (minExperience > 0) {
+      freelancers = freelancers.filter(
+        (f) => f.experience >= parseInt(minExperience),
+      );
+    }
+
+    if (maxHourlyRate < 500) {
+      freelancers = freelancers.filter(
+        (f) => f.hourlyRate <= parseFloat(maxHourlyRate),
+      );
+    }
+
+    switch (sortBy) {
+      case "rating":
+        freelancers.sort((a, b) => b.rating - a.rating);
+        break;
+      case "hourlyRate_asc":
+        freelancers.sort((a, b) => a.hourlyRate - b.hourlyRate);
+        break;
+      case "hourlyRate_desc":
+        freelancers.sort((a, b) => b.hourlyRate - a.hourlyRate);
+        break;
+      case "experience_desc":
+        freelancers.sort((a, b) => b.experience - a.experience);
+        break;
+      default:
+        freelancers.sort((a, b) => b.rating - a.rating);
+    }
+
+    const totalFiltered = freelancers.length;
+    const paginatedFreelancers = freelancers.slice(
+      offset,
+      offset + parseInt(limit),
+    );
+
+    console.log(
+      `✅ Found ${totalFiltered} freelancers, returning ${paginatedFreelancers.length}`,
+    );
+
+    res.json({
+      success: true,
+      freelancers: paginatedFreelancers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalFiltered,
+        pages: Math.ceil(totalFiltered / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Search freelancers error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error searching freelancers",
+      error: error.message,
+    });
+  }
+};
+
+export const compareFreelancers = async (req, res) => {
+  try {
+    const { freelancerIds, projectId } = req.body;
+
+    if (!freelancerIds || freelancerIds.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select at least 2 freelancers to compare",
+      });
+    }
+
+    let project = null;
+    if (projectId && projectId !== 0) {
+      project = await Project.findByPk(projectId);
+    }
+
+    const freelancers = await User.findAll({
+      where: {
+        id: { [Op.in]: freelancerIds },
+        role: "freelancer",
+      },
+      include: [
+        {
+          model: FreelancerProfile,
+          as: "freelancerProfile",
+        },
+      ],
+      attributes: ["id", "name", "avatar"],
+    });
+
+    if (freelancers.length < 2) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancers not found",
+      });
+    }
+
+    const comparisons = await Promise.all(
+      freelancers.map(async (freelancer) => {
+        const profile = freelancer.freelancerProfile;
+        const skills = profile?.skills ? parseJSON(profile.skills) : [];
+
+        let skillsMatch = 0;
+        if (project && project.required_skills) {
+          const projectSkills = parseJSON(project.required_skills, []);
+          const matchingSkills = skills.filter((skill) =>
+            projectSkills.some(
+              (ps) => ps.toLowerCase() === skill.toLowerCase(),
+            ),
+          );
+          skillsMatch =
+            projectSkills.length > 0
+              ? Math.round((matchingSkills.length / projectSkills.length) * 100)
+              : 0;
+        }
+
+        const contracts = await Contract.findAll({
+          where: { FreelancerId: freelancer.id },
+        });
+
+        const completedContracts = contracts.filter(
+          (c) => c.status === "completed",
+        );
+        const onTimeContracts = contracts.filter((c) => {
+          if (c.status === "completed" && c.completed_at) {
+            return true;
+          }
+          return false;
+        });
+
+        const completionRate =
+          contracts.length > 0
+            ? Math.round((completedContracts.length / contracts.length) * 100)
+            : 0;
+
+        const onTimeDelivery =
+          contracts.length > 0
+            ? Math.round((onTimeContracts.length / contracts.length) * 100)
+            : 0;
+
+        let responseTimeHours = 24;
+
+        const overallScore = Math.round(
+          (profile?.rating || 0) * 20 +
+            skillsMatch * 0.25 +
+            completionRate * 0.2 +
+            onTimeDelivery * 0.15 +
+            (profile?.experience_years || 0) * 2,
+        );
+
+        return {
+          id: freelancer.id,
+          name: freelancer.name,
+          avatar: freelancer.avatar,
+          title: profile?.title || "Professional Freelancer",
+          rating: profile?.rating || 0,
+          skills: skills,
+          experience: profile?.experience_years || 0,
+          completedProjects: profile?.completed_projects_count || 0,
+          completionRate,
+          onTimeDelivery,
+          responseTimeHours,
+          hourlyRate: profile?.hourly_rate || 0,
+          totalReviews: 0,
+          skillsMatch,
+          projectBudget: project?.budget || 0,
+          overallScore: Math.min(100, overallScore),
+        };
+      }),
+    );
+
+    res.json({
+      success: true,
+      comparisons,
+    });
+  } catch (error) {
+    console.error("Compare freelancers error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error comparing freelancers",
+      error: error.message,
+    });
+  }
+};
+
+export const getFreelancerPreview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { projectId } = req.query;
+
+    const user = await User.findByPk(id, {
+      attributes: [
+        "id",
+        "name",
+        "email",
+        "avatar",
+        "role",
+        "bio",
+        "location",
+        "createdAt",
+      ],
+    });
+
+    if (!user || user.role !== "freelancer") {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+
+    const profile = await FreelancerProfile.findOne({
+      where: { UserId: user.id },
+    });
+
+    const skills = profile?.skills
+      ? typeof profile.skills === "string"
+        ? JSON.parse(profile.skills)
+        : profile.skills
+      : [];
+    const languages = profile?.languages
+      ? typeof profile.languages === "string"
+        ? JSON.parse(profile.languages)
+        : profile.languages
+      : [];
+    const education = profile?.education
+      ? typeof profile.education === "string"
+        ? JSON.parse(profile.education)
+        : profile.education
+      : [];
+    const certifications = profile?.certifications
+      ? typeof profile.certifications === "string"
+        ? JSON.parse(profile.certifications)
+        : profile.certifications
+      : [];
+    const workExperience = profile?.work_experience
+      ? typeof profile.work_experience === "string"
+        ? JSON.parse(profile.work_experience)
+        : profile.work_experience
+      : [];
+
+    const contracts = await Contract.findAll({
+      where: { FreelancerId: user.id },
+    });
+
+    const completedContracts = contracts.filter(
+      (c) => c.status === "completed",
+    );
+    const activeContracts = contracts.filter((c) => c.status === "active");
+
+    const completionRate =
+      contracts.length > 0
+        ? Math.round((completedContracts.length / contracts.length) * 100)
+        : 0;
+
+    let skillsMatch = 0;
+    if (projectId && projectId !== 0) {
+      const project = await Project.findByPk(projectId);
+      if (project && project.required_skills) {
+        let projectSkills = [];
+        try {
+          projectSkills =
+            typeof project.required_skills === "string"
+              ? JSON.parse(project.required_skills)
+              : project.required_skills || [];
+        } catch (e) {
+          projectSkills = [];
+        }
+
+        const matchingSkills = skills.filter((skill) =>
+          projectSkills.some((ps) => ps.toLowerCase() === skill.toLowerCase()),
+        );
+        skillsMatch =
+          projectSkills.length > 0
+            ? Math.round((matchingSkills.length / projectSkills.length) * 100)
+            : 0;
+      }
+    }
+
+    res.json({
+      success: true,
+      freelancer: {
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+        title: profile?.title || "Professional Freelancer",
+        bio: profile?.bio || user.bio || "",
+        rating: profile?.rating || 0,
+        skills: skills,
+        experience: profile?.experience_years || 0,
+        hourlyRate: profile?.hourly_rate || 0,
+        completedProjects: profile?.completed_projects_count || 0,
+        location: profile?.location || user.location || "",
+        education: education,
+        certifications: certifications,
+        languages: languages,
+        workExperience: workExperience,
+        memberSince: user.createdAt,
+        stats: {
+          completionRate,
+          activeProjects: activeContracts.length,
+          totalProjects: contracts.length,
+          totalEarned: contracts.reduce(
+            (sum, c) => sum + (c.agreed_amount || 0),
+            0,
+          ),
+        },
+        skillsMatch,
+      },
+    });
+  } catch (error) {
+    console.error("Get freelancer preview error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching freelancer profile",
+      error: error.message,
+    });
+  }
+};
+
+export const getTopFreelancers = async (req, res) => {
+  try {
+    const { limit = 10, skill } = req.query;
+
+    let whereClause = { role: "freelancer" };
+
+    const users = await User.findAll({
+      where: whereClause,
+      attributes: ["id", "name", "email", "avatar", "role"],
+      limit: 100,
+    });
+
+    const userIds = users.map((u) => u.id);
+    const profiles = await FreelancerProfile.findAll({
+      where: { UserId: { [Op.in]: userIds } },
+    });
+
+    const profileMap = new Map();
+    profiles.forEach((profile) => {
+      profileMap.set(profile.UserId, profile);
+    });
+
+    let freelancers = users.map((user) => {
+      const profile = profileMap.get(user.id);
+
+      let skills = [];
+      if (profile?.skills) {
+        try {
+          skills =
+            typeof profile.skills === "string"
+              ? JSON.parse(profile.skills)
+              : profile.skills;
+        } catch (e) {
+          skills = [];
+        }
+      }
+
+      return {
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+        title: profile?.title || "Professional Freelancer",
+        rating: profile?.rating || 0,
+        skills: skills,
+        hourlyRate: profile?.hourly_rate || 0,
+        completedProjects: profile?.completed_projects_count || 0,
+      };
+    });
+
+    if (skill) {
+      freelancers = freelancers.filter((f) =>
+        f.skills.some((s) => s.toLowerCase().includes(skill.toLowerCase())),
+      );
+    }
+
+    freelancers.sort((a, b) => {
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return b.completedProjects - a.completedProjects;
+    });
+
+    freelancers = freelancers.slice(0, parseInt(limit));
+
+    res.json({
+      success: true,
+      freelancers: freelancers,
+    });
+  } catch (error) {
+    console.error("Get top freelancers error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching top freelancers",
+      error: error.message,
+    });
+  }
+};
+
+export const getFreelancerStatsForClient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByPk(id, {
+      include: [
+        {
+          model: FreelancerProfile,
+          as: "freelancerProfile",
+        },
+      ],
+    });
+
+    if (!user || user.role !== "freelancer") {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+
+    const profile = user.freelancerProfile;
+    const contracts = await Contract.findAll({
+      where: { FreelancerId: user.id },
+    });
+
+    const completedContracts = contracts.filter(
+      (c) => c.status === "completed",
+    );
+    const activeContracts = contracts.filter((c) => c.status === "active");
+
+    res.json({
+      success: true,
+      stats: {
+        totalProjects: contracts.length,
+        completedProjects: completedContracts.length,
+        activeProjects: activeContracts.length,
+        completionRate:
+          contracts.length > 0
+            ? Math.round((completedContracts.length / contracts.length) * 100)
+            : 0,
+        totalEarned: contracts.reduce(
+          (sum, c) => sum + (c.agreed_amount || 0),
+          0,
+        ),
+        avgResponseTimeHours: 24,
+        onTimeDeliveryRate: profile?.job_success_score || 0,
+        rating: profile?.rating || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Get freelancer stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching freelancer stats",
+      error: error.message,
     });
   }
 };

@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:freelancer_platform/models/usage_limits_model.dart';
 import 'package:freelancer_platform/screens/client/compare_freelancers_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
@@ -28,28 +29,8 @@ import 'project_proposals_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'freelancer_profile_preview_screen.dart';
 import '../interview/interviews_screen.dart';
-
-class _C {
-  static const sidebarBg = Color(0xFF2D2B55);
-  static const sidebarText = Color(0xFFC8C6E8);
-  static const accent = Color(0xFF6C63FF);
-  static const accentDark = Color(0xFF4F46E5);
-  static const accentLight = Color(0xFFA78BFA);
-  static const accentBg = Color(0xFFEEF2FF);
-  static const green = Color(0xFF14A800);
-  static const greenBg = Color(0xFFECFDF5);
-  static const warning = Color(0xFFF59E0B);
-  static const warningBg = Color(0xFFFFFBEB);
-  static const danger = Color(0xFFEF4444);
-  static const info = Color(0xFF3B82F6);
-  static const infoBg = Color(0xFFEFF6FF);
-  static const pageBg = Color(0xFFF5F6F8);
-  static const card = Colors.white;
-  static const dark = Color(0xFF1F2937);
-  static const gray = Color(0xFF6B7280);
-  static const border = Color(0xFFE5E7EB);
-  static const borderLight = Color(0xFFF0F0F0);
-}
+import '../../theme/app_theme.dart';
+import 'find_freelancers_screen.dart';
 
 class DashboardOverview {
   final _Stats stats;
@@ -349,12 +330,12 @@ class ClientProfile {
 
 class _SidebarItem {
   final IconData icon;
-  final String label;
+  final String labelKey;
   final int? badge;
   final bool badgeGreen;
   const _SidebarItem({
     required this.icon,
-    required this.label,
+    required this.labelKey,
     this.badge,
     this.badgeGreen = false,
   });
@@ -366,6 +347,7 @@ class _Sidebar extends StatelessWidget {
   final ClientProfile? profile;
   final String avatarUrl;
   final VoidCallback onProfile;
+  final VoidCallback? onSettings;
 
   const _Sidebar({
     required this.selectedIndex,
@@ -373,44 +355,49 @@ class _Sidebar extends StatelessWidget {
     required this.profile,
     required this.avatarUrl,
     required this.onProfile,
+    this.onSettings,
   });
 
   static const _items = [
-    _SidebarItem(icon: Icons.dashboard_outlined, label: 'Overview'),
+    _SidebarItem(icon: Icons.dashboard_outlined, labelKey: 'overview'),
     _SidebarItem(
       icon: Icons.folder_open_outlined,
-      label: 'My Projects',
+      labelKey: 'myProjects',
       badge: 5,
     ),
-    _SidebarItem(icon: Icons.send_outlined, label: 'Proposals', badge: 8),
+    _SidebarItem(icon: Icons.send_outlined, labelKey: 'proposals', badge: 8),
     _SidebarItem(
       icon: Icons.description_outlined,
-      label: 'Contracts',
+      labelKey: 'contracts',
       badge: 2,
       badgeGreen: true,
     ),
-    _SidebarItem(icon: Icons.favorite_border, label: 'Favorites'),
-    _SidebarItem(icon: Icons.chat_bubble_outline, label: 'Messages', badge: 3),
-    _SidebarItem(icon: Icons.interpreter_mode, label: 'Interviews'),
-    _SidebarItem(icon: Icons.account_balance_wallet_outlined, label: 'Wallet'),
-    _SidebarItem(icon: Icons.people_outline, label: 'Find Freelancers'),
-    _SidebarItem(icon: Icons.bar_chart_outlined, label: 'Analytics'),
+    _SidebarItem(icon: Icons.interpreter_mode, labelKey: 'interviews'),
+    _SidebarItem(
+      icon: Icons.account_balance_wallet_outlined,
+      labelKey: 'wallet',
+    ),
+    _SidebarItem(icon: Icons.people_outline, labelKey: 'findFreelancers'),
+    _SidebarItem(icon: Icons.bar_chart_outlined, labelKey: 'analytics'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: 220,
-      color: _C.sidebarBg,
+      color: isDark ? AppColors.darkSidebar : AppColors.lightSidebar,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 24, 20, 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
             child: Text(
               'CLIENT',
               style: TextStyle(
-                color: _C.accentLight,
+                color: AppColors.accent,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 2,
@@ -425,14 +412,16 @@ class _Sidebar extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: Colors.white.withOpacity(0.08),
+                    color: isDark
+                        ? Colors.white.withOpacity(0.08)
+                        : AppColors.border.withOpacity(0.5),
                     width: 0.5,
                   ),
                 ),
               ),
               child: Row(
                 children: [
-                  _buildAvatar(profile?.name ?? 'C', avatarUrl, 42),
+                  _buildAvatar(profile?.name ?? 'C', avatarUrl, 42, isDark),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -440,8 +429,10 @@ class _Sidebar extends StatelessWidget {
                       children: [
                         Text(
                           profile?.name ?? 'Client',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.lightTextPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -450,8 +441,10 @@ class _Sidebar extends StatelessWidget {
                         ),
                         Text(
                           profile?.company ?? 'Business Owner',
-                          style: const TextStyle(
-                            color: _C.accentLight,
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.accentLight
+                                : AppColors.accentDark,
                             fontSize: 10,
                           ),
                           maxLines: 1,
@@ -460,10 +453,12 @@ class _Sidebar extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.edit_outlined,
                     size: 13,
-                    color: _C.accentLight,
+                    color: isDark
+                        ? AppColors.accentLight
+                        : AppColors.accentDark,
                   ),
                 ],
               ),
@@ -479,6 +474,7 @@ class _Sidebar extends StatelessWidget {
               itemBuilder: (_, i) {
                 final item = _items[i];
                 final active = selectedIndex == i;
+                final label = _getLabel(t, item.labelKey);
                 return GestureDetector(
                   onTap: () => onItemTap(i),
                   child: AnimatedContainer(
@@ -495,12 +491,15 @@ class _Sidebar extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: active
-                          ? _C.accent.withOpacity(0.22)
+                          ? AppColors.accent.withOpacity(isDark ? 0.22 : 0.12)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: active
-                          ? const Border(
-                              left: BorderSide(color: _C.accent, width: 3),
+                          ? Border(
+                              left: BorderSide(
+                                color: AppColors.accent,
+                                width: 3,
+                              ),
                             )
                           : null,
                     ),
@@ -509,15 +508,27 @@ class _Sidebar extends StatelessWidget {
                         Icon(
                           item.icon,
                           size: 17,
-                          color: active ? Colors.white : _C.sidebarText,
+                          color: active
+                              ? (isDark
+                                    ? Colors.white
+                                    : AppColors.lightTextPrimary)
+                              : (isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            item.label,
+                            label,
                             style: TextStyle(
                               fontSize: 12,
-                              color: active ? Colors.white : _C.sidebarText,
+                              color: active
+                                  ? (isDark
+                                        ? Colors.white
+                                        : AppColors.lightTextPrimary)
+                                  : (isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary),
                               fontWeight: active
                                   ? FontWeight.w600
                                   : FontWeight.normal,
@@ -531,7 +542,9 @@ class _Sidebar extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: item.badgeGreen ? _C.green : _C.accent,
+                              color: item.badgeGreen
+                                  ? AppColors.success
+                                  : AppColors.accent,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -554,9 +567,26 @@ class _Sidebar extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _footerBtn(Icons.settings_outlined, 'Settings'),
+                _footerBtn(
+                  Icons.settings_outlined,
+                  t.settings,
+                  isDark,
+                  onTap: () {
+                    if (onSettings != null) {
+                      onSettings!();
+                    } else {
+                      Navigator.pushNamed(context, '/settings');
+                    }
+                  },
+                ),
                 const SizedBox(height: 8),
-                _footerBtn(Icons.logout, 'Logout', color: Colors.red.shade300),
+                _footerBtn(
+                  Icons.logout,
+                  t.logout,
+                  isDark,
+                  isDanger: true,
+                  onTap: () {},
+                ),
               ],
             ),
           ),
@@ -565,14 +595,37 @@ class _Sidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(String name, String url, double size) {
+  String _getLabel(AppLocalizations t, String key) {
+    switch (key) {
+      case 'overview':
+        return t.home;
+      case 'myProjects':
+        return t.myProjects;
+      case 'proposals':
+        return t.proposals;
+      case 'contracts':
+        return t.contracts;
+      case 'interviews':
+        return t.interviews;
+      case 'wallet':
+        return t.myWallet;
+      case 'findFreelancers':
+        return t.findWork;
+      case 'analytics':
+        return t.analytics;
+      default:
+        return key;
+    }
+  }
+
+  Widget _buildAvatar(String name, String url, double size, bool isDark) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.28),
-        gradient: const LinearGradient(
-          colors: [_C.accent, _C.accentLight],
+        gradient: LinearGradient(
+          colors: [AppColors.accent, AppColors.accentLight],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -606,15 +659,23 @@ class _Sidebar extends StatelessWidget {
 
   Widget _footerBtn(
     IconData icon,
-    String label, {
-    Color color = _C.sidebarText,
+    String label,
+    bool isDark, {
+    bool isDanger = false,
+    VoidCallback? onTap,
   }) {
-    return Row(
-      children: [
-        Icon(icon, size: 15, color: color),
-        const SizedBox(width: 8),
-        Text(label, style: TextStyle(fontSize: 11, color: color)),
-      ],
+    final color = isDanger
+        ? AppColors.danger
+        : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary);
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 8),
+          Text(label, style: TextStyle(fontSize: 11, color: color)),
+        ],
+      ),
     );
   }
 }
@@ -626,6 +687,7 @@ class _WelcomeBanner extends StatelessWidget {
   final int activeContracts;
   final VoidCallback onNewProject;
   final VoidCallback onFindFreelancers;
+  final VoidCallback? onSettings;
 
   const _WelcomeBanner({
     required this.profile,
@@ -634,9 +696,10 @@ class _WelcomeBanner extends StatelessWidget {
     required this.activeContracts,
     required this.onNewProject,
     required this.onFindFreelancers,
+    this.onSettings,
   });
 
-  String get _greeting {
+  String _getGreeting(AppLocalizations t) {
     final h = DateTime.now().hour;
     if (h < 12) return 'Good morning';
     if (h < 17) return 'Good afternoon';
@@ -645,15 +708,14 @@ class _WelcomeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final firstName = profile?.name?.split(' ').first ?? 'there';
+    final greeting = _getGreeting(t);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_C.accent, _C.accentDark, Color(0xFF7C3AED)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Stack(
@@ -709,7 +771,7 @@ class _WelcomeBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$_greeting, $firstName 👋',
+                      '$greeting, $firstName 👋',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -730,9 +792,9 @@ class _WelcomeBanner extends StatelessWidget {
               const SizedBox(width: 12),
               Column(
                 children: [
-                  _bannerBtn('+ New Project', onNewProject),
+                  _bannerBtn(t.postNewProject, onNewProject),
                   const SizedBox(height: 6),
-                  _bannerBtn('Find Freelancers', onFindFreelancers),
+                  _bannerBtn(t.findWork, onFindFreelancers),
                 ],
               ),
             ],
@@ -803,17 +865,23 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _C.borderLight),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A000000),
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : const Color(0x0A000000),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -839,7 +907,7 @@ class _StatCard extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: trendUp ? _C.greenBg : _C.warningBg,
+                    color: trendUp ? AppColors.successBg : AppColors.warningBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -847,9 +915,7 @@ class _StatCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
-                      color: trendUp
-                          ? const Color(0xFF059669)
-                          : const Color(0xFFD97706),
+                      color: trendUp ? AppColors.success : AppColors.warning,
                     ),
                   ),
                 ),
@@ -858,28 +924,32 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: _C.dark,
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 10, color: _C.gray)),
+          Text(label, style: TextStyle(fontSize: 10, color: AppColors.gray)),
           const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               minHeight: 4,
-              backgroundColor: _C.border,
+              backgroundColor: isDark
+                  ? AppColors.primaryDark
+                  : AppColors.border,
               valueColor: AlwaysStoppedAnimation<Color>(iconColor),
             ),
           ),
           const SizedBox(height: 5),
           Text(
             sub,
-            style: const TextStyle(fontSize: 9, color: _C.gray),
+            style: const TextStyle(fontSize: 9, color: AppColors.gray),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -906,18 +976,24 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: _C.card,
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _C.borderLight),
-          boxShadow: const [
+          border: Border.all(
+            color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x08000000),
+              color: isDark
+                  ? Colors.black.withOpacity(0.2)
+                  : const Color(0x08000000),
               blurRadius: 6,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -936,10 +1012,10 @@ class _QuickAction extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: _C.gray,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
               ),
               textAlign: TextAlign.center,
             ),
@@ -965,17 +1041,23 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _C.borderLight),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x08000000),
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : const Color(0x08000000),
             blurRadius: 10,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -987,10 +1069,12 @@ class _SectionCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: _C.dark,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
                 ),
               ),
               if (action != null && onAction != null)
@@ -998,7 +1082,10 @@ class _SectionCard extends StatelessWidget {
                   onTap: onAction,
                   child: Text(
                     action!,
-                    style: const TextStyle(fontSize: 11, color: _C.accent),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.accent,
+                    ),
                   ),
                 ),
             ],
@@ -1017,11 +1104,16 @@ class _PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E1B4B), const Color(0xFF312E81)]
+              : [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1030,18 +1122,18 @@ class _PremiumCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Client Premium 🚀',
-            style: TextStyle(
+          Text(
+            t.premium,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
           ),
           const SizedBox(height: 2),
-          const Text(
-            'Unlock full platform power',
-            style: TextStyle(fontSize: 10, color: _C.accentLight),
+          Text(
+            t.upgrade,
+            style: TextStyle(fontSize: 10, color: AppColors.accentLight),
           ),
           const SizedBox(height: 12),
           for (final f in [
@@ -1054,11 +1146,14 @@ class _PremiumCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 5),
               child: Row(
                 children: [
-                  const Icon(Icons.check, color: _C.accentLight, size: 12),
+                  Icon(Icons.check, color: AppColors.accentLight, size: 12),
                   const SizedBox(width: 6),
                   Text(
                     f,
-                    style: const TextStyle(fontSize: 10, color: _C.sidebarText),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppColors.darkTextSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -1077,9 +1172,12 @@ class _PremiumCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'Upgrade Now',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              child: Text(
+                t.upgrade,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -1096,18 +1194,25 @@ class _ProfileCompletionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final pct = completion.clamp(0.0, 100.0);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _C.borderLight),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x08000000),
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : const Color(0x08000000),
             blurRadius: 10,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1117,12 +1222,14 @@ class _ProfileCompletionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Profile Completion',
+              Text(
+                t.profileCompletion,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: _C.dark,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
                 ),
               ),
               Text(
@@ -1130,7 +1237,7 @@ class _ProfileCompletionCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: _C.accent,
+                  color: AppColors.accent,
                 ),
               ),
             ],
@@ -1141,32 +1248,37 @@ class _ProfileCompletionCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct / 100,
               minHeight: 6,
-              backgroundColor: _C.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(_C.accent),
+              backgroundColor: isDark
+                  ? AppColors.primaryDark
+                  : AppColors.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
             ),
           ),
           const SizedBox(height: 12),
-          _checkRow(true, 'Name & email verified'),
-          _checkRow(true, 'First project posted'),
-          _checkRow(false, 'Add company info'),
-          _checkRow(false, 'Upload profile photo'),
+          _checkRow(true, 'Name & email verified', isDark),
+          _checkRow(true, 'First project posted', isDark),
+          _checkRow(false, 'Add company info', isDark),
+          _checkRow(false, 'Upload profile photo', isDark),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: onTap,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _C.accent,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.primaryDark,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'Complete Profile',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              child: Text(
+                t.editProfile,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -1175,7 +1287,7 @@ class _ProfileCompletionCard extends StatelessWidget {
     );
   }
 
-  Widget _checkRow(bool done, String label) {
+  Widget _checkRow(bool done, String label, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -1183,12 +1295,19 @@ class _ProfileCompletionCard extends StatelessWidget {
           Icon(
             done ? Icons.check_circle : Icons.circle_outlined,
             size: 14,
-            color: done ? const Color(0xFF10B981) : Colors.grey.shade300,
+            color: done ? AppColors.success : Colors.grey.shade300,
           ),
           const SizedBox(width: 8),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: done ? _C.dark : _C.gray),
+            style: TextStyle(
+              fontSize: 11,
+              color: done
+                  ? (isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary)
+                  : AppColors.gray,
+            ),
           ),
         ],
       ),
@@ -1203,13 +1322,14 @@ class _UsageLimitBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final remaining = usage.remainingActiveProjects;
     final used = usage.activeProjectsUsed;
     final limit = usage.activeProjectsLimit!;
     final isMax = remaining <= 0;
-    final bgColor = isMax ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB);
-    final bdColor = isMax ? const Color(0xFFFECACA) : const Color(0xFFFDE68A);
-    final mainColor = isMax ? _C.danger : _C.warning;
+    final bgColor = isMax ? AppColors.dangerBg : AppColors.warningBg;
+    final bdColor = isMax ? AppColors.danger : AppColors.warning;
+    final mainColor = isMax ? AppColors.danger : AppColors.warning;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1217,7 +1337,7 @@ class _UsageLimitBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: bdColor),
+        border: Border.all(color: bdColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -1284,9 +1404,9 @@ class _UsageLimitBanner extends StatelessWidget {
                   color: mainColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  'Upgrade',
-                  style: TextStyle(
+                child: Text(
+                  t.upgrade,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1308,6 +1428,7 @@ class _InterviewLimitBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     if (!usage.hasInterviewLimit) return const SizedBox.shrink();
     final rem = usage.interviewsRemaining;
     final lim = usage.interviewsLimit;
@@ -1315,9 +1436,9 @@ class _InterviewLimitBanner extends StatelessWidget {
     if (rem > 2) return const SizedBox.shrink();
 
     final isMax = rem <= 0;
-    final bgColor = isMax ? const Color(0xFFFEF2F2) : const Color(0xFFF5F3FF);
-    final bdColor = isMax ? const Color(0xFFFECACA) : const Color(0xFFE9D5FF);
-    final mainColor = isMax ? _C.danger : const Color(0xFF7C3AED);
+    final bgColor = isMax ? AppColors.dangerBg : const Color(0xFFF5F3FF);
+    final bdColor = isMax ? AppColors.danger : AppColors.accent;
+    final mainColor = isMax ? AppColors.danger : AppColors.accent;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1325,7 +1446,7 @@ class _InterviewLimitBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: bdColor),
+        border: Border.all(color: bdColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -1382,9 +1503,9 @@ class _InterviewLimitBanner extends StatelessWidget {
                   color: mainColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  'Upgrade',
-                  style: TextStyle(
+                child: Text(
+                  t.upgrade,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1410,28 +1531,30 @@ class _CompletePublishReminderBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.infoBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: AppColors.info.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.edit_note, color: Colors.blue.shade800, size: 22),
+              Icon(Icons.edit_note, color: AppColors.info, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'أكمل نشر المشروع',
+                  t.postNewProject,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 14,
-                    color: Colors.blue.shade900,
+                    color: AppColors.info,
                   ),
                 ),
               ),
@@ -1440,11 +1563,7 @@ class _CompletePublishReminderBanner extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'لديك مسودة محفوظة على هذا الجهاز. أكمل النشر ليظهر مشروعك للمستقلين.',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: Colors.blue.shade800,
-            ),
+            style: TextStyle(fontSize: 12, height: 1.35, color: AppColors.info),
           ),
           const SizedBox(height: 10),
           Row(
@@ -1453,21 +1572,18 @@ class _CompletePublishReminderBanner extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => onContinue(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _C.accent,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.primaryDark,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('متابعة النشر'),
+                  child: Text(t.postProject),
                 ),
               ),
               const SizedBox(width: 8),
-              TextButton(
-                onPressed: () => onLater(),
-                child: const Text('لاحقاً'),
-              ),
+              TextButton(onPressed: () => onLater(), child: Text(t.maybeLater)),
             ],
           ),
         ],
@@ -1668,20 +1784,20 @@ class _ClientDashboardState extends State<ClientDashboard> {
   Color _statusColor(String s) {
     switch (s) {
       case 'active':
-        return _C.green;
+        return AppColors.success;
       case 'open':
-        return _C.info;
+        return AppColors.info;
       case 'pending_freelancer':
       case 'pending_client':
       case 'draft':
-        return _C.warning;
+        return AppColors.warning;
       case 'completed':
-        return const Color(0xFF10B981);
+        return AppColors.success;
       case 'cancelled':
       case 'disputed':
-        return _C.danger;
+        return AppColors.danger;
       default:
-        return _C.gray;
+        return AppColors.gray;
     }
   }
 
@@ -1707,16 +1823,16 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Color _matchColor(int score) {
-    if (score >= 80) return const Color(0xFF059669);
-    if (score >= 60) return _C.warning;
-    return _C.info;
+    if (score >= 80) return AppColors.success;
+    if (score >= 60) return AppColors.warning;
+    return AppColors.info;
   }
 
   Color _hexColor(String hex) {
     try {
       return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
     } catch (_) {
-      return _C.gray;
+      return AppColors.gray;
     }
   }
 
@@ -1779,23 +1895,24 @@ class _ClientDashboardState extends State<ClientDashboard> {
       );
 
   Future<void> _logout() async {
+    final t = AppLocalizations.of(context)!;
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: Text(t.logout),
+        content: Text(t.logoutConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () async {
               await ApiService.logout();
               Navigator.pop(context, true);
             },
-            child: const Text('Logout'),
+            child: Text(t.logout),
           ),
         ],
       ),
@@ -1807,10 +1924,15 @@ class _ClientDashboardState extends State<ClientDashboard> {
   @override
   Widget build(BuildContext context) {
     if (_loading || _loadingProfile) {
-      return const Scaffold(
-        backgroundColor: _C.pageBg,
-        body: Center(
-          child: CircularProgressIndicator(color: _C.accent, strokeWidth: 2.5),
+      return Scaffold(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        body: const Center(
+          child: CircularProgressIndicator(
+            color: AppColors.accent,
+            strokeWidth: 2.5,
+          ),
         ),
       );
     }
@@ -1818,7 +1940,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
     final avatarUrl = _getAvatarUrl(_clientProfile?.avatar);
 
     return Scaffold(
-      backgroundColor: _C.pageBg,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       body: Row(
         children: [
           _Sidebar(
@@ -1827,6 +1951,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
             profile: _clientProfile,
             avatarUrl: avatarUrl,
             onProfile: _navigateToProfile,
+            onSettings: () => Navigator.pushNamed(context, '/settings'),
           ),
 
           Expanded(
@@ -1843,33 +1968,37 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildTopBar() {
+    final t = AppLocalizations.of(context)!;
     final titles = [
-      'Overview',
-      'My Projects',
-      'Proposals',
-      'Contracts',
-      'Favorites',
-      'Messages',
-      'Interviews',
-      'Wallet',
-      'Find Freelancers',
-      'Analytics',
+      t.home,
+      t.myProjects,
+      t.proposals,
+      t.contracts,
+      t.interviews,
+      t.myWallet,
+      t.findWork,
+      t.analytics,
     ];
+
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: const BoxDecoration(
-        color: _C.card,
-        border: Border(bottom: BorderSide(color: _C.border, width: 0.5)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.darkSurface
+            : AppColors.lightCard,
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
       ),
       child: Row(
         children: [
           Text(
             titles[_selectedNav],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: _C.dark,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
             ),
           ),
           const Spacer(),
@@ -1910,8 +2039,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _topBarBtn(IconData icon, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return IconButton(
-      icon: Icon(icon, size: 20, color: _C.gray),
+      icon: Icon(
+        icon,
+        size: 20,
+        color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
+      ),
       onPressed: onTap,
       padding: const EdgeInsets.all(6),
       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -1920,6 +2054,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _topBarBtnBadge(IconData icon, VoidCallback onTap, int count) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
         _topBarBtn(icon, onTap),
@@ -1932,10 +2067,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
               height: 16,
               decoration: BoxDecoration(
                 color: icon == Icons.chat_bubble_outline
-                    ? _C.accent
-                    : _C.danger,
+                    ? AppColors.accent
+                    : AppColors.danger,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
+                border: Border.all(
+                  color: isDark ? AppColors.darkSurface : Colors.white,
+                  width: 1.5,
+                ),
               ),
               child: Center(
                 child: Text(
@@ -1954,8 +2092,15 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _topBarMenuBtn() {
+    final t = AppLocalizations.of(context)!;
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, size: 20, color: _C.gray),
+      icon: Icon(
+        Icons.more_vert,
+        size: 20,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.darkTextSecondary
+            : AppColors.gray,
+      ),
       onSelected: (v) {
         if (v == 'profile') _navigateToProfile();
         if (v == 'plans') Navigator.pushNamed(context, '/subscription/plans');
@@ -1970,13 +2115,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
         if (v == 'logout') _logout();
       },
       itemBuilder: (_) => [
-        _menuItem('profile', Icons.person_outline, 'Profile'),
-        _menuItem('plans', Icons.star_border, 'Upgrade Plan'),
+        _menuItem('profile', Icons.person_outline, t.profile),
+        _menuItem('plans', Icons.star_border, t.upgrade),
         _menuItem('mysub', Icons.subscriptions, 'My Subscription'),
         _menuItem('compare', Icons.compare_arrows, 'Compare Plans'),
-        _menuItem('interviews', Icons.interpreter_mode, 'Interviews'),
+        _menuItem('interviews', Icons.interpreter_mode, t.interviews),
         const PopupMenuDivider(),
-        _menuItem('logout', Icons.logout, 'Logout', color: Colors.red),
+        _menuItem('logout', Icons.logout, t.logout, color: AppColors.danger),
       ],
     );
   }
@@ -1987,11 +2132,18 @@ class _ClientDashboardState extends State<ClientDashboard> {
     String label, {
     Color? color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return PopupMenuItem(
       value: v,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color ?? _C.gray),
+          Icon(
+            icon,
+            size: 18,
+            color:
+                color ??
+                (isDark ? AppColors.darkTextSecondary : AppColors.gray),
+          ),
           const SizedBox(width: 10),
           Text(label, style: TextStyle(color: color)),
         ],
@@ -2022,6 +2174,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildBody() {
+    final t = AppLocalizations.of(context)!;
     switch (_selectedNav) {
       case 0:
         return _buildOverviewTab();
@@ -2032,31 +2185,36 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 3:
         return const MyContractsScreen(userRole: 'client');
       case 4:
-        return const FavoritesScreen();
-      case 5:
-        return ChatsListScreen();
-      case 6:
         return const InterviewsScreen();
+      case 5:
+        return _buildPlaceholder(t.myWallet);
+      case 6:
+        return const FindFreelancersScreen();
       case 7:
-        return _buildPlaceholder('Wallet');
-      case 8:
-        return _buildPlaceholder('Find Freelancers');
-      case 9:
-        return _buildPlaceholder('Analytics');
+        return _buildPlaceholder(t.analytics);
       default:
         return _buildOverviewTab();
     }
   }
 
   Widget _buildPlaceholder(String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
-      child: Text(label, style: const TextStyle(fontSize: 18, color: _C.gray)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 18,
+          color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
+        ),
+      ),
     );
   }
 
   Widget _buildOverviewTab() {
+    final t = AppLocalizations.of(context)!;
+
     return RefreshIndicator(
-      color: _C.accent,
+      color: AppColors.accent,
       onRefresh: () => Future.wait([
         _loadDashboard(),
         _loadMyProjects(),
@@ -2110,7 +2268,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                   pendingProposals: _data?.stats.pendingProposals ?? 0,
                   activeContracts: _data?.stats.inProgressProjects ?? 0,
                   onNewProject: _navigateToCreateProject,
-                  onFindFreelancers: () => setState(() => _selectedNav = 8),
+                  onFindFreelancers: () => setState(() => _selectedNav = 6),
                 ),
                 const SizedBox(height: 16),
 
@@ -2119,9 +2277,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     Expanded(
                       child: _QuickAction(
                         icon: Icons.add_circle_outline,
-                        bg: _C.accentBg,
-                        color: _C.accent,
-                        label: 'New Project',
+                        bg: AppColors.accentBg,
+                        color: AppColors.accent,
+                        label: t.postNewProject,
                         onTap: _navigateToCreateProject,
                       ),
                     ),
@@ -2129,9 +2287,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     Expanded(
                       child: _QuickAction(
                         icon: Icons.person_outline,
-                        bg: _C.infoBg,
-                        color: _C.info,
-                        label: 'Profile',
+                        bg: AppColors.infoBg,
+                        color: AppColors.info,
+                        label: t.profile,
                         onTap: _navigateToProfile,
                       ),
                     ),
@@ -2139,9 +2297,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     Expanded(
                       child: _QuickAction(
                         icon: Icons.description_outlined,
-                        bg: _C.warningBg,
-                        color: _C.warning,
-                        label: 'Contracts',
+                        bg: AppColors.warningBg,
+                        color: AppColors.warning,
+                        label: t.contracts,
                         onTap: _navigateToContracts,
                       ),
                     ),
@@ -2150,8 +2308,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       child: _QuickAction(
                         icon: Icons.interpreter_mode,
                         bg: const Color(0xFFF5F3FF),
-                        color: const Color(0xFF7C3AED),
-                        label: 'Interviews',
+                        color: AppColors.accent,
+                        label: t.interviews,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -2164,10 +2322,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     Expanded(
                       child: _QuickAction(
                         icon: Icons.people_outline,
-                        bg: _C.greenBg,
-                        color: _C.green,
-                        label: 'Freelancers',
-                        onTap: () => setState(() => _selectedNav = 8),
+                        bg: AppColors.successBg,
+                        color: AppColors.success,
+                        label: t.findWork,
+                        onTap: () => setState(() => _selectedNav = 6),
                       ),
                     ),
                   ],
@@ -2180,10 +2338,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       Expanded(
                         child: _StatCard(
                           icon: Icons.folder_open_outlined,
-                          iconBg: _C.accentBg,
-                          iconColor: _C.accent,
+                          iconBg: AppColors.accentBg,
+                          iconColor: AppColors.accent,
                           value: '${_data!.stats.totalProjects}',
-                          label: 'Total Projects',
+                          label: t.myProjects,
                           sub:
                               '${_data!.stats.inProgressProjects} active · ${_data!.stats.completedProjects} done',
                           trend: '+${_data!.stats.openProjects}',
@@ -2196,10 +2354,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       Expanded(
                         child: _StatCard(
                           icon: Icons.send_outlined,
-                          iconBg: const Color(0xFFFFF7ED),
-                          iconColor: _C.warning,
+                          iconBg: AppColors.warningBg,
+                          iconColor: AppColors.warning,
                           value: '${_data!.stats.totalProposals}',
-                          label: 'Proposals',
+                          label: t.proposals,
                           sub:
                               '${_data!.stats.pendingProposals} pending · ${_data!.stats.acceptedProposals} accepted',
                           trend: '+${_data!.stats.pendingProposals}',
@@ -2213,11 +2371,11 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       Expanded(
                         child: _StatCard(
                           icon: Icons.payments_outlined,
-                          iconBg: _C.greenBg,
-                          iconColor: const Color(0xFF10B981),
+                          iconBg: AppColors.successBg,
+                          iconColor: AppColors.success,
                           value:
                               '\$${_data!.stats.totalSpent.toStringAsFixed(0)}',
-                          label: 'Total Spent',
+                          label: t.totalSpent,
                           sub:
                               'Escrow: \$${_data!.stats.escrowHeld.toStringAsFixed(0)}',
                           trend: '↑ 18%',
@@ -2231,7 +2389,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                           iconBg: const Color(0xFFFEF9C3),
                           iconColor: const Color(0xFFCA8A04),
                           value: '${_data!.stats.proposalAcceptRate}%',
-                          label: 'Accept Rate',
+                          label: t.acceptanceRate,
                           sub:
                               '${_data!.stats.acceptedProposals} of ${_data!.stats.totalProposals}',
                           trendUp: _data!.stats.proposalAcceptRate >= 40,
@@ -2263,7 +2421,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                             flex: 2,
                             child: _buildFreelancerWithRating(
                               _data!.topFreelancers.first,
-                            ), 
+                            ),
                           ),
                       ],
                     )
@@ -2342,33 +2500,38 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildAnalyticsMini() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _C.borderLight),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x06000000),
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : const Color(0x06000000),
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
-          _analyticItem('98%', 'Response Rate', _C.accent),
-          _divider(),
-          _analyticItem('2.5h', 'Avg Response', _C.info),
-          _divider(),
-          _analyticItem('100%', 'Success Rate', const Color(0xFF10B981)),
+          _analyticItem('98%', 'Response Rate', AppColors.accent, isDark),
+          _divider(isDark),
+          _analyticItem('2.5h', 'Avg Response', AppColors.info, isDark),
+          _divider(isDark),
+          _analyticItem('100%', 'Success Rate', AppColors.success, isDark),
         ],
       ),
     );
   }
 
-  Widget _analyticItem(String val, String lbl, Color color) {
+  Widget _analyticItem(String val, String lbl, Color color, bool isDark) {
     return Expanded(
       child: Column(
         children: [
@@ -2381,15 +2544,28 @@ class _ClientDashboardState extends State<ClientDashboard> {
             ),
           ),
           const SizedBox(height: 3),
-          Text(lbl, style: const TextStyle(fontSize: 10, color: _C.gray)),
+          Text(
+            lbl,
+            style: TextStyle(
+              fontSize: 10,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _divider() => Container(width: 0.5, height: 36, color: _C.border);
+  Widget _divider(bool isDark) => Container(
+    width: 0.5,
+    height: 36,
+    color: isDark ? AppColors.primaryDark : AppColors.border,
+  );
 
   Widget _buildAISuggestions() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2397,12 +2573,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
           children: [
             Container(
               padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [_C.accent, _C.accentDark],
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
+              decoration: const LinearGradient(
+                colors: [AppColors.accent, AppColors.accentDark],
+              ).toBoxDecoration(),
               child: const Icon(
                 Icons.auto_awesome,
                 size: 14,
@@ -2410,18 +2583,20 @@ class _ClientDashboardState extends State<ClientDashboard> {
               ),
             ),
             const SizedBox(width: 10),
-            const Text(
-              'AI Recommendations',
+            Text(
+              t.aiRecommendations,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: _C.dark,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary,
               ),
             ),
             const Spacer(),
             Text(
               '${_aiSuggestions.length} freelancers',
-              style: const TextStyle(fontSize: 11, color: _C.gray),
+              style: const TextStyle(fontSize: 11, color: AppColors.gray),
             ),
           ],
         ),
@@ -2439,6 +2614,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildAICard(_AIFreelancerSuggestion fl) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final matchC = _matchColor(fl.matchScore);
     return GestureDetector(
       onTap: () {
@@ -2453,14 +2629,18 @@ class _ClientDashboardState extends State<ClientDashboard> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _C.borderLight),
-          boxShadow: const [
+          border: Border.all(
+            color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x08000000),
+              color: isDark
+                  ? Colors.black.withOpacity(0.2)
+                  : const Color(0x08000000),
               blurRadius: 8,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -2477,17 +2657,22 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     children: [
                       Text(
                         fl.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: _C.dark,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         fl.title ?? 'Freelancer',
-                        style: const TextStyle(fontSize: 10, color: _C.gray),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.gray,
+                        ),
                         maxLines: 1,
                       ),
                     ],
@@ -2526,12 +2711,15 @@ class _ClientDashboardState extends State<ClientDashboard> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: _C.accentBg,
+                        color: AppColors.accentBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         s,
-                        style: const TextStyle(fontSize: 9, color: _C.accent),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: AppColors.accent,
+                        ),
                       ),
                     ),
                   )
@@ -2541,22 +2729,22 @@ class _ClientDashboardState extends State<ClientDashboard> {
             const Divider(height: 14),
             Row(
               children: [
-                const Icon(Icons.star, size: 12, color: _C.warning),
+                const Icon(Icons.star, size: 12, color: AppColors.warning),
                 const SizedBox(width: 3),
                 Text(
                   fl.rating.toStringAsFixed(1),
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: _C.dark,
+                    color: AppColors.dark,
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Icon(Icons.work_outline, size: 12, color: _C.gray),
+                const Icon(Icons.work_outline, size: 12, color: AppColors.gray),
                 const SizedBox(width: 3),
                 Text(
                   '${fl.experience}y',
-                  style: const TextStyle(fontSize: 11, color: _C.gray),
+                  style: const TextStyle(fontSize: 11, color: AppColors.gray),
                 ),
                 const Spacer(),
                 Container(
@@ -2565,13 +2753,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: _C.accent,
+                    color: AppColors.accent,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: const Text(
                     'View',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.primaryDark,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2586,12 +2774,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildActiveContractsList() {
+    final t = AppLocalizations.of(context)!;
     final contracts = _data?.activeContracts ?? [];
     if (contracts.isEmpty) return const SizedBox.shrink();
 
     return _SectionCard(
       title: 'Active Contracts 🔥',
-      action: 'View All',
+      action: t.viewAll,
       onAction: _navigateToContracts,
       child: Column(
         children: contracts.take(3).map((c) => _buildContractRow(c)).toList(),
@@ -2600,6 +2789,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildContractRow(_ContractItem c) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final sc = _statusColor(c.status);
     return GestureDetector(
       onTap: () => Navigator.pushNamed(
@@ -2611,9 +2801,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFFAFAFA),
+          color: isDark
+              ? AppColors.primaryDark.withOpacity(0.3)
+              : const Color(0xFFFAFAFA),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _C.borderLight),
+          border: Border.all(
+            color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+          ),
         ),
         child: Column(
           children: [
@@ -2631,17 +2825,22 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     children: [
                       Text(
                         c.projectTitle ?? 'Project',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: _C.dark,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         c.freelancerName ?? 'Freelancer',
-                        style: const TextStyle(fontSize: 10, color: _C.gray),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.gray,
+                        ),
                       ),
                     ],
                   ),
@@ -2673,7 +2872,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: _C.accent,
+                        color: AppColors.accent,
                       ),
                     ),
                   ],
@@ -2689,7 +2888,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     child: LinearProgressIndicator(
                       value: c.progress / 100,
                       minHeight: 4,
-                      backgroundColor: _C.borderLight,
+                      backgroundColor: isDark
+                          ? AppColors.primaryDark
+                          : AppColors.borderLight,
                       valueColor: AlwaysStoppedAnimation<Color>(sc),
                     ),
                   ),
@@ -2711,11 +2912,43 @@ class _ClientDashboardState extends State<ClientDashboard> {
     );
   }
 
+  Widget _miniStatGradient(String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.accent, AppColors.accentDark],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: AppColors.primaryDark),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFreelancerWithRating(_FreelancerChip freelancer) {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return _SectionCard(
       title: 'Top Rated ⭐',
-      action: 'View All',
-      onAction: () => setState(() => _selectedNav = 8),
+      action: t.viewAll,
+      onAction: () => setState(() => _selectedNav = 6),
       child: GestureDetector(
         onTap: () => _navigateToFreelancerProfile(freelancer.id),
         child: Row(
@@ -2732,9 +2965,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 children: [
                   Text(
                     freelancer.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -2746,7 +2982,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                         '(${freelancer.rating?.toStringAsFixed(1) ?? "0.0"})',
                         style: const TextStyle(
                           fontSize: 10,
-                          color: Colors.grey,
+                          color: AppColors.gray,
                         ),
                       ),
                     ],
@@ -2759,7 +2995,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
               onPressed: () {
                 _showFreelancerReviews(freelancer.id, freelancer.name);
               },
-              tooltip: 'View Reviews',
+              tooltip: t.reviews,
             ),
           ],
         ),
@@ -2768,6 +3004,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   void _showFreelancerReviews(int freelancerId, String freelancerName) {
+    final t = AppLocalizations.of(context)!;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -2781,13 +3018,15 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildTopFreelancersList() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final list = _data?.topFreelancers ?? [];
     if (list.isEmpty) return const SizedBox.shrink();
 
     return _SectionCard(
       title: 'Top Freelancers 👥',
-      action: 'Find More',
-      onAction: () => setState(() => _selectedNav = 8),
+      action: t.findWork,
+      onAction: () => setState(() => _selectedNav = 6),
       child: Column(
         children: list.take(4).map((f) {
           return GestureDetector(
@@ -2801,21 +3040,26 @@ class _ClientDashboardState extends State<ClientDashboard> {
                   Expanded(
                     child: Text(
                       f.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: _C.dark,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (f.rating != null) ...[
-                    const Icon(Icons.star, size: 12, color: _C.warning),
+                    const Icon(Icons.star, size: 12, color: AppColors.warning),
                     const SizedBox(width: 3),
                     Text(
                       f.rating!.toStringAsFixed(1),
-                      style: const TextStyle(fontSize: 11, color: _C.gray),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.gray,
+                      ),
                     ),
                   ],
                 ],
@@ -2828,6 +3072,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildSpendingChart(List<_MonthlyPoint> pts) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final clean = pts.map((p) {
       final t = (p.total.isNaN || p.total.isInfinite || p.total < 0)
           ? 0.0
@@ -2844,10 +3089,15 @@ class _ClientDashboardState extends State<ClientDashboard> {
       child: SizedBox(
         height: 110,
         child: !hasData
-            ? const Center(
+            ? Center(
                 child: Text(
                   'No spending data yet',
-                  style: TextStyle(color: _C.gray, fontSize: 12),
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.gray,
+                    fontSize: 12,
+                  ),
                 ),
               )
             : BarChart(
@@ -2875,7 +3125,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
                             return const SizedBox();
                           return Text(
                             clean[i].label,
-                            style: const TextStyle(fontSize: 8, color: _C.gray),
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.gray,
+                            ),
                           );
                         },
                       ),
@@ -2900,7 +3155,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                         BarChartRodData(
                           toY: clean[i].total,
                           gradient: const LinearGradient(
-                            colors: [_C.accentLight, _C.accent],
+                            colors: [AppColors.accentLight, AppColors.accent],
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
                           ),
@@ -2919,6 +3174,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildStatusDonut(List<_StatusSlice> slices) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (slices.isEmpty) return const SizedBox.shrink();
     return _SectionCard(
       title: 'Project Status',
@@ -2967,19 +3223,23 @@ class _ClientDashboardState extends State<ClientDashboard> {
                           Expanded(
                             child: Text(
                               s.label,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
-                                color: _C.gray,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.gray,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
                             '${s.value}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: _C.dark,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary,
                             ),
                           ),
                         ],
@@ -2995,6 +3255,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildActivityFeed() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final acts = _data?.recentActivity ?? [];
     if (acts.isEmpty) return const SizedBox.shrink();
 
@@ -3012,13 +3273,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: _C.accentBg,
+                        color: AppColors.accentBg,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         _activityIcon(n.type),
                         size: 15,
-                        color: _C.accent,
+                        color: AppColors.accent,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -3028,19 +3289,23 @@ class _ClientDashboardState extends State<ClientDashboard> {
                         children: [
                           Text(
                             n.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: _C.dark,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             n.body,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: _C.gray,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.gray,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -3050,7 +3315,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     ),
                     Text(
                       _timeAgo(n.createdAt),
-                      style: const TextStyle(fontSize: 9, color: _C.gray),
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.gray,
+                      ),
                     ),
                   ],
                 ),
@@ -3062,7 +3332,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildProposalsTab() {
+    final t = AppLocalizations.of(context)!;
     final proposals = _data?.recentProposals ?? [];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -3071,24 +3344,26 @@ class _ClientDashboardState extends State<ClientDashboard> {
             children: [
               Expanded(
                 child: _miniStat(
-                  'Total',
+                  t.total,
                   '${_data?.stats.totalProposals ?? 0}',
-                  _C.accent,
+                  AppColors.accent,
+                  isDark,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _miniStat(
-                  'Pending',
+                  t.pending,
                   '${_data?.stats.pendingProposals ?? 0}',
-                  _C.warning,
+                  AppColors.warning,
+                  isDark,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _miniStatGradient(
                   '${_data?.stats.proposalAcceptRate ?? 0}%',
-                  'Accept Rate',
+                  t.acceptanceRate,
                 ),
               ),
             ],
@@ -3104,6 +3379,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildProposalCard(_ProposalItem p) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accepted = p.status == 'accepted';
     return GestureDetector(
       onTap: () => _navigateToFreelancerProfile(p.id),
@@ -3111,14 +3387,18 @@ class _ClientDashboardState extends State<ClientDashboard> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _C.borderLight),
-          boxShadow: const [
+          border: Border.all(
+            color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x06000000),
+              color: isDark
+                  ? Colors.black.withOpacity(0.2)
+                  : const Color(0x06000000),
               blurRadius: 6,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -3136,16 +3416,18 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 children: [
                   Text(
                     p.freelancerName ?? 'Freelancer',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: _C.dark,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '\$${p.price.toStringAsFixed(0)} · ${p.deliveryTime} days',
-                    style: const TextStyle(fontSize: 11, color: _C.gray),
+                    style: const TextStyle(fontSize: 11, color: AppColors.gray),
                   ),
                   if (p.skills.isNotEmpty) ...[
                     const SizedBox(height: 5),
@@ -3160,14 +3442,14 @@ class _ClientDashboardState extends State<ClientDashboard> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: _C.accentBg,
+                                color: AppColors.accentBg,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 s,
                                 style: const TextStyle(
                                   fontSize: 9,
-                                  color: _C.accent,
+                                  color: AppColors.accent,
                                 ),
                               ),
                             ),
@@ -3181,7 +3463,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: accepted ? _C.greenBg : _C.warningBg,
+                color: accepted ? AppColors.successBg : AppColors.warningBg,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
@@ -3189,7 +3471,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: accepted ? const Color(0xFF059669) : _C.warning,
+                  color: accepted ? AppColors.success : AppColors.warning,
                 ),
               ),
             ),
@@ -3200,6 +3482,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildProjectsTab() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -3208,25 +3493,28 @@ class _ClientDashboardState extends State<ClientDashboard> {
             children: [
               Expanded(
                 child: _miniStat(
-                  'Open',
+                  t.open,
                   '${_data?.stats.openProjects ?? 0}',
-                  _C.info,
+                  AppColors.info,
+                  isDark,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _miniStat(
-                  'Active',
+                  t.inProgress,
                   '${_data?.stats.inProgressProjects ?? 0}',
-                  _C.warning,
+                  AppColors.warning,
+                  isDark,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _miniStat(
-                  'Done',
+                  t.completed,
                   '${_data?.stats.completedProjects ?? 0}',
-                  const Color(0xFF10B981),
+                  AppColors.success,
+                  isDark,
                 ),
               ),
             ],
@@ -3242,37 +3530,42 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildProjectCard(Project p) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Color sc;
     String sl;
     switch (p.status) {
       case 'open':
-        sc = _C.info;
+        sc = AppColors.info;
         sl = 'Open';
         break;
       case 'in_progress':
-        sc = _C.warning;
+        sc = AppColors.warning;
         sl = 'Active';
         break;
       case 'completed':
-        sc = const Color(0xFF10B981);
+        sc = AppColors.success;
         sl = 'Done';
         break;
       default:
-        sc = _C.gray;
+        sc = AppColors.gray;
         sl = p.status ?? '';
     }
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _C.borderLight),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x06000000),
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : const Color(0x06000000),
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -3283,10 +3576,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
               Expanded(
                 child: Text(
                   p.title ?? 'Untitled',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: _C.dark,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -3312,27 +3607,27 @@ class _ClientDashboardState extends State<ClientDashboard> {
           const SizedBox(height: 6),
           Text(
             p.description ?? '',
-            style: const TextStyle(fontSize: 11, color: _C.gray),
+            style: const TextStyle(fontSize: 11, color: AppColors.gray),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.attach_money, size: 13, color: _C.gray),
+              const Icon(Icons.attach_money, size: 13, color: AppColors.gray),
               Text(
                 '\$${p.budget?.toStringAsFixed(0) ?? '0'}',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: _C.dark,
+                  color: AppColors.dark,
                 ),
               ),
               const SizedBox(width: 14),
-              const Icon(Icons.access_time, size: 12, color: _C.gray),
+              const Icon(Icons.access_time, size: 12, color: AppColors.gray),
               Text(
                 ' ${p.duration ?? 0}d',
-                style: const TextStyle(fontSize: 11, color: _C.gray),
+                style: const TextStyle(fontSize: 11, color: AppColors.gray),
               ),
               const Spacer(),
               if (p.id != null)
@@ -3344,7 +3639,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    foregroundColor: _C.accent,
+                    foregroundColor: AppColors.accent,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
@@ -3352,7 +3647,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    backgroundColor: _C.accentBg,
+                    backgroundColor: AppColors.accentBg,
                   ),
                   child: const Text(
                     'View Proposals',
@@ -3366,18 +3661,22 @@ class _ClientDashboardState extends State<ClientDashboard> {
     );
   }
 
-  Widget _miniStat(String label, String value, Color color) {
+  Widget _miniStat(String label, String value, Color color, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _C.borderLight),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark ? AppColors.primaryDark : AppColors.borderLight,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x06000000),
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : const Color(0x06000000),
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -3392,33 +3691,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 10, color: _C.gray)),
-        ],
-      ),
-    );
-  }
-
-  Widget _miniStatGradient(String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [_C.accent, _C.accentDark]),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: Colors.white70),
+            style: TextStyle(
+              fontSize: 10,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
+            ),
           ),
         ],
       ),
@@ -3427,10 +3705,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   Widget _avatarWidget(String name, String url, double size) {
     final colors = [
-      _C.accent,
-      _C.info,
-      const Color(0xFF10B981),
-      _C.warning,
+      AppColors.accent,
+      AppColors.info,
+      AppColors.success,
+      AppColors.warning,
       const Color(0xFF7C3AED),
     ];
     final color = colors[name.codeUnitAt(0) % colors.length];
@@ -3472,34 +3750,46 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   Widget _buildEmptyState() {
+    final t = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(40),
       child: Column(
         children: [
-          const Icon(Icons.inbox_outlined, size: 56, color: _C.gray),
+          Icon(
+            Icons.inbox_outlined,
+            size: 56,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
+          ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Nothing here yet',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: _C.dark,
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Create your first project to get started',
-            style: TextStyle(fontSize: 12, color: _C.gray),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.gray,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: _navigateToCreateProject,
             icon: const Icon(Icons.add, size: 16),
-            label: const Text('Create Project'),
+            label: Text(t.postNewProject),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _C.accent,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.primaryDark,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
               shape: RoundedRectangleBorder(
@@ -3511,4 +3801,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
       ),
     );
   }
+}
+
+extension _GradientToBoxDecoration on Gradient {
+  BoxDecoration toBoxDecoration() => BoxDecoration(gradient: this);
 }

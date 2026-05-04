@@ -357,7 +357,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
         Fluttertoast.showToast(
           msg: 'File uploaded successfully',
-          backgroundColor: AppColors.green,
+          backgroundColor: AppColors.success,
         );
       } else {
         Fluttertoast.showToast(
@@ -392,7 +392,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
         Fluttertoast.showToast(
           msg: 'File uploaded successfully',
-          backgroundColor: AppColors.green,
+          backgroundColor: AppColors.success,
         );
       }
     } catch (e) {
@@ -474,7 +474,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
         Fluttertoast.showToast(
           msg: 'File uploaded successfully',
-          backgroundColor: AppColors.green,
+          backgroundColor: AppColors.success,
         );
       }
     } catch (e) {

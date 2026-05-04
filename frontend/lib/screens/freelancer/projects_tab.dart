@@ -37,6 +37,8 @@ class _ProjectsTabState extends State<ProjectsTab> {
     ];
   }
 
+  static const Color accent = Color(0xFF2ECC71);
+
   @override
   void initState() {
     super.initState();
@@ -119,7 +121,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: Icon(Icons.access_time, color: theme.colorScheme.primary),
+            leading: Icon(Icons.access_time, color: AppColors.accent),
             title: Text(
               t.newestFirst,
               style: TextStyle(color: theme.colorScheme.onSurface),
@@ -134,7 +136,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.attach_money, color: theme.colorScheme.primary),
+            leading: Icon(Icons.attach_money, color: AppColors.accent),
             title: Text(
               t.budgetLowToHigh,
               style: TextStyle(color: theme.colorScheme.onSurface),
@@ -149,7 +151,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.attach_money, color: theme.colorScheme.primary),
+            leading: Icon(Icons.attach_money, color: AppColors.accent),
             title: Text(
               t.budgetHighToLow,
               style: TextStyle(color: theme.colorScheme.onSurface),
@@ -164,7 +166,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.timer, color: theme.colorScheme.primary),
+            leading: Icon(Icons.timer, color: AppColors.accent),
             title: Text(
               t.durationShortestFirst,
               style: TextStyle(color: theme.colorScheme.onSurface),
@@ -216,6 +218,9 @@ class _ProjectsTabState extends State<ProjectsTab> {
                       project.title ?? t.untitled,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary,
                       ),
                     ),
                   ),
@@ -266,21 +271,27 @@ class _ProjectsTabState extends State<ProjectsTab> {
                     child: Text(
                       project.client?.name ?? t.unknownClient,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
                       ),
                     ),
                   ),
                   Icon(
                     Icons.access_time,
                     size: 14,
-                    color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    color: isDark
+                        ? AppColors.darkTextHint
+                        : AppColors.lightTextHint,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(project.createdAt),
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: 11,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: isDark
+                          ? AppColors.darkTextHint
+                          : AppColors.lightTextHint,
                     ),
                   ),
                 ],
@@ -289,7 +300,9 @@ class _ProjectsTabState extends State<ProjectsTab> {
               Text(
                 project.description ?? t.noDescription,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -306,14 +319,14 @@ class _ProjectsTabState extends State<ProjectsTab> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         skill,
                         style: TextStyle(
                           fontSize: 10,
-                          color: AppColors.primary,
+                          color: isDark ? AppColors.accent : AppColors.primary,
                         ),
                       ),
                     );
@@ -328,26 +341,34 @@ class _ProjectsTabState extends State<ProjectsTab> {
                       Icon(
                         Icons.access_time,
                         size: 14,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: isDark
+                            ? AppColors.darkTextHint
+                            : AppColors.lightTextHint,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${project.duration} ${t.days}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: isDark
+                              ? AppColors.darkTextHint
+                              : AppColors.lightTextHint,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Icon(
                         Icons.location_on,
                         size: 14,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: isDark
+                            ? AppColors.darkTextHint
+                            : AppColors.lightTextHint,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         t.remote,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: isDark
+                              ? AppColors.darkTextHint
+                              : AppColors.lightTextHint,
                         ),
                       ),
                     ],
@@ -411,14 +432,21 @@ class _ProjectsTabState extends State<ProjectsTab> {
           padding: const EdgeInsets.all(16),
           child: TextField(
             controller: searchController,
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
+            ),
             decoration: InputDecoration(
               hintText: t.searchProjects,
               hintStyle: TextStyle(
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                color: isDark
+                    ? AppColors.darkTextHint
+                    : AppColors.lightTextHint,
               ),
-              prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+              prefixIcon: Icon(Icons.search, color: AppColors.accent),
               suffixIcon: IconButton(
-                icon: Icon(Icons.clear, color: theme.colorScheme.primary),
+                icon: Icon(Icons.clear, color: AppColors.accent),
                 onPressed: () {
                   searchController.clear();
                   filterProjects('');
@@ -432,7 +460,6 @@ class _ProjectsTabState extends State<ProjectsTab> {
               fillColor: theme.cardColor,
             ),
             onChanged: filterProjects,
-            style: TextStyle(color: theme.colorScheme.onSurface),
           ),
         ),
         SizedBox(
@@ -453,7 +480,9 @@ class _ProjectsTabState extends State<ProjectsTab> {
                     style: TextStyle(
                       color: isSelected
                           ? AppColors.secondary
-                          : theme.colorScheme.onSurface,
+                          : (isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary),
                     ),
                   ),
                   selected: isSelected,
@@ -464,7 +493,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
                     });
                   },
                   backgroundColor: isDark
-                      ? AppColors.darkSurface
+                      ? AppColors.darkCard
                       : Colors.grey.shade100,
                   selectedColor: AppColors.secondary.withOpacity(0.2),
                   checkmarkColor: AppColors.secondary,
@@ -485,20 +514,15 @@ class _ProjectsTabState extends State<ProjectsTab> {
               Text(
                 '${filteredProjects.length} ${t.projectsFound}',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: isDark
+                      ? AppColors.darkTextHint
+                      : AppColors.lightTextHint,
                 ),
               ),
               TextButton.icon(
                 onPressed: _showSortOptions,
-                icon: Icon(
-                  Icons.sort,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                label: Text(
-                  t.sort,
-                  style: TextStyle(color: theme.colorScheme.primary),
-                ),
+                icon: Icon(Icons.sort, size: 18, color: AppColors.accent),
+                label: Text(t.sort, style: TextStyle(color: AppColors.accent)),
               ),
             ],
           ),
@@ -506,9 +530,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
         Expanded(
           child: loading
               ? Center(
-                  child: CircularProgressIndicator(
-                    color: theme.colorScheme.primary,
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.accent),
                 )
               : filteredProjects.isEmpty
               ? Center(
@@ -518,13 +540,17 @@ class _ProjectsTabState extends State<ProjectsTab> {
                       Icon(
                         Icons.search_off,
                         size: 64,
-                        color: theme.colorScheme.onSurface.withOpacity(0.3),
+                        color: isDark
+                            ? AppColors.darkTextHint
+                            : AppColors.lightTextHint,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         t.noProjectsFound,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
                         ),
                       ),
                     ],
@@ -532,7 +558,7 @@ class _ProjectsTabState extends State<ProjectsTab> {
                 )
               : RefreshIndicator(
                   onRefresh: fetchProjects,
-                  color: theme.colorScheme.primary,
+                  color: AppColors.accent,
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: filteredProjects.length,

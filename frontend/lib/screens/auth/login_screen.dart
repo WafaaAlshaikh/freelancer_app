@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:freelancer_platform/services/socket_service.dart';
 import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
+import '../../utils/token_storage.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,6 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => loading = false);
 
     if (res['token'] != null) {
+      ApiService.token = res['token'];
+      await TokenStorage.saveToken(res['token']);
+      await TokenStorage.saveUserRole(res['user']?['role']);
+
       await SocketService.instance.init();
       Fluttertoast.showToast(msg: res['message']);
 
@@ -98,62 +104,59 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLeftPanel() {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: _buildLogo(),
-        ),        
-        const Text(
-          'Welcome Back!',
-          style: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            height: 1.1,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(alignment: Alignment.centerLeft, child: _buildLogo()),
+          const Text(
+            'Welcome Back!',
+            style: TextStyle(
+              fontSize: 40,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
-        const Text(
-          'Continue your freelancing journey',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+          const SizedBox(height: 14),
+          const Text(
+            'Continue your freelancing journey',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Connect with top clients, manage your projects, and grow your career on iPal - the leading freelancing platform.',
-          style: TextStyle(fontSize: 13, color: Colors.white60, height: 1.65),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 16),
+          const Text(
+            'Connect with top clients, manage your projects, and grow your career on iPal - the leading freelancing platform.',
+            style: TextStyle(fontSize: 13, color: Colors.white60, height: 1.65),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildLogo() {
-  return Image.asset(
-    'assets/images/logoo.png',
-    width: 100,
-    height: 100,
-    fit: BoxFit.contain,
-    errorBuilder: (context, error, stackTrace) {
-      return Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.white24,
-          borderRadius: BorderRadius.circular(75),
-        ),
-      );
-    },
-  );
-}
+    return Image.asset(
+      'assets/images/logoo.png',
+      width: 100,
+      height: 100,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.white24,
+            borderRadius: BorderRadius.circular(75),
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildRightCard({required double width}) {
     return Container(

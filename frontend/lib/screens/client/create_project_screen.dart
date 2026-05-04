@@ -1,11 +1,13 @@
-// frontend/lib/screens/client/create_project_screen.dart - تحديث كامل
+// screens/client/create_project_screen.dart
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../data/project_post_templates.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../services/draft_local_storage.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/ai_analysis_card.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -130,11 +132,12 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     });
     _restoringDraft = false;
     if (!mounted) return;
+    final t = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Continued from your saved draft'),
+        content: Text(t?.draftRestored ?? 'Continued from your saved draft'),
         action: SnackBarAction(
-          label: 'Clear',
+          label: t?.clear ?? 'Clear',
           onPressed: _confirmClearProjectDraft,
         ),
       ),
@@ -154,23 +157,45 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     });
     _scheduleProjectDraftSave();
     _debounceAnalysis();
-    Fluttertoast.showToast(msg: 'Template applied — edit and post when ready');
+    final tLocal = AppLocalizations.of(context);
+    Fluttertoast.showToast(
+      msg:
+          tLocal?.templateApplied ??
+          'Template applied — edit and post when ready',
+    );
   }
 
   Future<void> _confirmClearProjectDraft() async {
+    final t = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear draft?'),
-        content: const Text('Remove the saved project draft from this device?'),
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
+          t?.clearDraft ?? 'Clear draft?',
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+        ),
+        content: Text(
+          t?.clearDraftConfirmation ??
+              'Remove the saved project draft from this device?',
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(
+              t?.cancel ?? 'Cancel',
+              style: TextStyle(color: AppColors.accent),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear'),
+            child: Text(
+              t?.clear ?? 'Clear',
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -188,13 +213,15 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
       showAIAnalysis = false;
       _draftSavedAt = null;
     });
-    Fluttertoast.showToast(msg: 'Draft cleared');
+    Fluttertoast.showToast(msg: t?.draftCleared ?? 'Draft cleared');
   }
 
   void _openTemplatesSheet() {
+    final t = AppLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -207,26 +234,44 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
           controller: scroll,
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
-              'Project templates',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              t?.projectTemplates ?? 'Project templates',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Prefill fields — still edit before posting.',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              t?.templateHint ?? 'Prefill fields — still edit before posting.',
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 12),
-            ...ProjectPostTemplates.all.map((t) {
+            ...ProjectPostTemplates.all.map((template) {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
+                color: Theme.of(context).cardColor,
                 child: ListTile(
-                  title: Text(t.name),
-                  subtitle: Text(t.subtitle),
-                  trailing: const Icon(Icons.chevron_right),
+                  title: Text(
+                    template.name,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
+                  ),
+                  subtitle: Text(
+                    template.subtitle,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                  ),
+                  trailing: Icon(Icons.chevron_right, color: AppColors.accent),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _applyTemplate(t);
+                    _applyTemplate(template);
                   },
                 ),
               );
@@ -236,8 +281,11 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                 Navigator.pop(ctx);
                 _confirmClearProjectDraft();
               },
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Clear saved draft'),
+              icon: Icon(Icons.delete_outline, color: Colors.red),
+              label: Text(
+                t?.clearSavedDraft ?? 'Clear saved draft',
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           ],
         ),
@@ -288,16 +336,15 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
           durationController.text = analysis['estimated_duration_days']
               .toString();
         }
-        if (analysis['difficulty_level'] != null &&
-            categoryController.text.isEmpty) {}
       });
     } catch (e) {
       setState(() => analyzing = false);
-      print('Analysis error: $e');
+      debugPrint('Analysis error: $e');
     }
   }
 
   Future<void> _createProject() async {
+    final t = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => loading = true);
@@ -318,22 +365,41 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     if (result['project'] != null) {
       await DraftLocalStorage.clearProjectCreateDraft();
       await DraftLocalStorage.clearPublishReminderSnooze();
-      Fluttertoast.showToast(msg: "✅ Project created successfully");
+      Fluttertoast.showToast(
+        msg: t?.projectCreatedSuccess ?? "✅ Project created successfully",
+      );
       if (mounted) Navigator.pop(context, true);
     } else {
       Fluttertoast.showToast(
-        msg: result['message'] ?? "Error creating project",
+        msg:
+            result['message'] ??
+            t?.errorCreatingProject ??
+            "Error creating project",
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Post New Project"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          t?.postNewProject ?? "Post New Project",
+          style: TextStyle(
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.lightTextPrimary,
+          ),
+        ),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: isDark
+            ? AppColors.darkTextPrimary
+            : AppColors.lightTextPrimary,
         elevation: 0,
         actions: [
           if (_draftSavedAt != null)
@@ -341,18 +407,18 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Text(
-                  'Draft saved',
+                  t?.draftSaved ?? 'Draft saved',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.green.shade700,
+                    color: AppColors.success,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
           IconButton(
-            tooltip: 'Templates',
-            icon: const Icon(Icons.article_outlined),
+            tooltip: t?.templates ?? 'Templates',
+            icon: Icon(Icons.article_outlined, color: AppColors.accent),
             onPressed: _openTemplatesSheet,
           ),
           if (analyzing)
@@ -373,14 +439,25 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Project Details",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                t?.projectDetails ?? "Project Details",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                "Fill in the details below. AI will analyze and suggest improvements.",
-                style: TextStyle(color: Colors.grey),
+              Text(
+                t?.projectDetailsHint ??
+                    "Fill in the details below. AI will analyze and suggest improvements.",
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary,
+                ),
               ),
               const SizedBox(height: 10),
               Container(
@@ -389,24 +466,27 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.teal.shade50,
+                  color: AppColors.accent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.teal.shade100),
+                  border: Border.all(color: AppColors.accent.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.cloud_done_outlined,
                       size: 18,
-                      color: Colors.teal.shade800,
+                      color: AppColors.accent,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Your progress is saved automatically on this device.',
+                        t?.autoSaveHint ??
+                            'Your progress is saved automatically on this device.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.teal.shade900,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
                           height: 1.25,
                         ),
                       ),
@@ -429,9 +509,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              "Suggested milestones added to proposal",
+                              t?.milestonesAddedHint ??
+                                  "Suggested milestones added to proposal",
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: AppColors.success,
                           ),
                         );
                       }
@@ -441,47 +522,82 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
 
               const SizedBox(height: 16),
 
-              const Text(
-                "Project Title",
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                t?.projectTitle ?? "Project Title",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: titleController,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
                 decoration: InputDecoration(
-                  hintText: "e.g., Build an E-commerce App",
+                  hintText:
+                      t?.projectTitleHint ?? "e.g., Build an E-commerce App",
+                  hintStyle: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextHint
+                        : AppColors.lightTextHint,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: theme.cardColor,
                 ),
                 validator: (value) => value?.isEmpty == true
-                    ? 'Please enter project title'
+                    ? t?.requiredField ?? 'Please enter project title'
                     : null,
               ),
               const SizedBox(height: 16),
 
-              const Text(
-                "Project Description",
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                t?.projectDescription ?? "Project Description",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: descriptionController,
                 maxLines: 6,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
                 decoration: InputDecoration(
                   hintText:
+                      t?.projectDescriptionHint ??
                       "Describe your project in detail...\n- What do you need?\n- What are your expectations?\n- Any specific requirements?",
+                  hintStyle: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextHint
+                        : AppColors.lightTextHint,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: theme.cardColor,
                   alignLabelWithHint: true,
                 ),
-                validator: (value) =>
-                    value?.isEmpty == true ? 'Please enter description' : null,
+                validator: (value) => value?.isEmpty == true
+                    ? t?.requiredField ?? 'Please enter description'
+                    : null,
               ),
               const SizedBox(height: 16),
 
@@ -491,26 +607,38 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Budget (\$)",
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                        Text(
+                          t?.budget ?? "Budget (\$)",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.lightTextPrimary,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: budgetController,
                           keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.lightTextPrimary,
+                          ),
                           decoration: InputDecoration(
                             prefixText: '\$ ',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
                             ),
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: theme.cardColor,
                           ),
                           validator: (value) {
-                            if (value?.isEmpty == true) return 'Required';
+                            if (value?.isEmpty == true)
+                              return t?.requiredField ?? 'Required';
                             if (double.tryParse(value!) == null)
-                              return 'Invalid number';
+                              return t?.invalidNumber ?? 'Invalid number';
                             return null;
                           },
                         ),
@@ -522,26 +650,38 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Duration (days)",
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                        Text(
+                          t?.durationDays ?? "Duration (days)",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.lightTextPrimary,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: durationController,
                           keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.lightTextPrimary,
+                          ),
                           decoration: InputDecoration(
-                            suffixText: 'days',
+                            suffixText: t?.days ?? 'days',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
                             ),
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: theme.cardColor,
                           ),
                           validator: (value) {
-                            if (value?.isEmpty == true) return 'Required';
+                            if (value?.isEmpty == true)
+                              return t?.requiredField ?? 'Required';
                             if (int.tryParse(value!) == null)
-                              return 'Invalid number';
+                              return t?.invalidNumber ?? 'Invalid number';
                             return null;
                           },
                         ),
@@ -552,25 +692,54 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
               ),
               const SizedBox(height: 16),
 
-              const Text(
-                "Category",
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                t?.category ?? "Category",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: categoryController.text.isNotEmpty
                     ? categoryController.text
                     : null,
-                hint: const Text("Select a category"),
+                hint: Text(
+                  t?.selectCategory ?? "Select a category",
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextHint
+                        : AppColors.lightTextHint,
+                  ),
+                ),
+                dropdownColor: theme.cardColor,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: theme.cardColor,
                 ),
                 items: categories.map((cat) {
-                  return DropdownMenuItem(value: cat, child: Text(cat));
+                  return DropdownMenuItem(
+                    value: cat,
+                    child: Text(
+                      cat,
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary,
+                      ),
+                    ),
+                  );
                 }).toList(),
                 onChanged: (value) {
                   setState(() => categoryController.text = value ?? '');
@@ -579,9 +748,14 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
               ),
               const SizedBox(height: 16),
 
-              const Text(
-                "Required Skills",
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                t?.requiredSkills ?? "Required Skills",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -590,7 +764,16 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                 children: availableSkills.map((skill) {
                   final isSelected = selectedSkills.contains(skill);
                   return FilterChip(
-                    label: Text(skill),
+                    label: Text(
+                      skill,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary),
+                      ),
+                    ),
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
@@ -603,9 +786,11 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                       _analyzeProject();
                       _scheduleProjectDraftSave();
                     },
-                    backgroundColor: Colors.grey.shade100,
-                    selectedColor: Colors.blue.shade100,
-                    checkmarkColor: Colors.blue,
+                    backgroundColor: isDark
+                        ? AppColors.darkCard
+                        : Colors.grey.shade100,
+                    selectedColor: AppColors.secondary,
+                    checkmarkColor: Colors.white,
                   );
                 }).toList(),
               ),
@@ -617,18 +802,19 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                 child: ElevatedButton(
                   onPressed: loading ? null : _createProject,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff14A800),
+                    backgroundColor: AppColors.secondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: loading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "Post Project",
-                          style: TextStyle(
+                      : Text(
+                          t?.postProject ?? "Post Project",
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                 ),

@@ -11,6 +11,7 @@ import {
   Wallet,
   Transaction,
   Notification,
+  Offer,
 } from "../models/index.js";
 import ContractService from "../services/contractService.js";
 import NotificationService from "../services/notificationService.js";
@@ -134,6 +135,7 @@ export const getProjectById = async (req, res) => {
       include: [
         {
           model: User,
+          as: "client",
           attributes: ["id", "name", "avatar"],
         },
       ],
@@ -148,10 +150,12 @@ export const getProjectById = async (req, res) => {
       include: [
         {
           model: User,
+          as: "freelancer",
           attributes: ["id", "name", "avatar"],
         },
         {
           model: FreelancerProfile,
+          as: "profile",
           attributes: ["title", "rating", "experience_years", "skills"],
         },
       ],
@@ -716,8 +720,8 @@ export const acceptProposalWithNegotiation = async (req, res) => {
     const finalMilestones = Array.isArray(agreedMilestones)
       ? agreedMilestones
       : Array.isArray(proposal.milestones)
-      ? proposal.milestones
-      : [];
+        ? proposal.milestones
+        : [];
 
     await Proposal.update(
       { status: "rejected" },
@@ -1002,7 +1006,6 @@ export const manualConfirmPayment = async (req, res) => {
       reference_type: "contract",
       completed_at: new Date(),
     });
-    
 
     console.log("✅ Transaction created:", transaction.id);
 
@@ -1095,19 +1098,25 @@ export const approveMilestone = async (req, res) => {
       return res.status(400).json({ message: "Milestone already approved" });
     }
 
-    const pool = contract.funded_escrow_amount != null
-      ? parseFloat(contract.funded_escrow_amount)
-      : parseFloat(contract.agreed_amount);
+    const pool =
+      contract.funded_escrow_amount != null
+        ? parseFloat(contract.funded_escrow_amount)
+        : parseFloat(contract.agreed_amount);
     const alreadyReleased = parseFloat(contract.released_amount || 0);
     const milestoneAmt = parseFloat(milestone.amount || 0);
-    
+
     if (alreadyReleased + milestoneAmt > pool + 0.01) {
       return res.status(400).json({
-        message: "Cannot approve: total milestone releases would exceed funded escrow",
+        message:
+          "Cannot approve: total milestone releases would exceed funded escrow",
       });
     }
 
-    await PaymentService.releaseMilestonePayment(contractId, milestoneIndex, userId);
+    await PaymentService.releaseMilestonePayment(
+      contractId,
+      milestoneIndex,
+      userId,
+    );
 
     milestone.status = "approved";
     milestone.approved_at = new Date();
@@ -1127,7 +1136,6 @@ export const approveMilestone = async (req, res) => {
     });
 
     res.json({ message: "✅ Milestone approved", milestone });
-    
   } catch (err) {
     console.error("Error approving milestone:", err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -1137,7 +1145,7 @@ export const approveMilestone = async (req, res) => {
 export const getOrCreateWallet = async (req, res) => {
   try {
     let wallet = await Wallet.findOne({ where: { UserId: req.user.id } });
-    
+
     if (!wallet) {
       wallet = await Wallet.create({
         UserId: req.user.id,
@@ -1147,13 +1155,13 @@ export const getOrCreateWallet = async (req, res) => {
         total_withdrawn: 0,
       });
     }
-    
+
     const transactions = await Transaction.findAll({
       where: { wallet_id: wallet.id },
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
       limit: 50,
     });
-    
+
     res.json({ wallet, transactions });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -1166,13 +1174,13 @@ export const createWallet = async (req, res) => {
     if (existing) {
       return res.json({ success: true, wallet: existing });
     }
-    
+
     const wallet = await Wallet.create({
       UserId: req.user.id,
       balance: 0,
       pending_balance: 0,
     });
-    
+
     res.json({ success: true, wallet });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -1668,5 +1676,160 @@ export const createContractFromProposalDirect = async (req, res) => {
   } catch (error) {
     console.error("❌ Error creating contract:", error);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const sendOfferToFreelancer = async (req, res) => {
+  try {
+    const { freelancerId, projectId, amount, message } = req.body;
+    const clientId = req.user.id;
+
+    if (!freelancerId || !projectId) {
+      return res.status(400).json({
+        success: false,
+        message: "Freelancer ID and Project ID are required",
+      });
+    }
+
+    const project = await Project.findOne({
+      where: {
+        id: projectId,
+        UserId: clientId,
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found or you do not have permission",
+      });
+    }
+
+    if (project.status !== "open") {
+      return res.status(400).json({
+        success: false,
+        message: "Project is not open for offers",
+      });
+    }
+
+    const freelancer = await User.findOne({
+      where: {
+        id: freelancerId,
+        role: "freelancer",
+      },
+    });
+
+    if (!freelancer) {
+      return res.status(404).json({
+        success: false,
+        message: "Freelancer not found",
+      });
+    }
+
+    const existingOffer = await Offer.findOne({
+      where: {
+        clientId: clientId,
+        freelancerId: freelancerId,
+        projectId: projectId,
+        status: "pending",
+      },
+    });
+
+    if (existingOffer) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You already have a pending offer for this freelancer on this project",
+      });
+    }
+
+    const offer = await Offer.create({
+      clientId: clientId,
+      freelancerId: freelancerId,
+      projectId: projectId,
+      amount: amount || project.budget,
+      message:
+        message || `I would like to hire you for project: ${project.title}`,
+      status: "pending",
+    });
+
+    const NotificationService = (
+      await import("../services/notificationService.js")
+    ).default;
+
+    await NotificationService.createNotification({
+      userId: freelancerId,
+      type: "offer_received",
+      title: "New Job Offer! 🎉",
+      body: `You received a job offer${amount ? ` of $${amount}` : ""} from ${req.user.name}`,
+      data: {
+        offerId: offer.id,
+        projectId: projectId,
+        projectTitle: project.title,
+        amount: amount || project.budget,
+        type: "offer",
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Offer sent successfully",
+      offer: {
+        id: offer.id,
+        projectTitle: project.title,
+        amount: offer.amount,
+        message: offer.message,
+        status: offer.status,
+        expiresAt: offer.expiresAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error in sendOfferToFreelancer:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error sending offer",
+      error: error.message,
+    });
+  }
+};
+
+export const getOpenProjectsForHiring = async (req, res) => {
+  try {
+    const clientId = req.user.id;
+
+    console.log("🔍 Client ID:", clientId);
+
+    const allClientProjects = await Project.findAll({
+      where: { UserId: clientId },
+    });
+
+    console.log(`📊 Total projects for client: ${allClientProjects.length}`);
+
+    if (allClientProjects.length > 0) {
+      console.log("📋 Project statuses:");
+      allClientProjects.forEach((p) => {
+        console.log(
+          `   - ID: ${p.id}, Status: "${p.status}", Title: ${p.title}`,
+        );
+      });
+    }
+
+    const openProjects = allClientProjects.filter((p) => p.status === "open");
+
+    console.log(`📊 Open projects: ${openProjects.length}`);
+
+    res.json({
+      success: true,
+      projects: openProjects,
+      totalProjects: allClientProjects.length,
+      openCount: openProjects.length,
+    });
+  } catch (error) {
+    console.error("❌ Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching projects",
+      error: error.message,
+    });
   }
 };

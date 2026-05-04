@@ -651,16 +651,13 @@ class _MyProposalsScreenState extends State<MyProposalsScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          t.myProposals,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        automaticallyImplyLeading: false,
         elevation: 0,
         centerTitle: false,
         backgroundColor: theme.scaffoldBackgroundColor,
         foregroundColor: theme.colorScheme.onSurface,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
+          preferredSize: const Size.fromHeight(3),
           child: Container(
             color: theme.cardColor,
             child: TabBar(

@@ -1221,6 +1221,10 @@ class _ContractScreenState extends State<ContractScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final textColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Html(
@@ -1229,11 +1233,11 @@ class _ContractScreenState extends State<ContractScreen> {
           "body": Style(
             fontSize: FontSize(14.0),
             lineHeight: LineHeight(1.6),
-            color: theme.colorScheme.onSurface,
+            color: textColor,
           ),
           "h1": Style(
             fontSize: FontSize(24),
-            color: theme.colorScheme.secondary,
+            color: isDark ? AppColors.accent : AppColors.primary,
             textAlign: TextAlign.center,
             margin: Margins.only(bottom: 20),
             fontWeight: FontWeight.bold,
@@ -1242,29 +1246,40 @@ class _ContractScreenState extends State<ContractScreen> {
             fontSize: FontSize(18),
             fontWeight: FontWeight.bold,
             margin: Margins.only(top: 16, bottom: 8),
-            color: theme.colorScheme.onSurface,
+            color: textColor,
+          ),
+          "h3": Style(
+            fontSize: FontSize(16),
+            fontWeight: FontWeight.bold,
+            margin: Margins.only(top: 12, bottom: 6),
+            color: textColor,
           ),
           "p": Style(
             margin: Margins.only(bottom: 8),
-            color: theme.colorScheme.onSurface,
+            color: textColor,
+            fontSize: FontSize(14),
           ),
           ".signature": Style(
             margin: Margins.only(top: 32),
             fontStyle: FontStyle.italic,
             fontSize: FontSize(16),
+            color: isDark ? AppColors.accent : AppColors.secondary,
           ),
           ".terms": Style(
             backgroundColor: isDark
                 ? AppColors.darkSurface
-                : Colors.grey.shade50,
+                : Colors.grey.shade100,
             padding: HtmlPaddings.all(16),
             margin: Margins.only(top: 8, bottom: 8),
           ),
-          "strong": Style(fontWeight: FontWeight.bold),
+          "strong": Style(
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.accent : AppColors.primary,
+          ),
           ".milestone-card": Style(
             backgroundColor: isDark
                 ? AppColors.darkSurface
-                : Colors.grey.shade100,
+                : Colors.grey.shade50,
             padding: HtmlPaddings.all(12),
             margin: Margins.only(bottom: 12),
           ),
@@ -1275,6 +1290,8 @@ class _ContractScreenState extends State<ContractScreen> {
             padding: HtmlPaddings.all(12),
             margin: Margins.only(bottom: 12),
           ),
+          "span": Style(color: textColor),
+          "div": Style(color: textColor),
         },
       ),
     );

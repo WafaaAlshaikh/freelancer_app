@@ -138,7 +138,7 @@ class _ReviewDetailsScreenState extends State<ReviewDetailsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard2 : AppColors.infoBg,
+            color: isDark ? AppColors.darkCard : AppColors.infoBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isDark
@@ -178,7 +178,7 @@ class _ReviewDetailsScreenState extends State<ReviewDetailsScreen> {
       decoration: BoxDecoration(
         gradient: isDark
             ? LinearGradient(
-                colors: [AppColors.darkCard2, AppColors.darkSurface],
+                colors: [AppColors.darkCard, AppColors.darkSurface],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
@@ -400,7 +400,7 @@ class _ReviewDetailsScreenState extends State<ReviewDetailsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard2 : Colors.grey.shade50,
+            color: isDark ? AppColors.darkCard : Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

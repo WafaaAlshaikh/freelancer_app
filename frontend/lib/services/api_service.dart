@@ -115,7 +115,7 @@ class ApiService {
     try {
       final uri = Uri.parse('$baseUrl/auth/signup');
       final request = http.MultipartRequest('POST', uri);
-      
+
       request.fields['name'] = name;
       request.fields['email'] = email;
       request.fields['password'] = password;
@@ -133,16 +133,20 @@ class ApiService {
         request.fields['referral_source'] = referralSource;
       }
 
-      Future<void> addFile(String fieldName, File? file, String defaultFileName) async {
+      Future<void> addFile(
+        String fieldName,
+        File? file,
+        String defaultFileName,
+      ) async {
         if (file == null) return;
-        
+
         if (kIsWeb) {
           try {
             final bytes = await file.readAsBytes();
             final fileName = file.path.split('/').last;
             final extension = fileName.split('.').last;
             MediaType contentType;
-            
+
             if (extension.toLowerCase() == 'pdf') {
               contentType = MediaType('application', 'pdf');
             } else if (['jpg', 'jpeg'].contains(extension.toLowerCase())) {
@@ -152,7 +156,7 @@ class ApiService {
             } else {
               contentType = MediaType('application', 'octet-stream');
             }
-            
+
             request.files.add(
               http.MultipartFile.fromBytes(
                 fieldName,
@@ -168,7 +172,7 @@ class ApiService {
           final filePath = file.path;
           final extension = filePath.split('.').last;
           MediaType contentType;
-          
+
           if (extension.toLowerCase() == 'pdf') {
             contentType = MediaType('application', 'pdf');
           } else if (['jpg', 'jpeg'].contains(extension.toLowerCase())) {
@@ -178,7 +182,7 @@ class ApiService {
           } else {
             contentType = MediaType('application', 'octet-stream');
           }
-          
+
           request.files.add(
             await http.MultipartFile.fromPath(
               fieldName,
@@ -204,20 +208,30 @@ class ApiService {
         if (companyName != null && companyName.isNotEmpty) {
           request.fields['company_name'] = companyName;
         }
-        if (commercialRegisterNumber != null && commercialRegisterNumber.isNotEmpty) {
-          request.fields['commercial_register_number'] = commercialRegisterNumber;
+        if (commercialRegisterNumber != null &&
+            commercialRegisterNumber.isNotEmpty) {
+          request.fields['commercial_register_number'] =
+              commercialRegisterNumber;
         }
         if (taxNumber != null && taxNumber.isNotEmpty) {
           request.fields['tax_number'] = taxNumber;
         }
-        await addFile('verification_document', verificationDocument, 'verification.pdf');
-        await addFile('commercial_register', commercialRegisterImage, 'commercial_register.pdf');
+        await addFile(
+          'verification_document',
+          verificationDocument,
+          'verification.pdf',
+        );
+        await addFile(
+          'commercial_register',
+          commercialRegisterImage,
+          'commercial_register.pdf',
+        );
       }
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       final data = jsonDecode(response.body);
-      
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         return data;
       } else {
@@ -282,7 +296,11 @@ class ApiService {
       return {'success': false, 'message': e.toString()};
     }
   }
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+
+  static Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
@@ -295,7 +313,10 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> verifyEmail(String email, String code) async {
+  static Future<Map<String, dynamic>> verifyEmail(
+    String email,
+    String code,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/verify'),
@@ -307,7 +328,7 @@ class ApiService {
       return {'error': e.toString()};
     }
   }
-  
+
   static Future<void> logout() async {
     token = null;
     await TokenStorage.clearToken();
@@ -3691,6 +3712,233 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$baseUrl/ratings/$reviewId/helpful'),
         headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> searchFreelancers({
+    String query = '',
+    String skill = '',
+    double minRating = 0,
+    double maxHourlyRate = 500,
+    int minExperience = 0,
+    String sortBy = 'rating',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'minRating': minRating.toString(),
+        'maxHourlyRate': maxHourlyRate.toString(),
+        'minExperience': minExperience.toString(),
+        'sortBy': sortBy,
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      if (query.isNotEmpty) {
+        queryParams['q'] = query;
+      }
+      if (skill.isNotEmpty) {
+        queryParams['skill'] = skill;
+      }
+
+      final uri = Uri.parse(
+        '$baseUrl/client/search',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: await headers);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final List dataList = data['freelancers'] ?? [];
+          return {
+            'success': true,
+            'freelancers': dataList
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList(),
+            'pagination': data['pagination'],
+          };
+        }
+      }
+
+      return {
+        'success': false,
+        'freelancers': [],
+        'message': 'Failed to load freelancers',
+      };
+    } catch (e) {
+      debugPrint('Error searching freelancers: $e');
+      return {'success': false, 'freelancers': [], 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getFreelancerPreview({
+    required int freelancerId,
+    int? projectId,
+  }) async {
+    try {
+      final uri = projectId != null
+          ? Uri.parse(
+              '$baseUrl/client/$freelancerId/preview',
+            ).replace(queryParameters: {'projectId': projectId.toString()})
+          : Uri.parse('$baseUrl/client/$freelancerId/preview');
+
+      final response = await http.get(uri, headers: await headers);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          return data['freelancer'];
+        }
+      }
+
+      return {};
+    } catch (e) {
+      debugPrint('Error getting freelancer preview: $e');
+      return {};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getTopFreelancers({
+    int limit = 10,
+    String? skill,
+  }) async {
+    try {
+      final queryParams = <String, String>{'limit': limit.toString()};
+
+      if (skill != null && skill.isNotEmpty) {
+        queryParams['skill'] = skill;
+      }
+
+      final uri = Uri.parse(
+        '$baseUrl/client/top',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri, headers: await headers);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final List dataList = data['freelancers'] ?? [];
+          return {
+            'success': true,
+            'freelancers': dataList
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList(),
+          };
+        }
+      }
+
+      return {'success': false, 'freelancers': []};
+    } catch (e) {
+      debugPrint('Error getting top freelancers: $e');
+      return {'success': false, 'freelancers': []};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getFreelancerStatsForClient({
+    required int freelancerId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/client/$freelancerId/stats'),
+        headers: await headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+
+      return {'success': false, 'stats': {}};
+    } catch (e) {
+      debugPrint('Error getting freelancer stats: $e');
+      return {'success': false, 'stats': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> sendOfferToFreelancer({
+    required int freelancerId,
+    required int projectId,
+    double? amount,
+    String? message,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/client/offers/send'),
+        headers: await headers,
+        body: jsonEncode({
+          'freelancerId': freelancerId,
+          'projectId': projectId,
+          'amount': amount,
+          'message': message,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getOpenProjectsForHiring() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/client/projects/open'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString(), 'projects': []};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getMyOffers() async {
+    try {
+      print('🔍 API Call: $BASE_URL/freelancer/offers');
+      final response = await http.get(
+        Uri.parse('$BASE_URL/freelancer/offers'),
+        headers: await headers,
+      );
+      print('📡 Offers response status: ${response.statusCode}');
+      print('📡 Offers response body: ${response.body}');
+
+      final data = jsonDecode(response.body);
+      print('📡 Parsed data: $data');
+
+      return data;
+    } catch (e) {
+      print('❌ Error getting offers: $e');
+      return {'success': false, 'message': e.toString(), 'offers': []};
+    }
+  }
+
+  static Future<int> getUnreadOffersCount() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/freelancer/offers/unread-count'),
+        headers: await headers,
+      );
+      final data = jsonDecode(response.body);
+      return data['count'] ?? 0;
+    } catch (e) {
+      print('Error getting unread offers count: $e');
+      return 0;
+    }
+  }
+
+  static Future<Map<String, dynamic>> respondToOffer(
+    int offerId,
+    String status,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/freelancer/offers/$offerId/respond'),
+        headers: await headers,
+        body: jsonEncode({'status': status}),
       );
       return jsonDecode(response.body);
     } catch (e) {

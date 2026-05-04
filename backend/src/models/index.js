@@ -30,6 +30,15 @@ import UserFavorite from "./UserFavorite.js";
 import FinancialTransaction from "./FinancialTransaction.js";
 import InterviewInvitation from "./InterviewInvitation.js";
 import ReviewHelpful from "./ReviewHelpful.js";
+import Offer from './offerModel.js';
+
+Offer.belongsTo(User, { as: 'client', foreignKey: 'client_id' });
+Offer.belongsTo(User, { as: 'freelancer', foreignKey: 'freelancer_id' });
+Offer.belongsTo(Project, { as: 'project', foreignKey: 'project_id' });
+
+User.hasMany(Offer, { as: 'sentOffers', foreignKey: 'client_id' });
+User.hasMany(Offer, { as: 'receivedOffers', foreignKey: 'freelancer_id' });
+Project.hasMany(Offer, { as: 'offers', foreignKey: 'project_id' });
 
 User.hasOne(UserSubscription, { foreignKey: "user_id" });
 UserSubscription.belongsTo(User, { foreignKey: "user_id" });
@@ -191,4 +200,5 @@ export {
   FinancialTransaction,
   InterviewInvitation,
   ReviewHelpful,
+  Offer,
 };

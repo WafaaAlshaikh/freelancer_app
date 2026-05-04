@@ -449,7 +449,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviews.
   ///
   /// In en, this message translates to:
-  /// **'Reviews'**
+  /// **'reviews'**
   String get reviews;
 
   /// No description provided for @analytics.
@@ -590,7 +590,7 @@ abstract class AppLocalizations {
   /// **'Seller Response'**
   String get sellerResponse;
 
-  /// No description provided for @outOf5.
+  /// Text showing rating out of 5
   ///
   /// In en, this message translates to:
   /// **'out of 5'**
@@ -602,7 +602,7 @@ abstract class AppLocalizations {
   /// **'Quality'**
   String get quality;
 
-  /// No description provided for @communication.
+  /// Metric name for communication
   ///
   /// In en, this message translates to:
   /// **'Communication'**
@@ -896,10 +896,10 @@ abstract class AppLocalizations {
   /// **'Any'**
   String get any;
 
-  /// No description provided for @budget.
+  /// Label for budget
   ///
   /// In en, this message translates to:
-  /// **'Budget'**
+  /// **'budget'**
   String get budget;
 
   /// No description provided for @deleteFilter.
@@ -1142,7 +1142,7 @@ abstract class AppLocalizations {
   /// **'Map preview unavailable'**
   String get mapPreviewUnavailable;
 
-  /// No description provided for @skills.
+  /// Metric name for skills
   ///
   /// In en, this message translates to:
   /// **'Skills'**
@@ -1259,7 +1259,7 @@ abstract class AppLocalizations {
   /// No description provided for @behance.
   ///
   /// In en, this message translates to:
-  /// **'Behance / Dribbble'**
+  /// **'Behance'**
   String get behance;
 
   /// No description provided for @availability.
@@ -1295,7 +1295,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyHours.
   ///
   /// In en, this message translates to:
-  /// **'Weekly hours (available)'**
+  /// **'Weekly hours'**
   String get weeklyHours;
 
   /// No description provided for @yearsOfExperience.
@@ -1307,10 +1307,10 @@ abstract class AppLocalizations {
   /// No description provided for @years.
   ///
   /// In en, this message translates to:
-  /// **'years'**
+  /// **'yrs'**
   String get years;
 
-  /// No description provided for @hourlyRate.
+  /// Label for hourly rate
   ///
   /// In en, this message translates to:
   /// **'Hourly Rate'**
@@ -1760,7 +1760,7 @@ abstract class AppLocalizations {
   /// **'View Details'**
   String get viewDetails;
 
-  /// No description provided for @refresh.
+  /// Tooltip for refresh button
   ///
   /// In en, this message translates to:
   /// **'Refresh'**
@@ -1928,10 +1928,10 @@ abstract class AppLocalizations {
   /// **'Est. Hours'**
   String get estHours;
 
-  /// No description provided for @hours.
+  /// Plural form of hours
   ///
   /// In en, this message translates to:
-  /// **'hrs'**
+  /// **'h'**
   String get hours;
 
   /// No description provided for @baseRate.
@@ -1946,7 +1946,7 @@ abstract class AppLocalizations {
   /// **'Complexity'**
   String get complexity;
 
-  /// No description provided for @experience.
+  /// Metric name for experience
   ///
   /// In en, this message translates to:
   /// **'Experience'**
@@ -3998,10 +3998,10 @@ abstract class AppLocalizations {
   /// **'Timeline'**
   String get timeline;
 
-  /// No description provided for @invitationSent.
+  /// Message when invitation is sent
   ///
   /// In en, this message translates to:
-  /// **'Invitation Sent'**
+  /// **'Invitation sent to'**
   String get invitationSent;
 
   /// No description provided for @declined.
@@ -4298,7 +4298,7 @@ abstract class AppLocalizations {
   /// **'Acceptance Rate'**
   String get acceptanceRate;
 
-  /// No description provided for @completionRate.
+  /// Label for completion rate statistic
   ///
   /// In en, this message translates to:
   /// **'Completion Rate'**
@@ -4532,7 +4532,7 @@ abstract class AppLocalizations {
   /// **'Yesterday at'**
   String get yesterdayAt;
 
-  /// No description provided for @at.
+  /// Preposition for time (e.g., at 10:00 AM)
   ///
   /// In en, this message translates to:
   /// **'at'**
@@ -4604,7 +4604,7 @@ abstract class AppLocalizations {
   /// **'Your feedback helps {name} improve and helps other clients make informed decisions.'**
   String feedbackDescription(String name);
 
-  /// No description provided for @overallRating.
+  /// Label for overall rating statistic
   ///
   /// In en, this message translates to:
   /// **'Overall Rating'**
@@ -5123,8 +5123,1214 @@ abstract class AppLocalizations {
   /// No description provided for @sortBy.
   ///
   /// In en, this message translates to:
-  /// **'Sort By'**
+  /// **'Sort by'**
   String get sortBy;
+
+  /// No description provided for @postNewProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Post New Project'**
+  String get postNewProject;
+
+  /// No description provided for @templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get templates;
+
+  /// No description provided for @projectDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the details below. AI will analyze and suggest improvements.'**
+  String get projectDetailsHint;
+
+  /// No description provided for @autoSaveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress is saved automatically on this device.'**
+  String get autoSaveHint;
+
+  /// No description provided for @draftRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Continued from your saved draft'**
+  String get draftRestored;
+
+  /// No description provided for @templateApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Template applied — edit and post when ready'**
+  String get templateApplied;
+
+  /// No description provided for @clearDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear draft?'**
+  String get clearDraft;
+
+  /// No description provided for @clearDraftConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the saved project draft from this device?'**
+  String get clearDraftConfirmation;
+
+  /// No description provided for @draftCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft cleared'**
+  String get draftCleared;
+
+  /// No description provided for @projectTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Project templates'**
+  String get projectTemplates;
+
+  /// No description provided for @templateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefill fields — still edit before posting.'**
+  String get templateHint;
+
+  /// No description provided for @clearSavedDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved draft'**
+  String get clearSavedDraft;
+
+  /// No description provided for @projectCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Project created successfully'**
+  String get projectCreatedSuccess;
+
+  /// No description provided for @errorCreatingProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating project'**
+  String get errorCreatingProject;
+
+  /// No description provided for @projectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Title'**
+  String get projectTitle;
+
+  /// No description provided for @projectTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Build an E-commerce App'**
+  String get projectTitleHint;
+
+  /// No description provided for @requiredField.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a value'**
+  String get requiredField;
+
+  /// No description provided for @projectDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Description'**
+  String get projectDescription;
+
+  /// No description provided for @projectDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe your project in detail...\n- What do you need?\n- What are your expectations?\n- Any specific requirements?'**
+  String get projectDescriptionHint;
+
+  /// No description provided for @durationDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration (days)'**
+  String get durationDays;
+
+  /// No description provided for @selectCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a category'**
+  String get selectCategory;
+
+  /// No description provided for @postProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Post Project'**
+  String get postProject;
+
+  /// No description provided for @milestonesAddedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested milestones added to proposal'**
+  String get milestonesAddedHint;
+
+  /// No description provided for @open.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get open;
+
+  /// No description provided for @aiRecommendations.
+  ///
+  /// In en, this message translates to:
+  /// **'Ai Recommendations'**
+  String get aiRecommendations;
+
+  /// No description provided for @totalSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Spent'**
+  String get totalSpent;
+
+  /// Title for compare freelancers screen
+  ///
+  /// In en, this message translates to:
+  /// **'Compare Freelancers'**
+  String get compareFreelancers;
+
+  /// Button tooltip to switch to card view
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Card View'**
+  String get switchToCardView;
+
+  /// Button tooltip to switch to detailed table view
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Detailed View'**
+  String get switchToDetailedView;
+
+  /// Loading message when analyzing freelancers
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing freelancers...'**
+  String get analyzingFreelancers;
+
+  /// Subtitle while loading comparison data
+  ///
+  /// In en, this message translates to:
+  /// **'Comparing skills, experience, and performance'**
+  String get comparingFreelancersDesc;
+
+  /// Empty state message when no freelancers available
+  ///
+  /// In en, this message translates to:
+  /// **'No freelancers to compare'**
+  String get noFreelancersToCompare;
+
+  /// Instruction when no freelancers selected
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least 2 freelancers to start comparing'**
+  String get selectAtLeastTwoFreelancers;
+
+  /// Button text to go back
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get goBack;
+
+  /// Label for AI recommendation banner
+  ///
+  /// In en, this message translates to:
+  /// **'AI Recommendation'**
+  String get aiRecommendation;
+
+  /// Text showing match percentage with project
+  ///
+  /// In en, this message translates to:
+  /// **'match with your project'**
+  String get matchWithProject;
+
+  /// Badge label for AI recommended freelancer
+  ///
+  /// In en, this message translates to:
+  /// **'AI Pick'**
+  String get aiPick;
+
+  /// Description for overall rating metric
+  ///
+  /// In en, this message translates to:
+  /// **'Overall rating and performance'**
+  String get overallRatingDescription;
+
+  /// Description for skills match metric
+  ///
+  /// In en, this message translates to:
+  /// **'Skills match with your project'**
+  String get skillsMatchDescription;
+
+  /// Description for experience metric
+  ///
+  /// In en, this message translates to:
+  /// **'Years of experience & project count'**
+  String get experienceDescription;
+
+  /// Description for reliability metric
+  ///
+  /// In en, this message translates to:
+  /// **'Completion rate & on-time delivery'**
+  String get reliabilityDescription;
+
+  /// Description for communication metric
+  ///
+  /// In en, this message translates to:
+  /// **'Response time & feedback'**
+  String get communicationDescription;
+
+  /// Description for value metric
+  ///
+  /// In en, this message translates to:
+  /// **'Price vs quality ratio'**
+  String get valueDescription;
+
+  /// Label for skills match statistic
+  ///
+  /// In en, this message translates to:
+  /// **'Skills Match'**
+  String get skillsMatch;
+
+  /// Subtitle for skills match
+  ///
+  /// In en, this message translates to:
+  /// **'with your project'**
+  String get withYourProject;
+
+  /// Subtitle for completion rate
+  ///
+  /// In en, this message translates to:
+  /// **'of projects completed'**
+  String get ofProjectsCompleted;
+
+  /// Label for on-time delivery statistic
+  ///
+  /// In en, this message translates to:
+  /// **'On-Time Delivery'**
+  String get onTimeDelivery;
+
+  /// Subtitle for on-time delivery
+  ///
+  /// In en, this message translates to:
+  /// **'of deadlines met'**
+  String get ofDeadlinesMet;
+
+  /// Label for response time statistic
+  ///
+  /// In en, this message translates to:
+  /// **'Response Time'**
+  String get responseTime;
+
+  /// Subtitle for response time
+  ///
+  /// In en, this message translates to:
+  /// **'average response'**
+  String get averageResponse;
+
+  /// Label for completed projects statistic
+  ///
+  /// In en, this message translates to:
+  /// **'Projects Completed'**
+  String get projectsCompleted;
+
+  /// Subtitle for completed projects
+  ///
+  /// In en, this message translates to:
+  /// **'total projects'**
+  String get totalProjects;
+
+  /// Subtitle for experience years
+  ///
+  /// In en, this message translates to:
+  /// **'in the field'**
+  String get inTheField;
+
+  /// Abbreviation for hour
+  ///
+  /// In en, this message translates to:
+  /// **'hr'**
+  String get hr;
+
+  /// Section title for top skills
+  ///
+  /// In en, this message translates to:
+  /// **'Top Skills'**
+  String get topSkills;
+
+  /// Button text to view freelancer profile
+  ///
+  /// In en, this message translates to:
+  /// **'View Profile'**
+  String get viewProfile;
+
+  /// Button text to hire freelancer
+  ///
+  /// In en, this message translates to:
+  /// **'Hire'**
+  String get hire;
+
+  /// Singular form of hour
+  ///
+  /// In en, this message translates to:
+  /// **'hr'**
+  String get hour;
+
+  /// Abbreviation for project(s)
+  ///
+  /// In en, this message translates to:
+  /// **'prj'**
+  String get prj;
+
+  /// Title for performance comparison chart
+  ///
+  /// In en, this message translates to:
+  /// **'Performance Comparison'**
+  String get performanceComparison;
+
+  /// Title for ratings comparison chart
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings Comparison'**
+  String get ratingsComparison;
+
+  /// Title for comprehensive analysis section
+  ///
+  /// In en, this message translates to:
+  /// **'Comprehensive Analysis'**
+  String get comprehensiveAnalysis;
+
+  /// Metric name for overall rating
+  ///
+  /// In en, this message translates to:
+  /// **'Overall'**
+  String get overall;
+
+  /// Metric name for reliability
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability'**
+  String get reliability;
+
+  /// Metric name for value for money
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get value;
+
+  /// FAB text to view comparison charts
+  ///
+  /// In en, this message translates to:
+  /// **'View Charts'**
+  String get viewCharts;
+
+  /// Title for delete project dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Project'**
+  String get deleteProject;
+
+  /// Confirmation message for deleting a project
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this project?'**
+  String get deleteProjectConfirmation;
+
+  /// Label for project status
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get projectStatusLabel;
+
+  /// Status text when project is accepting proposals
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting proposals'**
+  String get acceptingProposals;
+
+  /// Status text when project is in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Project in progress'**
+  String get projectInProgress;
+
+  /// Button text to complete a project
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Project'**
+  String get completeProject;
+
+  /// Label for project posted date
+  ///
+  /// In en, this message translates to:
+  /// **'Posted'**
+  String get posted;
+
+  /// Label for view count
+  ///
+  /// In en, this message translates to:
+  /// **'views'**
+  String get views;
+
+  /// Title for contract details section
+  ///
+  /// In en, this message translates to:
+  /// **'Contract Details'**
+  String get contractDetails;
+
+  /// Message when interview limit is reached
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly interview invitation limit reached'**
+  String get interviewLimitReached;
+
+  /// Message when no interview invitations left
+  ///
+  /// In en, this message translates to:
+  /// **'No interview invitations left this month ({lim}/mo). Upgrade your plan to invite more.'**
+  String noInterviewInvitationsLeft(int lim);
+
+  /// Message showing remaining interview invitations
+  ///
+  /// In en, this message translates to:
+  /// **'{rem} of {lim} interview invitations left this month'**
+  String interviewInvitationsLeft(int rem, int lim);
+
+  /// Message when proposal status is updated
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal {status} updated successfully'**
+  String proposalStatusUpdated(String status);
+
+  /// Error message when updating proposal fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating proposal'**
+  String get errorUpdatingProposal;
+
+  /// Error message when proposal data is not found
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal data not found'**
+  String get proposalDataNotFound;
+
+  /// Error message when project or freelancer data is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Missing project or freelancer data'**
+  String get missingProjectOrFreelancerData;
+
+  /// Title for project proposals screen
+  ///
+  /// In en, this message translates to:
+  /// **'Project Proposals'**
+  String get projectProposals;
+
+  /// Title for AI recommended freelancers section
+  ///
+  /// In en, this message translates to:
+  /// **'AI Recommended Freelancers'**
+  String get aiRecommendedFreelancers;
+
+  /// Label for match percentage
+  ///
+  /// In en, this message translates to:
+  /// **'Match'**
+  String get match;
+
+  /// Button text to invite freelancer to project
+  ///
+  /// In en, this message translates to:
+  /// **'Invite to Project'**
+  String get inviteToProject;
+
+  /// Empty state message for proposals
+  ///
+  /// In en, this message translates to:
+  /// **'When freelancers submit proposals, they will appear here'**
+  String get whenFreelancersSubmitProposals;
+
+  /// Button text to negotiate with freelancer
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiate'**
+  String get negotiate;
+
+  /// Label for interview feature
+  ///
+  /// In en, this message translates to:
+  /// **'Interview'**
+  String get interview;
+
+  /// Option for manual time selection
+  ///
+  /// In en, this message translates to:
+  /// **'Manual (Choose Times)'**
+  String get manualChooseTimes;
+
+  /// Option for AI optimized time selection
+  ///
+  /// In en, this message translates to:
+  /// **'Smart (AI Optimized)'**
+  String get smartAIOptimized;
+
+  /// Message when no description is provided
+  ///
+  /// In en, this message translates to:
+  /// **'No description provided'**
+  String get noDescriptionProvided;
+
+  /// Label for delivery time
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get delivery;
+
+  /// Loading message when generating SOW
+  ///
+  /// In en, this message translates to:
+  /// **'Generating SOW...'**
+  String get generatingSOW;
+
+  /// Button text to generate SOW
+  ///
+  /// In en, this message translates to:
+  /// **'Generate SOW'**
+  String get generateSOW;
+
+  /// Loading message when creating something
+  ///
+  /// In en, this message translates to:
+  /// **'Creating...'**
+  String get creating;
+
+  /// Button text to view contract
+  ///
+  /// In en, this message translates to:
+  /// **'View Contract'**
+  String get viewContract;
+
+  /// Message for coming soon feature
+  ///
+  /// In en, this message translates to:
+  /// **'View Contract - Coming Soon'**
+  String get viewContractComingSoon;
+
+  /// Title when proposal is accepted
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal Accepted'**
+  String get proposalAccepted;
+
+  /// Message when contract is created
+  ///
+  /// In en, this message translates to:
+  /// **'A contract has been created. You can now communicate with the freelancer.'**
+  String get contractCreatedMessage;
+
+  /// Title when proposal is rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal Rejected'**
+  String get proposalRejected;
+
+  /// Message when proposal is rejected
+  ///
+  /// In en, this message translates to:
+  /// **'This proposal has been rejected. You can still contact the freelancer if needed.'**
+  String get proposalRejectedMessage;
+
+  /// Error message when contract creation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create contract'**
+  String get failedToCreateContract;
+
+  /// Message for AI interview invitation
+  ///
+  /// In en, this message translates to:
+  /// **'AI has analyzed availability and suggested optimal times. Please select the time that works best for you.'**
+  String get aiInterviewInvitationMessage;
+
+  /// Success message when smart interview invitation is sent
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Smart interview invitation sent to freelancer!'**
+  String get smartInterviewInvitationSent;
+
+  /// Title for AI suggested times dialog
+  ///
+  /// In en, this message translates to:
+  /// **'AI Suggested Times Sent'**
+  String get aiSuggestedTimesSent;
+
+  /// Description for AI times sent dialog
+  ///
+  /// In en, this message translates to:
+  /// **'The following AI-optimized times have been sent to the freelancer. They will select one that works for them.'**
+  String get aiTimesSentDescription;
+
+  /// Title for schedule interview dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule Interview'**
+  String get scheduleInterview;
+
+  /// Instruction for selecting interview times
+  ///
+  /// In en, this message translates to:
+  /// **'Select 1-3 preferred times for the interview'**
+  String get selectPreferredTimes;
+
+  /// Button to add interview time
+  ///
+  /// In en, this message translates to:
+  /// **'Add Time'**
+  String get addTime;
+
+  /// Hint for optional message field
+  ///
+  /// In en, this message translates to:
+  /// **'Add a message for the freelancer (optional)'**
+  String get optionalMessageHint;
+
+  /// Button to send interview invitation
+  ///
+  /// In en, this message translates to:
+  /// **'Send Invitation'**
+  String get sendInvitation;
+
+  /// Default message for interview invitation
+  ///
+  /// In en, this message translates to:
+  /// **'I would like to interview you for this project. Please select a time that works for you.'**
+  String get interviewInvitationMessage;
+
+  /// Success message when interview invitation is sent
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Interview invitation sent!'**
+  String get interviewInvitationSent;
+
+  /// Error message when sending invitation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error sending invitation'**
+  String get errorSendingInvitation;
+
+  /// Button text to acknowledge
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get gotIt;
+
+  /// No description provided for @clearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Filter '**
+  String get clearFilter;
+
+  /// No description provided for @showAllContracts.
+  ///
+  /// In en, this message translates to:
+  /// **' Show All Contracts '**
+  String get showAllContracts;
+
+  /// No description provided for @noActiveContracts.
+  ///
+  /// In en, this message translates to:
+  /// **'No Active Contracts'**
+  String get noActiveContracts;
+
+  /// No description provided for @noDraftContracts.
+  ///
+  /// In en, this message translates to:
+  /// **'No Draft Contracts'**
+  String get noDraftContracts;
+
+  /// No description provided for @noCompletedContracts.
+  ///
+  /// In en, this message translates to:
+  /// **'No Completed Contracts'**
+  String get noCompletedContracts;
+
+  /// No description provided for @noSignedContracts.
+  ///
+  /// In en, this message translates to:
+  /// **'No Signed Contracts'**
+  String get noSignedContracts;
+
+  /// No description provided for @active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get active;
+
+  /// No description provided for @draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get draft;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @ratingsAndReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings & Reviews'**
+  String get ratingsAndReviews;
+
+  /// No description provided for @viewAllReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Reviews'**
+  String get viewAllReviews;
+
+  /// No description provided for @seeMore.
+  ///
+  /// In en, this message translates to:
+  /// **'See more'**
+  String get seeMore;
+
+  /// No description provided for @topRated.
+  ///
+  /// In en, this message translates to:
+  /// **'Top rated'**
+  String get topRated;
+
+  /// No description provided for @risingTalent.
+  ///
+  /// In en, this message translates to:
+  /// **'Rising talent'**
+  String get risingTalent;
+
+  /// No description provided for @acceptingWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting work'**
+  String get acceptingWork;
+
+  /// No description provided for @limited.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited'**
+  String get limited;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get done;
+
+  /// No description provided for @hireForProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Hire for project'**
+  String get hireForProject;
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
+  /// No description provided for @atAGlance.
+  ///
+  /// In en, this message translates to:
+  /// **'At a glance'**
+  String get atAGlance;
+
+  /// No description provided for @portfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'Portfolio'**
+  String get portfolio;
+
+  /// No description provided for @response.
+  ///
+  /// In en, this message translates to:
+  /// **'Response'**
+  String get response;
+
+  /// No description provided for @hourly.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly'**
+  String get hourly;
+
+  /// No description provided for @commitment.
+  ///
+  /// In en, this message translates to:
+  /// **'Commitment'**
+  String get commitment;
+
+  /// No description provided for @skillsAndExpertise.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills & expertise'**
+  String get skillsAndExpertise;
+
+  /// No description provided for @categories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categories;
+
+  /// No description provided for @memberSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Member since'**
+  String get memberSince;
+
+  /// No description provided for @profileViews.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile views'**
+  String get profileViews;
+
+  /// No description provided for @workExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Work experience'**
+  String get workExperience;
+
+  /// No description provided for @website.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get website;
+
+  /// No description provided for @gitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub'**
+  String get gitHub;
+
+  /// No description provided for @linkedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'LinkedIn'**
+  String get linkedIn;
+
+  /// No description provided for @dribbble.
+  ///
+  /// In en, this message translates to:
+  /// **'Dribbble'**
+  String get dribbble;
+
+  /// No description provided for @twitter.
+  ///
+  /// In en, this message translates to:
+  /// **'Twitter'**
+  String get twitter;
+
+  /// No description provided for @featured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get featured;
+
+  /// No description provided for @recentlyDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently delivered projects'**
+  String get recentlyDelivered;
+
+  /// No description provided for @deliveredProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered project'**
+  String get deliveredProject;
+
+  /// No description provided for @delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get delivered;
+
+  /// No description provided for @clientReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Client reviews'**
+  String get clientReviews;
+
+  /// No description provided for @couldNotLoadProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this profile.'**
+  String get couldNotLoadProfile;
+
+  /// No description provided for @errorLoadingProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading profile'**
+  String get errorLoadingProfile;
+
+  /// No description provided for @failedToStartChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start chat'**
+  String get failedToStartChat;
+
+  /// No description provided for @freelancerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Freelancer profile'**
+  String get freelancerProfile;
+
+  /// No description provided for @professionalFreelancer.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional Freelancer'**
+  String get professionalFreelancer;
+
+  /// No description provided for @findFreelancers.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Freelancers'**
+  String get findFreelancers;
+
+  /// No description provided for @searchFreelancers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search freelancers...'**
+  String get searchFreelancers;
+
+  /// No description provided for @noFreelancersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No freelancers found'**
+  String get noFreelancersFound;
+
+  /// No description provided for @tryDifferentFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Try different filters'**
+  String get tryDifferentFilters;
+
+  /// No description provided for @freelancersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'freelancers found'**
+  String get freelancersFound;
+
+  /// No description provided for @selected.
+  ///
+  /// In en, this message translates to:
+  /// **'selected'**
+  String get selected;
+
+  /// No description provided for @activeFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Active filters'**
+  String get activeFilters;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clearAll;
+
+  /// No description provided for @allSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'All skills'**
+  String get allSkills;
+
+  /// No description provided for @minRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum rating'**
+  String get minRating;
+
+  /// No description provided for @minExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum experience'**
+  String get minExperience;
+
+  /// No description provided for @maxHourlyRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum hourly rate'**
+  String get maxHourlyRate;
+
+  /// No description provided for @lowestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowest first'**
+  String get lowestFirst;
+
+  /// No description provided for @highestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest first'**
+  String get highestFirst;
+
+  /// No description provided for @mostFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Most first'**
+  String get mostFirst;
+
+  /// No description provided for @filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get filters;
+
+  /// No description provided for @hireRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Hire request sent!'**
+  String get hireRequestSent;
+
+  /// No description provided for @compare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get compare;
+
+  /// No description provided for @skill.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill'**
+  String get skill;
+
+  /// No description provided for @sendOfferTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Offer to'**
+  String get sendOfferTo;
+
+  /// No description provided for @offerAmountOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer Amount (Optional)'**
+  String get offerAmountOptional;
+
+  /// No description provided for @enterAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter amount'**
+  String get enterAmount;
+
+  /// No description provided for @messageOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Message (Optional)'**
+  String get messageOptional;
+
+  /// No description provided for @writeMessageHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your message here...'**
+  String get writeMessageHere;
+
+  /// No description provided for @sendOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Offer'**
+  String get sendOffer;
+
+  /// No description provided for @offerSentSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer sent successfully!'**
+  String get offerSentSuccessfully;
+
+  /// No description provided for @noOpenProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'No open projects'**
+  String get noOpenProjects;
+
+  /// No description provided for @createProjectNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Project Now'**
+  String get createProjectNow;
+
+  /// No description provided for @hireFreelancer.
+  ///
+  /// In en, this message translates to:
+  /// **'Hire Freelancer'**
+  String get hireFreelancer;
+
+  /// No description provided for @sendCustomOfferToFreelancer.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a custom job offer to this freelancer'**
+  String get sendCustomOfferToFreelancer;
+
+  /// No description provided for @sendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Message'**
+  String get sendMessage;
+
+  /// No description provided for @discussBeforeHiring.
+  ///
+  /// In en, this message translates to:
+  /// **'Discuss details before hiring'**
+  String get discussBeforeHiring;
+
+  /// No description provided for @scheduleVideoCallInterview.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule a video call interview'**
+  String get scheduleVideoCallInterview;
+
+  /// No description provided for @offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Offers'**
+  String get offers;
+
+  /// No description provided for @noOffersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No offers yet'**
+  String get noOffersYet;
+
+  /// No description provided for @whenYouReceiveOffers.
+  ///
+  /// In en, this message translates to:
+  /// **'When you receive job offers, they will appear here'**
+  String get whenYouReceiveOffers;
+
+  /// No description provided for @offerAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer accepted'**
+  String get offerAccepted;
+
+  /// No description provided for @offerDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer declined'**
+  String get offerDeclined;
+
+  /// No description provided for @accept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get accept;
+
+  /// No description provided for @createProjectFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project first to hire freelancers'**
+  String get createProjectFirst;
+
+  /// No description provided for @createProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Project'**
+  String get createProject;
 }
 
 class _AppLocalizationsDelegate

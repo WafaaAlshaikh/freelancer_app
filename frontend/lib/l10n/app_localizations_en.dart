@@ -183,7 +183,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noImage => 'No image';
 
   @override
-  String get reviews => 'Reviews';
+  String get reviews => 'reviews';
 
   @override
   String get analytics => 'Analytics';
@@ -409,7 +409,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get any => 'Any';
 
   @override
-  String get budget => 'Budget';
+  String get budget => 'budget';
 
   @override
   String get deleteFilter => 'Delete Filter';
@@ -594,7 +594,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedin => 'LinkedIn';
 
   @override
-  String get behance => 'Behance / Dribbble';
+  String get behance => 'Behance';
 
   @override
   String get availability => 'Availability';
@@ -612,13 +612,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notAvailable => 'Not available';
 
   @override
-  String get weeklyHours => 'Weekly hours (available)';
+  String get weeklyHours => 'Weekly hours';
 
   @override
   String get yearsOfExperience => 'Years of Experience';
 
   @override
-  String get years => 'years';
+  String get years => 'yrs';
 
   @override
   String get hourlyRate => 'Hourly Rate';
@@ -941,7 +941,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get estHours => 'Est. Hours';
 
   @override
-  String get hours => 'hrs';
+  String get hours => 'h';
 
   @override
   String get baseRate => 'Base Rate';
@@ -2037,7 +2037,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timeline => 'Timeline';
 
   @override
-  String get invitationSent => 'Invitation Sent';
+  String get invitationSent => 'Invitation sent to';
 
   @override
   String get declined => 'Declined';
@@ -2638,5 +2638,634 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maxDuration => 'Max Duration';
 
   @override
-  String get sortBy => 'Sort By';
+  String get sortBy => 'Sort by';
+
+  @override
+  String get postNewProject => 'Post New Project';
+
+  @override
+  String get templates => 'Templates';
+
+  @override
+  String get projectDetailsHint =>
+      'Fill in the details below. AI will analyze and suggest improvements.';
+
+  @override
+  String get autoSaveHint =>
+      'Your progress is saved automatically on this device.';
+
+  @override
+  String get draftRestored => 'Continued from your saved draft';
+
+  @override
+  String get templateApplied => 'Template applied — edit and post when ready';
+
+  @override
+  String get clearDraft => 'Clear draft?';
+
+  @override
+  String get clearDraftConfirmation =>
+      'Remove the saved project draft from this device?';
+
+  @override
+  String get draftCleared => 'Draft cleared';
+
+  @override
+  String get projectTemplates => 'Project templates';
+
+  @override
+  String get templateHint => 'Prefill fields — still edit before posting.';
+
+  @override
+  String get clearSavedDraft => 'Clear saved draft';
+
+  @override
+  String get projectCreatedSuccess => '✅ Project created successfully';
+
+  @override
+  String get errorCreatingProject => 'Error creating project';
+
+  @override
+  String get projectTitle => 'Project Title';
+
+  @override
+  String get projectTitleHint => 'e.g., Build an E-commerce App';
+
+  @override
+  String get requiredField => 'Please enter a value';
+
+  @override
+  String get projectDescription => 'Project Description';
+
+  @override
+  String get projectDescriptionHint =>
+      'Describe your project in detail...\n- What do you need?\n- What are your expectations?\n- Any specific requirements?';
+
+  @override
+  String get durationDays => 'Duration (days)';
+
+  @override
+  String get selectCategory => 'Select a category';
+
+  @override
+  String get postProject => 'Post Project';
+
+  @override
+  String get milestonesAddedHint => 'Suggested milestones added to proposal';
+
+  @override
+  String get open => 'Open';
+
+  @override
+  String get aiRecommendations => 'Ai Recommendations';
+
+  @override
+  String get totalSpent => 'Total Spent';
+
+  @override
+  String get compareFreelancers => 'Compare Freelancers';
+
+  @override
+  String get switchToCardView => 'Switch to Card View';
+
+  @override
+  String get switchToDetailedView => 'Switch to Detailed View';
+
+  @override
+  String get analyzingFreelancers => 'Analyzing freelancers...';
+
+  @override
+  String get comparingFreelancersDesc =>
+      'Comparing skills, experience, and performance';
+
+  @override
+  String get noFreelancersToCompare => 'No freelancers to compare';
+
+  @override
+  String get selectAtLeastTwoFreelancers =>
+      'Select at least 2 freelancers to start comparing';
+
+  @override
+  String get goBack => 'Go Back';
+
+  @override
+  String get aiRecommendation => 'AI Recommendation';
+
+  @override
+  String get matchWithProject => 'match with your project';
+
+  @override
+  String get aiPick => 'AI Pick';
+
+  @override
+  String get overallRatingDescription => 'Overall rating and performance';
+
+  @override
+  String get skillsMatchDescription => 'Skills match with your project';
+
+  @override
+  String get experienceDescription => 'Years of experience & project count';
+
+  @override
+  String get reliabilityDescription => 'Completion rate & on-time delivery';
+
+  @override
+  String get communicationDescription => 'Response time & feedback';
+
+  @override
+  String get valueDescription => 'Price vs quality ratio';
+
+  @override
+  String get skillsMatch => 'Skills Match';
+
+  @override
+  String get withYourProject => 'with your project';
+
+  @override
+  String get ofProjectsCompleted => 'of projects completed';
+
+  @override
+  String get onTimeDelivery => 'On-Time Delivery';
+
+  @override
+  String get ofDeadlinesMet => 'of deadlines met';
+
+  @override
+  String get responseTime => 'Response Time';
+
+  @override
+  String get averageResponse => 'average response';
+
+  @override
+  String get projectsCompleted => 'Projects Completed';
+
+  @override
+  String get totalProjects => 'total projects';
+
+  @override
+  String get inTheField => 'in the field';
+
+  @override
+  String get hr => 'hr';
+
+  @override
+  String get topSkills => 'Top Skills';
+
+  @override
+  String get viewProfile => 'View Profile';
+
+  @override
+  String get hire => 'Hire';
+
+  @override
+  String get hour => 'hr';
+
+  @override
+  String get prj => 'prj';
+
+  @override
+  String get performanceComparison => 'Performance Comparison';
+
+  @override
+  String get ratingsComparison => 'Ratings Comparison';
+
+  @override
+  String get comprehensiveAnalysis => 'Comprehensive Analysis';
+
+  @override
+  String get overall => 'Overall';
+
+  @override
+  String get reliability => 'Reliability';
+
+  @override
+  String get value => 'Value';
+
+  @override
+  String get viewCharts => 'View Charts';
+
+  @override
+  String get deleteProject => 'Delete Project';
+
+  @override
+  String get deleteProjectConfirmation =>
+      'Are you sure you want to delete this project?';
+
+  @override
+  String get projectStatusLabel => 'Status';
+
+  @override
+  String get acceptingProposals => 'Accepting proposals';
+
+  @override
+  String get projectInProgress => 'Project in progress';
+
+  @override
+  String get completeProject => 'Complete Project';
+
+  @override
+  String get posted => 'Posted';
+
+  @override
+  String get views => 'views';
+
+  @override
+  String get contractDetails => 'Contract Details';
+
+  @override
+  String get interviewLimitReached =>
+      'Monthly interview invitation limit reached';
+
+  @override
+  String noInterviewInvitationsLeft(int lim) {
+    return 'No interview invitations left this month ($lim/mo). Upgrade your plan to invite more.';
+  }
+
+  @override
+  String interviewInvitationsLeft(int rem, int lim) {
+    return '$rem of $lim interview invitations left this month';
+  }
+
+  @override
+  String proposalStatusUpdated(String status) {
+    return 'Proposal $status updated successfully';
+  }
+
+  @override
+  String get errorUpdatingProposal => 'Error updating proposal';
+
+  @override
+  String get proposalDataNotFound => 'Proposal data not found';
+
+  @override
+  String get missingProjectOrFreelancerData =>
+      'Missing project or freelancer data';
+
+  @override
+  String get projectProposals => 'Project Proposals';
+
+  @override
+  String get aiRecommendedFreelancers => 'AI Recommended Freelancers';
+
+  @override
+  String get match => 'Match';
+
+  @override
+  String get inviteToProject => 'Invite to Project';
+
+  @override
+  String get whenFreelancersSubmitProposals =>
+      'When freelancers submit proposals, they will appear here';
+
+  @override
+  String get negotiate => 'Negotiate';
+
+  @override
+  String get interview => 'Interview';
+
+  @override
+  String get manualChooseTimes => 'Manual (Choose Times)';
+
+  @override
+  String get smartAIOptimized => 'Smart (AI Optimized)';
+
+  @override
+  String get noDescriptionProvided => 'No description provided';
+
+  @override
+  String get delivery => 'Delivery';
+
+  @override
+  String get generatingSOW => 'Generating SOW...';
+
+  @override
+  String get generateSOW => 'Generate SOW';
+
+  @override
+  String get creating => 'Creating...';
+
+  @override
+  String get viewContract => 'View Contract';
+
+  @override
+  String get viewContractComingSoon => 'View Contract - Coming Soon';
+
+  @override
+  String get proposalAccepted => 'Proposal Accepted';
+
+  @override
+  String get contractCreatedMessage =>
+      'A contract has been created. You can now communicate with the freelancer.';
+
+  @override
+  String get proposalRejected => 'Proposal Rejected';
+
+  @override
+  String get proposalRejectedMessage =>
+      'This proposal has been rejected. You can still contact the freelancer if needed.';
+
+  @override
+  String get failedToCreateContract => 'Failed to create contract';
+
+  @override
+  String get aiInterviewInvitationMessage =>
+      'AI has analyzed availability and suggested optimal times. Please select the time that works best for you.';
+
+  @override
+  String get smartInterviewInvitationSent =>
+      '✅ Smart interview invitation sent to freelancer!';
+
+  @override
+  String get aiSuggestedTimesSent => 'AI Suggested Times Sent';
+
+  @override
+  String get aiTimesSentDescription =>
+      'The following AI-optimized times have been sent to the freelancer. They will select one that works for them.';
+
+  @override
+  String get scheduleInterview => 'Schedule Interview';
+
+  @override
+  String get selectPreferredTimes =>
+      'Select 1-3 preferred times for the interview';
+
+  @override
+  String get addTime => 'Add Time';
+
+  @override
+  String get optionalMessageHint =>
+      'Add a message for the freelancer (optional)';
+
+  @override
+  String get sendInvitation => 'Send Invitation';
+
+  @override
+  String get interviewInvitationMessage =>
+      'I would like to interview you for this project. Please select a time that works for you.';
+
+  @override
+  String get interviewInvitationSent => '✅ Interview invitation sent!';
+
+  @override
+  String get errorSendingInvitation => 'Error sending invitation';
+
+  @override
+  String get gotIt => 'Got it';
+
+  @override
+  String get clearFilter => 'Clear Filter ';
+
+  @override
+  String get showAllContracts => ' Show All Contracts ';
+
+  @override
+  String get noActiveContracts => 'No Active Contracts';
+
+  @override
+  String get noDraftContracts => 'No Draft Contracts';
+
+  @override
+  String get noCompletedContracts => 'No Completed Contracts';
+
+  @override
+  String get noSignedContracts => 'No Signed Contracts';
+
+  @override
+  String get active => 'Active';
+
+  @override
+  String get draft => 'Draft';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get ratingsAndReviews => 'Ratings & Reviews';
+
+  @override
+  String get viewAllReviews => 'View All Reviews';
+
+  @override
+  String get seeMore => 'See more';
+
+  @override
+  String get topRated => 'Top rated';
+
+  @override
+  String get risingTalent => 'Rising talent';
+
+  @override
+  String get acceptingWork => 'Accepting work';
+
+  @override
+  String get limited => 'Limited';
+
+  @override
+  String get done => 'done';
+
+  @override
+  String get hireForProject => 'Hire for project';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get atAGlance => 'At a glance';
+
+  @override
+  String get portfolio => 'Portfolio';
+
+  @override
+  String get response => 'Response';
+
+  @override
+  String get hourly => 'Hourly';
+
+  @override
+  String get commitment => 'Commitment';
+
+  @override
+  String get skillsAndExpertise => 'Skills & expertise';
+
+  @override
+  String get categories => 'Categories';
+
+  @override
+  String get memberSince => 'Member since';
+
+  @override
+  String get profileViews => 'Profile views';
+
+  @override
+  String get workExperience => 'Work experience';
+
+  @override
+  String get website => 'Website';
+
+  @override
+  String get gitHub => 'GitHub';
+
+  @override
+  String get linkedIn => 'LinkedIn';
+
+  @override
+  String get dribbble => 'Dribbble';
+
+  @override
+  String get twitter => 'Twitter';
+
+  @override
+  String get featured => 'Featured';
+
+  @override
+  String get recentlyDelivered => 'Recently delivered projects';
+
+  @override
+  String get deliveredProject => 'Delivered project';
+
+  @override
+  String get delivered => 'Delivered';
+
+  @override
+  String get clientReviews => 'Client reviews';
+
+  @override
+  String get couldNotLoadProfile => 'Could not load this profile.';
+
+  @override
+  String get errorLoadingProfile => 'Error loading profile';
+
+  @override
+  String get failedToStartChat => 'Failed to start chat';
+
+  @override
+  String get freelancerProfile => 'Freelancer profile';
+
+  @override
+  String get professionalFreelancer => 'Professional Freelancer';
+
+  @override
+  String get findFreelancers => 'Find Freelancers';
+
+  @override
+  String get searchFreelancers => 'Search freelancers...';
+
+  @override
+  String get noFreelancersFound => 'No freelancers found';
+
+  @override
+  String get tryDifferentFilters => 'Try different filters';
+
+  @override
+  String get freelancersFound => 'freelancers found';
+
+  @override
+  String get selected => 'selected';
+
+  @override
+  String get activeFilters => 'Active filters';
+
+  @override
+  String get clearAll => 'Clear all';
+
+  @override
+  String get allSkills => 'All skills';
+
+  @override
+  String get minRating => 'Minimum rating';
+
+  @override
+  String get minExperience => 'Minimum experience';
+
+  @override
+  String get maxHourlyRate => 'Maximum hourly rate';
+
+  @override
+  String get lowestFirst => 'Lowest first';
+
+  @override
+  String get highestFirst => 'Highest first';
+
+  @override
+  String get mostFirst => 'Most first';
+
+  @override
+  String get filters => 'Filters';
+
+  @override
+  String get hireRequestSent => 'Hire request sent!';
+
+  @override
+  String get compare => 'Compare';
+
+  @override
+  String get skill => 'Skill';
+
+  @override
+  String get sendOfferTo => 'Send Offer to';
+
+  @override
+  String get offerAmountOptional => 'Offer Amount (Optional)';
+
+  @override
+  String get enterAmount => 'Enter amount';
+
+  @override
+  String get messageOptional => 'Message (Optional)';
+
+  @override
+  String get writeMessageHere => 'Write your message here...';
+
+  @override
+  String get sendOffer => 'Send Offer';
+
+  @override
+  String get offerSentSuccessfully => 'Offer sent successfully!';
+
+  @override
+  String get noOpenProjects => 'No open projects';
+
+  @override
+  String get createProjectNow => 'Create Project Now';
+
+  @override
+  String get hireFreelancer => 'Hire Freelancer';
+
+  @override
+  String get sendCustomOfferToFreelancer =>
+      'Send a custom job offer to this freelancer';
+
+  @override
+  String get sendMessage => 'Send Message';
+
+  @override
+  String get discussBeforeHiring => 'Discuss details before hiring';
+
+  @override
+  String get scheduleVideoCallInterview => 'Schedule a video call interview';
+
+  @override
+  String get offers => 'Offers';
+
+  @override
+  String get noOffersYet => 'No offers yet';
+
+  @override
+  String get whenYouReceiveOffers =>
+      'When you receive job offers, they will appear here';
+
+  @override
+  String get offerAccepted => 'Offer accepted';
+
+  @override
+  String get offerDeclined => 'Offer declined';
+
+  @override
+  String get accept => 'Accept';
+
+  @override
+  String get createProjectFirst => 'Create a project first to hire freelancers';
+
+  @override
+  String get createProject => 'Create Project';
 }

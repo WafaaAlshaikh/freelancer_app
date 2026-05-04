@@ -8,9 +8,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../services/chat_service.dart';
 import '../../utils/constants.dart';
+import '../../theme/app_theme.dart';
 
 class FreelancerProfilePreviewScreen extends StatefulWidget {
   final int freelancerId;
@@ -34,15 +36,6 @@ class _FreelancerProfilePreviewScreenState
   bool _isHiring = false;
   List<dynamic> _recentReviews = [];
   RatingStats? _stats;
-
-  static const Color _primary = Color(0xFF6366F1);
-  static const Color _primaryDark = Color(0xFF4F46E5);
-  static const Color _success = Color(0xFF10B981);
-  static const Color _warning = Color(0xFFF59E0B);
-  static const Color _dark = Color(0xFF1F2937);
-  static const Color _gray = Color(0xFF6B7280);
-  static const Color _lightGray = Color(0xFFF3F4F6);
-  static const Color _border = Color(0xFFE5E7EB);
 
   List<dynamic> _safeList(dynamic value) {
     if (value == null) return [];
@@ -74,11 +67,12 @@ class _FreelancerProfilePreviewScreenState
     }
   }
 
-  Widget _buildReviewCard(Map<String, dynamic> review) {
+  Widget _buildReviewCard(Map<String, dynamic> review, ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final rating = (review['rating'] ?? 0).toDouble();
     final comment = review['comment'] ?? '';
     final fromUser = review['fromUser'] ?? {};
-    final userName = fromUser['name'] ?? 'Client';
+    final userName = fromUser['name'] ?? t.client;
     final userAvatar = fromUser['avatar'];
     final createdAt = review['createdAt'] != null
         ? DateTime.tryParse(review['createdAt'])
@@ -86,6 +80,8 @@ class _FreelancerProfilePreviewScreenState
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: theme.cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -109,22 +105,31 @@ class _FreelancerProfilePreviewScreenState
                     children: [
                       Text(
                         userName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
-                      RatingStars(rating: rating, size: 12),
+                      _buildRatingStars(rating, theme),
                     ],
                   ),
                 ),
                 if (createdAt != null)
                   Text(
                     _formatDate(createdAt),
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    style: TextStyle(fontSize: 10, color: AppColors.gray),
                   ),
               ],
             ),
             if (comment.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(comment, style: const TextStyle(fontSize: 13)),
+              Text(
+                comment,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
             ],
           ],
         ),
@@ -172,15 +177,17 @@ class _FreelancerProfilePreviewScreenState
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
+        final t = AppLocalizations.of(context)!;
         Fluttertoast.showToast(
-          msg: 'Error loading profile: $e',
-          backgroundColor: Colors.red,
+          msg: '${t.errorLoadingProfile}: $e',
+          backgroundColor: AppColors.danger,
         );
       }
     }
   }
 
   Future<void> _startChat() async {
+    final t = AppLocalizations.of(context)!;
     setState(() => _isHiring = true);
     try {
       final result = await ChatService.createChat(widget.freelancerId);
@@ -188,7 +195,7 @@ class _FreelancerProfilePreviewScreenState
 
       if (result['success'] == true || result['id'] != null) {
         final chatId = result['chat']?['id'] ?? result['id'];
-        final freelancerName = _profileData['user']?['name'] ?? 'Freelancer';
+        final freelancerName = _profileData['user']?['name'] ?? t.freelancer;
         final freelancerAvatar = _profileData['user']?['avatar'];
 
         Navigator.pushNamed(
@@ -203,110 +210,125 @@ class _FreelancerProfilePreviewScreenState
         );
       } else {
         Fluttertoast.showToast(
-          msg: result['message'] ?? 'Failed to start chat',
-          backgroundColor: Colors.red,
+          msg: result['message'] ?? t.failedToStartChat,
+          backgroundColor: AppColors.danger,
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e', backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+        msg: '${t.error}: $e',
+        backgroundColor: AppColors.danger,
+      );
     } finally {
       if (mounted) setState(() => _isHiring = false);
     }
   }
 
-  Widget _buildRatingAndReviews() {
-  final stats = _profileData['stats'] ?? {};
-  final reviews = _safeList(_profileData['reviews']);
-  final rating = (stats['rating'] ?? 0).toDouble();
-  final totalReviews = stats['total_reviews'] ?? 0;
-  
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Ratings & Reviews',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    rating.toStringAsFixed(1),
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber,
-                    ),
-                  ),
-                  RatingStars(rating: rating, size: 16),
-                  Text(
-                    '$totalReviews reviews',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
+  Widget _buildRatingAndReviews(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
+    final stats = _profileData['stats'] ?? {};
+    final reviews = _safeList(_profileData['reviews']);
+    final rating = (stats['rating'] ?? 0).toDouble();
+    final totalReviews = stats['total_reviews'] ?? 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t.ratingsAndReviews,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ReviewsScreen(
-                      userId: widget.freelancerId,
-                      userName: _profileData['user']?['name'] ?? 'Freelancer',
-                      userRole: 'freelancer',
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.star_border),
-              label: const Text('View All Reviews'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.amber,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Colors.amber),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      ...reviews.take(3).map((review) => _buildReviewCard(review)),
-      if (reviews.length > 3)
-        TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ReviewsScreen(
-                  userId: widget.freelancerId,
-                  userName: _profileData['user']?['name'] ?? 'Freelancer',
-                  userRole: 'freelancer',
-                ),
-              ),
-            );
-          },
-          child: const Text('See more reviews →'),
         ),
-    ],
-  );
-}
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                    0.5,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      rating.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber,
+                      ),
+                    ),
+                    _buildRatingStars(rating, theme),
+                    Text(
+                      '$totalReviews ${t.reviews}',
+                      style: TextStyle(fontSize: 12, color: AppColors.gray),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReviewsScreen(
+                        userId: widget.freelancerId,
+                        userName: _profileData['user']?['name'] ?? t.freelancer,
+                        userRole: 'freelancer',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.star_border),
+                label: Text(t.viewAllReviews),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.cardColor,
+                  foregroundColor: Colors.amber,
+                  side: const BorderSide(color: Colors.amber),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...reviews.take(3).map((review) => _buildReviewCard(review, theme)),
+        if (reviews.length > 3)
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReviewsScreen(
+                    userId: widget.freelancerId,
+                    userName: _profileData['user']?['name'] ?? t.freelancer,
+                    userRole: 'freelancer',
+                  ),
+                ),
+              );
+            },
+            child: Text(
+              '${t.seeMore} →',
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
+          ),
+      ],
+    );
+  }
+
   Future<void> _hireOrOpenProjectHire() async {
+    final t = AppLocalizations.of(context)!;
     if (widget.projectId == null) {
       await _startChat();
       return;
@@ -325,19 +347,20 @@ class _FreelancerProfilePreviewScreenState
         },
       );
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      Fluttertoast.showToast(msg: '${t.error}: $e');
     } finally {
       if (mounted) setState(() => _isHiring = false);
     }
   }
 
   void _shareProfile() {
+    final t = AppLocalizations.of(context)!;
     final user = _profileData['user'] ?? {};
     final profile = _profileData['profile'] ?? {};
-    final name = user['name'] ?? 'Freelancer';
+    final name = user['name'] ?? t.freelancer;
     final title = profile['title'] ?? user['tagline'] ?? '';
     final text = title.toString().isNotEmpty ? '$name — $title' : name;
-    Share.share('$text\n(Freelancer profile)');
+    Share.share('$text\n(${t.freelancerProfile})');
   }
 
   String _mediaUrl(String? path) => apiMediaUrl(path);
@@ -385,15 +408,16 @@ class _FreelancerProfilePreviewScreenState
   }
 
   String _availabilityLabel(String? code) {
+    final t = AppLocalizations.of(context)!;
     switch (code) {
       case 'full_time':
-        return 'Full-time';
+        return t.fullTime;
       case 'part_time':
-        return 'Part-time';
+        return t.partTime;
       case 'as_needed':
-        return 'As needed';
+        return t.asNeeded;
       case 'not_available':
-        return 'Not available';
+        return t.notAvailable;
       default:
         return code?.replaceAll('_', ' ') ?? '';
     }
@@ -410,16 +434,16 @@ class _FreelancerProfilePreviewScreenState
     }
   }
 
-  Widget _buildRatingStar(double rating) {
+  Widget _buildRatingStars(double rating, ThemeData theme) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (index) {
         if (index < rating.floor()) {
-          return const Icon(Icons.star, color: Colors.amber, size: 16);
+          return const Icon(Icons.star, color: Colors.amber, size: 14);
         } else if (index < rating && rating - index > 0.5) {
-          return const Icon(Icons.star_half, color: Colors.amber, size: 16);
+          return const Icon(Icons.star_half, color: Colors.amber, size: 14);
         } else {
-          return const Icon(Icons.star_border, color: Colors.amber, size: 16);
+          return const Icon(Icons.star_border, color: Colors.amber, size: 14);
         }
       }),
     );
@@ -431,6 +455,7 @@ class _FreelancerProfilePreviewScreenState
     required VoidCallback onPressed,
     required bool isLoading,
     required bool outlined,
+    required ThemeData theme,
   }) {
     if (outlined) {
       return OutlinedButton.icon(
@@ -439,16 +464,13 @@ class _FreelancerProfilePreviewScreenState
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: _primary,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2),
               )
             : Icon(icon, size: 18),
         label: Text(label),
         style: OutlinedButton.styleFrom(
-          foregroundColor: _primary,
-          side: const BorderSide(color: _primary),
+          foregroundColor: theme.colorScheme.primary,
+          side: BorderSide(color: theme.colorScheme.primary),
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -462,15 +484,12 @@ class _FreelancerProfilePreviewScreenState
           ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2),
             )
           : Icon(icon, size: 18),
       label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: _primary,
+        backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -479,14 +498,15 @@ class _FreelancerProfilePreviewScreenState
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeData theme, bool isDark) {
+    final t = AppLocalizations.of(context)!;
     final user = _profileData['user'] ?? {};
     final profile = _profileData['profile'] ?? {};
     final stats = _profileData['stats'] ?? {};
     final trust = _profileData['trust'] ?? {};
-    final name = user['name'] ?? 'Freelancer';
+    final name = user['name'] ?? t.freelancer;
     final title =
-        profile['title'] ?? user['tagline'] ?? 'Professional Freelancer';
+        profile['title'] ?? user['tagline'] ?? t.professionalFreelancer;
     final avatarUrl = _mediaUrl(user['avatar']?.toString());
     final coverUrl = _mediaUrl(user['cover_image']?.toString());
     final rating = _getSafeDouble(stats['rating']);
@@ -511,25 +531,34 @@ class _FreelancerProfilePreviewScreenState
                       imageUrl: coverUrl,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [_primary, _primaryDark],
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.primary.withOpacity(0.7),
+                            ],
                           ),
                         ),
                       ),
                       errorWidget: (_, __, ___) => Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [_primary, _primaryDark],
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.primary.withOpacity(0.7),
+                            ],
                           ),
                         ),
                       ),
                     )
                   else
                     Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [_primary, _primaryDark],
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withOpacity(0.7),
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -590,7 +619,8 @@ class _FreelancerProfilePreviewScreenState
                                 imageUrl: avatarUrl,
                                 fit: BoxFit.cover,
                                 placeholder: (_, __) => Container(
-                                  color: _lightGray,
+                                  color:
+                                      theme.colorScheme.surfaceContainerHighest,
                                   child: const Center(
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
@@ -598,7 +628,9 @@ class _FreelancerProfilePreviewScreenState
                                   ),
                                 ),
                                 errorWidget: (_, __, ___) => Container(
-                                  color: _primary.withOpacity(0.3),
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.3,
+                                  ),
                                   child: Center(
                                     child: Text(
                                       _initials(name),
@@ -612,7 +644,9 @@ class _FreelancerProfilePreviewScreenState
                                 ),
                               )
                             : Container(
-                                color: _primary.withOpacity(0.35),
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.35,
+                                ),
                                 child: Center(
                                   child: Text(
                                     _initials(name),
@@ -629,19 +663,19 @@ class _FreelancerProfilePreviewScreenState
                     const SizedBox(height: 12),
                     Text(
                       name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: _dark,
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: _gray,
+                        color: AppColors.gray,
                         height: 1.3,
                       ),
                       textAlign: TextAlign.center,
@@ -653,15 +687,31 @@ class _FreelancerProfilePreviewScreenState
                       alignment: WrapAlignment.center,
                       children: [
                         if (trust['identity_verified'] == true)
-                          _pill(Icons.verified_user, 'Verified', _success),
+                          _buildPill(
+                            Icons.verified_user,
+                            t.verified,
+                            AppColors.success,
+                            theme,
+                          ),
                         if (trust['top_rated'] == true)
-                          _pill(Icons.military_tech, 'Top rated', _warning),
+                          _buildPill(
+                            Icons.military_tech,
+                            t.topRated,
+                            AppColors.warning,
+                            theme,
+                          ),
                         if (trust['rising_talent'] == true)
-                          _pill(Icons.trending_up, 'Rising talent', _primary),
-                        _pill(
+                          _buildPill(
+                            Icons.trending_up,
+                            t.risingTalent,
+                            theme.colorScheme.primary,
+                            theme,
+                          ),
+                        _buildPill(
                           isAvailable ? Icons.circle : Icons.circle_outlined,
-                          isAvailable ? 'Accepting work' : 'Limited',
-                          isAvailable ? _success : _gray,
+                          isAvailable ? t.acceptingWork : t.limited,
+                          isAvailable ? AppColors.success : AppColors.gray,
+                          theme,
                         ),
                       ],
                     ),
@@ -669,34 +719,42 @@ class _FreelancerProfilePreviewScreenState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildRatingStar(rating),
+                        _buildRatingStars(rating, theme),
                         const SizedBox(width: 8),
                         Text(
                           rating.toStringAsFixed(1),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: _dark,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         Text(
-                          ' ($totalReviews reviews)',
-                          style: const TextStyle(fontSize: 13, color: _gray),
+                          ' ($totalReviews ${t.reviews})',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.gray,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Text(
                           '·',
-                          style: TextStyle(color: _gray.withOpacity(0.5)),
+                          style: TextStyle(
+                            color: AppColors.gray.withOpacity(0.5),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Icon(
                           Icons.work_outline,
                           size: 16,
-                          color: _gray.withOpacity(0.9),
+                          color: AppColors.gray.withOpacity(0.9),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '$completedProjects done',
-                          style: const TextStyle(fontSize: 13, color: _gray),
+                          '$completedProjects ${t.done}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.gray,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Container(
@@ -705,7 +763,7 @@ class _FreelancerProfilePreviewScreenState
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: _success.withOpacity(0.12),
+                            color: AppColors.success.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -725,10 +783,11 @@ class _FreelancerProfilePreviewScreenState
                         Expanded(
                           child: _buildActionButton(
                             icon: Icons.chat_bubble_outline,
-                            label: 'Message',
+                            label: t.message,
                             onPressed: _startChat,
                             isLoading: _isHiring,
                             outlined: true,
+                            theme: theme,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -736,11 +795,12 @@ class _FreelancerProfilePreviewScreenState
                           child: _buildActionButton(
                             icon: Icons.work_outline,
                             label: widget.projectId != null
-                                ? 'Hire for project'
-                                : 'Contact',
+                                ? t.hireForProject
+                                : t.contact,
                             onPressed: _hireOrOpenProjectHire,
                             isLoading: _isHiring,
                             outlined: false,
+                            theme: theme,
                           ),
                         ),
                       ],
@@ -755,7 +815,7 @@ class _FreelancerProfilePreviewScreenState
     );
   }
 
-  Widget _pill(IconData icon, String text, Color color) {
+  Widget _buildPill(IconData icon, String text, Color color, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -770,10 +830,10 @@ class _FreelancerProfilePreviewScreenState
           const SizedBox(width: 6),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: _dark,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -781,12 +841,16 @@ class _FreelancerProfilePreviewScreenState
     );
   }
 
-  Widget _sectionCard({required String title, required List<Widget> children}) {
+  Widget _sectionCard({
+    required String title,
+    required List<Widget> children,
+    required ThemeData theme,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -801,10 +865,10 @@ class _FreelancerProfilePreviewScreenState
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: _dark,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -814,7 +878,8 @@ class _FreelancerProfilePreviewScreenState
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final stats = _profileData['stats'] ?? {};
     final profile = _profileData['profile'] ?? {};
 
@@ -834,7 +899,7 @@ class _FreelancerProfilePreviewScreenState
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -847,12 +912,12 @@ class _FreelancerProfilePreviewScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'At a glance',
+          Text(
+            t.atAGlance,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: _dark,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 16),
@@ -861,27 +926,30 @@ class _FreelancerProfilePreviewScreenState
               Expanded(
                 child: _buildStatCard(
                   value: '$completedProjects',
-                  label: 'Completed',
+                  label: t.completed,
                   icon: Icons.check_circle_outline,
-                  color: _success,
+                  color: AppColors.success,
+                  theme: theme,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
                   value: '$totalReviews',
-                  label: 'Reviews',
+                  label: t.reviews,
                   icon: Icons.reviews_outlined,
-                  color: _primary,
+                  color: theme.colorScheme.primary,
+                  theme: theme,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
                   value: '$activeProjects',
-                  label: 'Active',
+                  label: t.active,
                   icon: Icons.trending_up,
-                  color: _warning,
+                  color: AppColors.warning,
+                  theme: theme,
                 ),
               ),
             ],
@@ -892,32 +960,51 @@ class _FreelancerProfilePreviewScreenState
               Expanded(
                 child: _buildStatCard(
                   value: '$portfolioCount',
-                  label: 'Portfolio',
+                  label: t.portfolio,
                   icon: Icons.collections_bookmark_outlined,
                   color: const Color(0xFF8B5CF6),
+                  theme: theme,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Divider(color: _border),
+          Divider(color: theme.dividerColor),
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildInfoRow(Icons.access_time, 'Response', '$responseTime h'),
+              _buildInfoRow(
+                Icons.access_time,
+                t.response,
+                '$responseTime h',
+                theme,
+              ),
               const Spacer(),
-              _buildInfoRow(Icons.star, 'Rating', rating.toStringAsFixed(1)),
+              _buildInfoRow(
+                Icons.star,
+                t.rating,
+                rating.toStringAsFixed(1),
+                theme,
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildInfoRow(Icons.work, 'Experience', '$experienceYears yrs'),
+              _buildInfoRow(
+                Icons.work,
+                t.experience,
+                '$experienceYears ${t.years}',
+                theme,
+              ),
               const Spacer(),
               _buildInfoRow(
                 Icons.attach_money,
-                'Hourly',
-                hourlyRate > 0 ? '\$${hourlyRate.toStringAsFixed(0)}/hr' : '—',
+                t.hourly,
+                hourlyRate > 0
+                    ? '\$${hourlyRate.toStringAsFixed(0)}/${t.hour}'
+                    : '—',
+                theme,
               ),
             ],
           ),
@@ -931,6 +1018,7 @@ class _FreelancerProfilePreviewScreenState
     required String label,
     required IconData icon,
     required Color color,
+    required ThemeData theme,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -951,31 +1039,43 @@ class _FreelancerProfilePreviewScreenState
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 11, color: _gray)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: AppColors.gray),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value,
+    ThemeData theme,
+  ) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: _gray),
+        Icon(icon, size: 16, color: AppColors.gray),
         const SizedBox(width: 6),
-        Text('$label: ', style: const TextStyle(fontSize: 13, color: _gray)),
+        Text(
+          '$label: ',
+          style: const TextStyle(fontSize: 13, color: AppColors.gray),
+        ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: _dark,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAvailabilitySection() {
+  Widget _buildAvailabilitySection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
     final avail = profile['availability']?.toString();
     final weekly = _getSafeInt(profile['weekly_hours'], defaultValue: 40);
@@ -984,23 +1084,30 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Availability',
+        title: t.availability,
         children: [
           _buildInfoRow(
             Icons.schedule,
-            'Commitment',
+            t.commitment,
             _availabilityLabel(avail),
+            theme,
           ),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.timelapse, 'Weekly hours', '$weekly h'),
+          _buildInfoRow(
+            Icons.timelapse,
+            t.weeklyHours,
+            '$weekly ${t.hours}',
+            theme,
+          ),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildSkillsSection() {
+  Widget _buildSkillsSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
-
     final skills = _safeList(profile['skills']);
     final topSkills = _safeList(profile['top_skills']);
 
@@ -1013,7 +1120,7 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Skills & expertise',
+        title: t.skillsAndExpertise,
         children: [
           Wrap(
             spacing: 8,
@@ -1025,14 +1132,14 @@ class _FreelancerProfilePreviewScreenState
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: _primary.withOpacity(0.1),
+                  color: theme.colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   skill.toString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: _primary,
+                    color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1040,11 +1147,13 @@ class _FreelancerProfilePreviewScreenState
             }).toList(),
           ),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildLanguagesSection() {
+  Widget _buildLanguagesSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
     final langs = _safeList(profile['languages']);
     if (langs.isEmpty) return const SizedBox.shrink();
@@ -1052,7 +1161,7 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Languages',
+        title: t.languages,
         children: [
           Wrap(
             spacing: 8,
@@ -1061,19 +1170,24 @@ class _FreelancerProfilePreviewScreenState
                 .map(
                   (e) => Chip(
                     label: Text(e.toString()),
-                    backgroundColor: _lightGray,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                     side: BorderSide.none,
-                    labelStyle: const TextStyle(fontSize: 13, color: _dark),
+                    labelStyle: TextStyle(
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                 )
                 .toList(),
           ),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildCategoriesSection() {
+  Widget _buildCategoriesSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
     final cats = _safeList(profile['categories']);
     if (cats.isEmpty) return const SizedBox.shrink();
@@ -1081,7 +1195,7 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Categories',
+        title: t.categories,
         children: [
           Wrap(
             spacing: 8,
@@ -1095,22 +1209,27 @@ class _FreelancerProfilePreviewScreenState
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: _border),
+                      border: Border.all(color: theme.dividerColor),
                     ),
                     child: Text(
                       c.toString(),
-                      style: const TextStyle(fontSize: 13, color: _dark),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 )
                 .toList(),
           ),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildAboutSection() {
+  Widget _buildAboutSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
     final user = _profileData['user'] ?? {};
     final bio = (profile['display_bio'] ?? profile['bio'] ?? user['bio'] ?? '')
@@ -1135,7 +1254,7 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'About',
+        title: t.about,
         children: [
           if (location.isNotEmpty)
             Padding(
@@ -1143,12 +1262,19 @@ class _FreelancerProfilePreviewScreenState
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_on, size: 18, color: _gray),
+                  const Icon(
+                    Icons.location_on,
+                    size: 18,
+                    color: AppColors.gray,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       location,
-                      style: const TextStyle(fontSize: 14, color: _dark),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ],
@@ -1162,14 +1288,16 @@ class _FreelancerProfilePreviewScreenState
                 if (memberSince != null)
                   _buildInfoRow(
                     Icons.calendar_today_outlined,
-                    'Member since',
+                    t.memberSince,
                     '${memberSince.year}',
+                    theme,
                   ),
                 if (views > 0)
                   _buildInfoRow(
                     Icons.visibility_outlined,
-                    'Profile views',
+                    t.profileViews,
                     '$views',
+                    theme,
                   ),
               ],
             ),
@@ -1178,14 +1306,20 @@ class _FreelancerProfilePreviewScreenState
           if (bio.isNotEmpty)
             Text(
               bio,
-              style: const TextStyle(fontSize: 14, height: 1.55, color: _dark),
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.55,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildWorkExperienceSection() {
+  Widget _buildWorkExperienceSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
     final raw = _safeList(profile['work_experience']);
     if (raw.isEmpty) return const SizedBox.shrink();
@@ -1193,7 +1327,7 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Work experience',
+        title: t.workExperience,
         children: raw.map((item) {
           final m = _safeMap(item);
           final role = m['title'] ?? m['role'] ?? m['position'] ?? '';
@@ -1214,7 +1348,7 @@ class _FreelancerProfilePreviewScreenState
                   width: 4,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: _primary.withOpacity(0.35),
+                    color: theme.colorScheme.primary.withOpacity(0.35),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -1226,16 +1360,19 @@ class _FreelancerProfilePreviewScreenState
                       if (role.toString().isNotEmpty)
                         Text(
                           role.toString(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: _dark,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       if (company.toString().isNotEmpty)
                         Text(
                           company.toString(),
-                          style: const TextStyle(fontSize: 13, color: _gray),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.gray,
+                          ),
                         ),
                       if (period.isNotEmpty)
                         Padding(
@@ -1244,7 +1381,7 @@ class _FreelancerProfilePreviewScreenState
                             period,
                             style: TextStyle(
                               fontSize: 12,
-                              color: _gray.withOpacity(0.9),
+                              color: AppColors.gray.withOpacity(0.9),
                             ),
                           ),
                         ),
@@ -1253,10 +1390,10 @@ class _FreelancerProfilePreviewScreenState
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
                             desc.toString(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               height: 1.45,
-                              color: _dark,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -1267,11 +1404,13 @@ class _FreelancerProfilePreviewScreenState
             ),
           );
         }).toList(),
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildEducationSection() {
+  Widget _buildEducationSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
     final edu = _safeList(profile['education']);
     if (edu.isEmpty) return const SizedBox.shrink();
@@ -1279,7 +1418,7 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Education',
+        title: t.education,
         children: edu.map((item) {
           final m = _safeMap(item);
           final degree = m['degree'] ?? m['field'] ?? '';
@@ -1290,7 +1429,11 @@ class _FreelancerProfilePreviewScreenState
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.school_outlined, size: 20, color: _primary),
+                Icon(
+                  Icons.school_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -1299,22 +1442,26 @@ class _FreelancerProfilePreviewScreenState
                       if (degree.toString().isNotEmpty)
                         Text(
                           degree.toString(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       if (inst.toString().isNotEmpty)
                         Text(
                           inst.toString(),
-                          style: const TextStyle(fontSize: 13, color: _gray),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.gray,
+                          ),
                         ),
                       if (year.toString().isNotEmpty)
                         Text(
                           year.toString(),
                           style: TextStyle(
                             fontSize: 12,
-                            color: _gray.withOpacity(0.85),
+                            color: AppColors.gray.withOpacity(0.85),
                           ),
                         ),
                     ],
@@ -1324,11 +1471,13 @@ class _FreelancerProfilePreviewScreenState
             ),
           );
         }).toList(),
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildCertificationsSection() {
+  Widget _buildCertificationsSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final profile = _profileData['profile'] ?? {};
     final certs = _safeList(profile['certifications']);
     if (certs.isEmpty) return const SizedBox.shrink();
@@ -1336,7 +1485,7 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Certifications',
+        title: t.certifications,
         children: certs.map((item) {
           final m = _safeMap(item);
           final name = m['name'] ?? m['title'] ?? item.toString();
@@ -1347,7 +1496,11 @@ class _FreelancerProfilePreviewScreenState
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.verified_outlined, size: 20, color: _success),
+                Icon(
+                  Icons.verified_outlined,
+                  size: 20,
+                  color: AppColors.success,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -1355,22 +1508,26 @@ class _FreelancerProfilePreviewScreenState
                     children: [
                       Text(
                         name.toString(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       if (issuer.toString().isNotEmpty)
                         Text(
                           issuer.toString(),
-                          style: const TextStyle(fontSize: 13, color: _gray),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.gray,
+                          ),
                         ),
                       if (year.toString().isNotEmpty)
                         Text(
                           year.toString(),
                           style: TextStyle(
                             fontSize: 12,
-                            color: _gray.withOpacity(0.85),
+                            color: AppColors.gray.withOpacity(0.85),
                           ),
                         ),
                     ],
@@ -1380,11 +1537,13 @@ class _FreelancerProfilePreviewScreenState
             ),
           );
         }).toList(),
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildContactLinksSection() {
+  Widget _buildContactLinksSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final links = _safeMap(_profileData['contact_links']);
     if (links.isEmpty) return const SizedBox.shrink();
 
@@ -1395,12 +1554,12 @@ class _FreelancerProfilePreviewScreenState
       }
     }
 
-    add('Website', links['website']?.toString());
-    add('GitHub', links['github']?.toString());
-    add('LinkedIn', links['linkedin']?.toString());
-    add('Behance', links['behance']?.toString());
-    add('Dribbble', links['dribbble']?.toString());
-    add('Twitter', links['twitter']?.toString());
+    add(t.website, links['website']?.toString());
+    add(t.gitHub, links['github']?.toString());
+    add(t.linkedIn, links['linkedin']?.toString());
+    add(t.behance, links['behance']?.toString());
+    add(t.dribbble, links['dribbble']?.toString());
+    add(t.twitter, links['twitter']?.toString());
 
     if (entries.isEmpty) return const SizedBox.shrink();
 
@@ -1420,35 +1579,49 @@ class _FreelancerProfilePreviewScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Links',
+        title: t.links,
         children: [
           ...entries.map(
             (e) => ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(iconFor(e.key), color: _primary, size: 22),
-              title: Text(e.key),
+              leading: Icon(
+                iconFor(e.key),
+                color: theme.colorScheme.primary,
+                size: 22,
+              ),
+              title: Text(
+                e.key,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
               subtitle: Text(
                 e.value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: AppColors.gray),
               ),
-              trailing: const Icon(Icons.open_in_new, size: 18, color: _gray),
+              trailing: const Icon(
+                Icons.open_in_new,
+                size: 18,
+                color: AppColors.gray,
+              ),
               onTap: () => _openExternal(e.value),
             ),
           ),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildPortfolioSection() {
+  Widget _buildPortfolioSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final portfolio = _safeList(_profileData['portfolio']);
     if (portfolio.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Portfolio',
+        title: t.portfolio,
         children: [
           ...portfolio.map<Widget>((item) {
             final itemMap = _safeMap(item);
@@ -1462,7 +1635,7 @@ class _FreelancerProfilePreviewScreenState
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Material(
-                color: _lightGray,
+                color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(14),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
@@ -1481,14 +1654,14 @@ class _FreelancerProfilePreviewScreenState
                           fit: BoxFit.cover,
                           placeholder: (_, __) => Container(
                             height: 160,
-                            color: _border,
+                            color: theme.dividerColor,
                             child: const Center(
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           ),
                           errorWidget: (_, __, ___) => Container(
                             height: 120,
-                            color: _border,
+                            color: theme.dividerColor,
                             child: const Icon(Icons.image_not_supported),
                           ),
                         ),
@@ -1501,10 +1674,11 @@ class _FreelancerProfilePreviewScreenState
                               children: [
                                 Expanded(
                                   child: Text(
-                                    itemMap['title']?.toString() ?? 'Project',
-                                    style: const TextStyle(
+                                    itemMap['title']?.toString() ?? t.project,
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                   ),
                                 ),
@@ -1515,12 +1689,12 @@ class _FreelancerProfilePreviewScreenState
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _warning.withOpacity(0.2),
+                                      color: AppColors.warning.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Text(
-                                      'Featured',
-                                      style: TextStyle(
+                                    child: Text(
+                                      t.featured,
+                                      style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         color: Color(0xFFB45309),
@@ -1538,10 +1712,10 @@ class _FreelancerProfilePreviewScreenState
                                   itemMap['description'].toString(),
                                   maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     height: 1.4,
-                                    color: _gray,
+                                    color: AppColors.gray,
                                   ),
                                 ),
                               ),
@@ -1560,17 +1734,20 @@ class _FreelancerProfilePreviewScreenState
                                             vertical: 3,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
+                                            color: theme.cardColor,
                                             borderRadius: BorderRadius.circular(
                                               6,
                                             ),
-                                            border: Border.all(color: _border),
+                                            border: Border.all(
+                                              color: theme.dividerColor,
+                                            ),
                                           ),
                                           child: Text(
                                             t,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 11,
-                                              color: _dark,
+                                              color:
+                                                  theme.colorScheme.onSurface,
                                             ),
                                           ),
                                         ),
@@ -1588,22 +1765,24 @@ class _FreelancerProfilePreviewScreenState
             );
           }),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildDeliveredProjectsSection() {
+  Widget _buildDeliveredProjectsSection(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final projects = _safeList(_profileData['recent_completed_projects']);
     if (projects.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: _sectionCard(
-        title: 'Recently delivered projects',
+        title: t.recentlyDelivered,
         children: [
           ...projects.take(6).map((item) {
             final data = _safeMap(item);
-            final title = data['title']?.toString() ?? 'Delivered project';
+            final title = data['title']?.toString() ?? t.deliveredProject;
             final category = data['category']?.toString() ?? '';
             final budget = _getSafeDouble(data['budget']);
             final deliveredAt = data['delivered_at'] != null
@@ -1616,29 +1795,36 @@ class _FreelancerProfilePreviewScreenState
 
             return ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.task_alt, color: _success),
-              title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+              leading: const Icon(Icons.task_alt, color: AppColors.success),
+              title: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
               subtitle: Text(
                 subtitle.isNotEmpty
-                    ? '$subtitle\nDelivered ${_formatDate(deliveredAt)}'
-                    : 'Delivered ${_formatDate(deliveredAt)}',
+                    ? '$subtitle\n${t.delivered} ${_formatDate(deliveredAt)}'
+                    : '${t.delivered} ${_formatDate(deliveredAt)}',
                 style: const TextStyle(height: 1.4),
               ),
             );
           }),
         ],
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildReviewsSection() {
+  Widget _buildReviewsSectionWrap(ThemeData theme) {
+    final t = AppLocalizations.of(context)!;
     final reviews = _safeList(_profileData['reviews']);
     if (reviews.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 8),
       child: _sectionCard(
-        title: 'Client reviews',
+        title: t.clientReviews,
         children: [
           ...reviews.take(6).map((review) {
             final reviewMap = _safeMap(review);
@@ -1676,29 +1862,33 @@ class _FreelancerProfilePreviewScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              from['name']?.toString() ?? 'Client',
-                              style: const TextStyle(
+                              from['name']?.toString() ?? t.client,
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
-                            _buildRatingStar(rating),
+                            _buildRatingStars(rating, theme),
                           ],
                         ),
                       ),
                       Text(
                         _formatDate(createdAt),
-                        style: const TextStyle(fontSize: 11, color: _gray),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.gray,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
                     (reviewMap['comment'] ?? '').toString(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       height: 1.45,
-                      color: _dark,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const Divider(height: 20),
@@ -1707,28 +1897,42 @@ class _FreelancerProfilePreviewScreenState
             );
           }),
         ],
+        theme: theme,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final t = AppLocalizations.of(context)!;
+
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_profileData.isEmpty || _profileData['user'] == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profile')),
+        appBar: AppBar(
+          title: Text(t.profile),
+          backgroundColor: theme.scaffoldBackgroundColor,
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('Could not load this profile.'),
+              Text(
+                t.couldNotLoadProfile,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: _loadFreelancerProfile,
-                child: const Text('Retry'),
+                child: Text(t.retry),
               ),
             ],
           ),
@@ -1737,29 +1941,32 @@ class _FreelancerProfilePreviewScreenState
     }
 
     return Scaffold(
-      backgroundColor: _lightGray,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       body: RefreshIndicator(
         onRefresh: _loadFreelancerProfile,
+        color: theme.colorScheme.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeader(),
+              _buildHeader(theme, isDark),
               const SizedBox(height: 8),
-              _buildStatsSection(),
-              _buildAvailabilitySection(),
-              _buildSkillsSection(),
-              _buildLanguagesSection(),
-              _buildCategoriesSection(),
-              _buildAboutSection(),
-              _buildWorkExperienceSection(),
-              _buildEducationSection(),
-              _buildCertificationsSection(),
-              _buildContactLinksSection(),
-              _buildDeliveredProjectsSection(),
-              _buildPortfolioSection(),
-              _buildReviewsSection(),
+              _buildStatsSection(theme),
+              _buildAvailabilitySection(theme),
+              _buildSkillsSection(theme),
+              _buildLanguagesSection(theme),
+              _buildCategoriesSection(theme),
+              _buildAboutSection(theme),
+              _buildWorkExperienceSection(theme),
+              _buildEducationSection(theme),
+              _buildCertificationsSection(theme),
+              _buildContactLinksSection(theme),
+              _buildDeliveredProjectsSection(theme),
+              _buildPortfolioSection(theme),
+              _buildReviewsSectionWrap(theme),
               const SizedBox(height: 32),
             ],
           ),

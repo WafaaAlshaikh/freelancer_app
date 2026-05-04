@@ -1065,5 +1065,607 @@
   "maxBudget": "الحد الأقصى للميزانية", 
   "minDuration": "الحد الأدنى للمدة",
   "maxDuration": "الحد الأقصى للمدة",
-  "sortBy": "ترتيب حسب"
+  "sortBy": "ترتيب حسب",
+
+"postNewProject": "نشر مشروع جديد",
+"draftSaved": "تم حفظ المسودة",
+"templates": "القوالب",
+"projectDetails": "تفاصيل المشروع",
+"projectDetailsHint": "املأ التفاصيل أدناه. سيقوم الذكاء الاصطناعي بتحليل واقتراح تحسينات",
+"autoSaveHint": "يتم حفظ تقدمك تلقائياً على هذا الجهاز",
+"draftRestored": "تم الاستمرار من المسودة المحفوظة",
+"templateApplied": "تم تطبيق القالب — يمكنك التعديل قبل النشر",
+"clearDraft": "مسح المسودة؟",
+"clearDraftConfirmation": "هل تريد حذف مسودة المشروع المحفوظة؟",
+"clear": "مسح",
+"draftCleared": "تم مسح المسودة",
+"projectTemplates": "قوالب المشاريع",
+"templateHint": "املأ الحقول مسبقاً — يمكنك التعديل قبل النشر",
+"clearSavedDraft": "مسح المسودة المحفوظة",
+"projectCreatedSuccess": "✅ تم إنشاء المشروع بنجاح",
+"errorCreatingProject": "خطأ في إنشاء المشروع",
+"projectTitle": "عنوان المشروع",
+"projectTitleHint": "مثال: بناء تطبيق متجر إلكتروني",
+"requiredField": "الرجاء إدخال قيمة",
+"projectDescription": "وصف المشروع",
+"projectDescriptionHint": "صف مشروعك بالتفصيل...\n- ماذا تحتاج؟\n- ما هي توقعاتك؟\n- أي متطلبات محددة؟",
+"budget": "الميزانية ($)",
+"durationDays": "المدة (أيام)",
+"days": "أيام",
+"selectCategory": "اختر تصنيفاً",
+"requiredSkills": "المهارات المطلوبة",
+"postProject": "نشر المشروع",
+"invalidNumber": "رقم غير صالح",
+"milestonesAddedHint": "تم إضافة المراحل المقترحة إلى العرض",
+"draftSavedHint": "تم حفظ المسودة",
+"clearDraftHint": "مسح المسودة",
+"templateAppliedDesc": "تم تطبيق القالب — يمكنك التعديل قبل النشر",
+"projectDetailsDesc": "املأ التفاصيل أدناه. سيقوم الذكاء الاصطناعي بتحليل واقتراح تحسينات",
+"autoSaveDesc": "يتم حفظ تقدمك تلقائياً على هذا الجهاز",
+"projectTitleDesc": "عنوان المشروع",
+"projectTitleExample": "مثال: بناء تطبيق متجر إلكتروني",
+"projectDescriptionDesc": "وصف المشروع",
+"projectDescriptionExample": "صف مشروعك بالتفصيل...\n- ماذا تحتاج؟\n- ما هي توقعاتك؟\n- أي متطلبات محددة؟",
+"budgetDesc": "الميزانية ($)",
+"durationDaysDesc": "المدة (أيام)",
+"selectCategoryDesc": "اختر تصنيفاً",
+"requiredSkillsDesc": "المهارات المطلوبة",
+"postProjectDesc": "نشر المشروع",
+"open":"مفتوح",
+"aiRecommendations":"توصيات الذكاء الاصطناعي",
+"totalSpent":"إجمالي المصروفات",
+"@_comments": "ترجمات شاشة مقارنة المستقلين",
+  "compareFreelancers": "مقارنة المستقلين",
+  "@compareFreelancers": {
+    "description": "عنوان شاشة مقارنة المستقلين"
+  },
+  "switchToCardView": "التبديل إلى عرض البطاقات",
+  "@switchToCardView": {
+    "description": "نص توضيحي لزر التبديل إلى عرض البطاقات"
+  },
+  "switchToDetailedView": "التبديل إلى عرض الجدول",
+  "@switchToDetailedView": {
+    "description": "نص توضيحي لزر التبديل إلى عرض الجدول التفصيلي"
+  },
+  "analyzingFreelancers": "جاري تحليل المستقلين...",
+  "@analyzingFreelancers": {
+    "description": "رسالة تحميل أثناء تحليل المستقلين"
+  },
+  "comparingFreelancersDesc": "مقارنة المهارات والخبرة والأداء",
+  "@comparingFreelancersDesc": {
+    "description": "نص فرعي أثناء تحميل بيانات المقارنة"
+  },
+  "noFreelancersToCompare": "لا يوجد مستقلين للمقارنة",
+  "@noFreelancersToCompare": {
+    "description": "رسالة الحالة الفارغة عندما لا يوجد مستقلين"
+  },
+  "selectAtLeastTwoFreelancers": "اختر مستقلين على الأقل لبدء المقارنة",
+  "@selectAtLeastTwoFreelancers": {
+    "description": "تعليمات عندما لا يوجد مستقلين مختارين"
+  },
+  "goBack": "العودة",
+  "@goBack": {
+    "description": "نص زر العودة"
+  },
+  "aiRecommendation": "توصية الذكاء الاصطناعي",
+  "@aiRecommendation": {
+    "description": "تسمية لافتة توصية الذكاء الاصطناعي"
+  },
+  "matchWithProject": "تطابق مع مشروعك",
+  "@matchWithProject": {
+    "description": "نص يظهر نسبة التطابق مع المشروع"
+  },
+  "aiPick": "اختيار الذكاء",
+  "@aiPick": {
+    "description": "تسمية الشارة للمستقل الموصى به من الذكاء الاصطناعي"
+  },
+  "overallRatingDescription": "التقييم العام والأداء",
+  "@overallRatingDescription": {
+    "description": "وصف مقياس التقييم العام"
+  },
+  "skillsMatchDescription": "تطابق المهارات مع مشروعك",
+  "@skillsMatchDescription": {
+    "description": "وصف مقياس تطابق المهارات"
+  },
+  "experienceDescription": "سنوات الخبرة وعدد المشاريع",
+  "@experienceDescription": {
+    "description": "وصف مقياس الخبرة"
+  },
+  "reliabilityDescription": "نسبة الإنجاز والتسليم في الوقت المحدد",
+  "@reliabilityDescription": {
+    "description": "وصف مقياس الموثوقية"
+  },
+  "communicationDescription": "وقت الاستجابة والتقييمات",
+  "@communicationDescription": {
+    "description": "وصف مقياس التواصل"
+  },
+  "valueDescription": "نسبة الجودة إلى السعر",
+  "@valueDescription": {
+    "description": "وصف مقياس القيمة مقابل المال"
+  },
+  "skillsMatch": "تطابق المهارات",
+  "@skillsMatch": {
+    "description": "تسمية إحصائية تطابق المهارات"
+  },
+  "withYourProject": "مع مشروعك",
+  "@withYourProject": {
+    "description": "نص فرعي لتطابق المهارات"
+  },
+  "completionRate": "نسبة الإنجاز",
+  "@completionRate": {
+    "description": "تسمية إحصائية نسبة الإنجاز"
+  },
+  "ofProjectsCompleted": "من المشاريع المكتملة",
+  "@ofProjectsCompleted": {
+    "description": "نص فرعي لنسبة الإنجاز"
+  },
+  "onTimeDelivery": "التسليم في الوقت",
+  "@onTimeDelivery": {
+    "description": "تسمية إحصائية التسليم في الوقت المحدد"
+  },
+  "ofDeadlinesMet": "من المواعيد النهائية الملتزم بها",
+  "@ofDeadlinesMet": {
+    "description": "نص فرعي للتسليم في الوقت المحدد"
+  },
+  "responseTime": "وقت الاستجابة",
+  "@responseTime": {
+    "description": "تسمية إحصائية وقت الاستجابة"
+  },
+  "averageResponse": "متوسط الرد",
+  "@averageResponse": {
+    "description": "نص فرعي لوقت الاستجابة"
+  },
+  "projectsCompleted": "المشاريع المكتملة",
+  "@projectsCompleted": {
+    "description": "تسمية إحصائية المشاريع المكتملة"
+  },
+  "totalProjects": "إجمالي المشاريع",
+  "@totalProjects": {
+    "description": "نص فرعي للمشاريع المكتملة"
+  },
+  "inTheField": "في المجال",
+  "@inTheField": {
+    "description": "نص فرعي لسنوات الخبرة"
+  },
+  "hourlyRate": "السعر بالساعة",
+  "@hourlyRate": {
+    "description": "تسمية السعر بالساعة"
+  },
+  "hr": "ساعة",
+  "@hr": {
+    "description": "اختصار للساعة"
+  },
+  "budget": "الميزانية",
+  "@budget": {
+    "description": "تسمية الميزانية"
+  },
+  "topSkills": "أفضل المهارات",
+  "@topSkills": {
+    "description": "عنوان قسم أفضل المهارات"
+  },
+  "viewProfile": "عرض الملف الشخصي",
+  "@viewProfile": {
+    "description": "نص زر عرض الملف الشخصي للمستقل"
+  },
+  "hire": "توظيف",
+  "@hire": {
+    "description": "نص زر توظيف المستقل"
+  },
+  "outOf5": "من 5",
+  "@outOf5": {
+    "description": "نص يظهر التقييم من 5"
+  },
+  "hour": "ساعة",
+  "@hour": {
+    "description": "صيغة المفرد للساعة"
+  },
+  "hours": "ساعات",
+  "@hours": {
+    "description": "صيغة الجمع للساعات"
+  },
+  "prj": "مشروع",
+  "@prj": {
+    "description": "اختصار للمشروع/المشاريع"
+  },
+  "performanceComparison": "مقارنة الأداء",
+  "@performanceComparison": {
+    "description": "عنوان مخطط مقارنة الأداء"
+  },
+  "ratingsComparison": "مقارنة التقييمات",
+  "@ratingsComparison": {
+    "description": "عنوان مخطط مقارنة التقييمات"
+  },
+  "comprehensiveAnalysis": "التحليل الشامل",
+  "@comprehensiveAnalysis": {
+    "description": "عنوان قسم التحليل الشامل"
+  },
+  "overall": "عام",
+  "@overall": {
+    "description": "اسم مقياس التقييم العام"
+  },
+  "skills": "المهارات",
+  "@skills": {
+    "description": "اسم مقياس المهارات"
+  },
+  "experience": "الخبرة",
+  "@experience": {
+    "description": "اسم مقياس الخبرة"
+  },
+  "reliability": "الموثوقية",
+  "@reliability": {
+    "description": "اسم مقياس الموثوقية"
+  },
+  "communication": "التواصل",
+  "@communication": {
+    "description": "اسم مقياس التواصل"
+  },
+  "value": "القيمة",
+  "@value": {
+    "description": "اسم مقياس القيمة مقابل المال"
+  },
+  "overallRating": "التقييم العام",
+  "@overallRating": {
+    "description": "تسمية إحصائية التقييم العام"
+  },
+  "viewCharts": "عرض المخططات",
+  "@viewCharts": {
+    "description": "نص زر عرض مخططات المقارنة"
+  },
+  "refresh": "تحديث",
+  "@refresh": {
+    "description": "نص توضيحي لزر التحديث"
+  },
+  
+  "@_comments": "ترجمات شاشة تفاصيل المشروع",
+  "deleteProject": "حذف المشروع",
+  "@deleteProject": {
+    "description": "عنوان نافذة حذف المشروع"
+  },
+  "deleteProjectConfirmation": "هل أنت متأكد من حذف هذا المشروع؟",
+  "@deleteProjectConfirmation": {
+    "description": "رسالة تأكيد حذف المشروع"
+  },
+  "projectStatusLabel": "الحالة",
+  "@projectStatusLabel": {
+    "description": "تسمية حالة المشروع"
+  },
+  "acceptingProposals": "قبول العروض",
+  "@acceptingProposals": {
+    "description": "نص حالة المشروع عندما يقبل العروض"
+  },
+  "projectInProgress": "المشروع قيد التنفيذ",
+  "@projectInProgress": {
+    "description": "نص حالة المشروع عندما قيد التنفيذ"
+  },
+  "completeProject": "إكمال المشروع",
+  "@completeProject": {
+    "description": "نص زر إكمال المشروع"
+  },
+  "posted": "تاريخ النشر",
+  "@posted": {
+    "description": "تسمية تاريخ نشر المشروع"
+  },
+  "views": "مشاهدة",
+  "@views": {
+    "description": "تسمية عدد المشاهدات"
+  },
+  "contractDetails": "تفاصيل العقد",
+  "@contractDetails": {
+    "description": "عنوان قسم تفاصيل العقد"
+  },
+
+  "@_comments2": "ترجمات شاشة عروض المشروع",
+  "interviewLimitReached": "تم الوصول إلى الحد الأقصى لدعوات المقابلة الشهرية",
+  "@interviewLimitReached": {
+    "description": "رسالة عند الوصول للحد الأقصى للمقابلات"
+  },
+  "noInterviewInvitationsLeft": "لا توجد دعوات مقابلة متبقية هذا الشهر ({lim}/شهر). قم بترقية خطتك لإرسال المزيد.",
+  "@noInterviewInvitationsLeft": {
+    "description": "رسالة عدم وجود دعوات مقابلة متبقية",
+    "placeholders": {
+      "lim": {
+        "type": "int",
+        "description": "الحد الأقصى لدعوات المقابلة"
+      }
+    }
+  },
+  "interviewInvitationsLeft": "{rem} من {lim} دعوة مقابلة متبقية هذا الشهر",
+  "@interviewInvitationsLeft": {
+    "description": "رسالة عرض عدد دعوات المقابلة المتبقية",
+    "placeholders": {
+      "rem": {
+        "type": "int",
+        "description": "عدد دعوات المقابلة المتبقية"
+      },
+      "lim": {
+        "type": "int",
+        "description": "الحد الأقصى لدعوات المقابلة"
+      }
+    }
+  },
+  "proposalStatusUpdated": "تم تحديث حالة العرض إلى {status}",
+  "@proposalStatusUpdated": {
+    "description": "رسالة تحديث حالة العرض",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "description": "الحالة الجديدة للعرض"
+      }
+    }
+  },
+  "errorUpdatingProposal": "خطأ في تحديث العرض",
+  "@errorUpdatingProposal": {
+    "description": "رسالة خطأ عند فشل تحديث العرض"
+  },
+  "proposalDataNotFound": "بيانات العرض غير موجودة",
+  "@proposalDataNotFound": {
+    "description": "رسالة خطأ عند عدم وجود بيانات العرض"
+  },
+  "missingProjectOrFreelancerData": "بيانات المشروع أو المستقل غير موجودة",
+  "@missingProjectOrFreelancerData": {
+    "description": "رسالة خطأ عند عدم وجود بيانات المشروع أو المستقل"
+  },
+  "projectProposals": "عروض المشروع",
+  "@projectProposals": {
+    "description": "عنوان شاشة عروض المشروع"
+  },
+  "aiRecommendedFreelancers": "المستقلون الموصى بهم من الذكاء الاصطناعي",
+  "@aiRecommendedFreelancers": {
+    "description": "عنوان قسم المستقلين الموصى بهم من الذكاء الاصطناعي"
+  },
+  "match": "تطابق",
+  "@match": {
+    "description": "تسمية نسبة التطابق"
+  },
+  "invitationSent": "تم إرسال الدعوة إلى",
+  "@invitationSent": {
+    "description": "رسالة عند إرسال الدعوة"
+  },
+  "inviteToProject": "دعوة للمشروع",
+  "@inviteToProject": {
+    "description": "نص زر دعوة المستقل للمشروع"
+  },
+  "whenFreelancersSubmitProposals": "عندما يقدم المستقلون عروضهم، ستظهر هنا",
+  "@whenFreelancersSubmitProposals": {
+    "description": "رسالة الحالة الفارغة للعروض"
+  },
+  "negotiate": "تفاوض",
+  "@negotiate": {
+    "description": "نص زر التفاوض مع المستقل"
+  },
+  "interview": "مقابلة",
+  "@interview": {
+    "description": "تسمية ميزة المقابلة"
+  },
+  "manualChooseTimes": "يدوي (اختيار الأوقات)",
+  "@manualChooseTimes": {
+    "description": "خيار اختيار الأوقات يدوياً"
+  },
+  "smartAIOptimized": "ذكي (محسن بالذكاء الاصطناعي)",
+  "@smartAIOptimized": {
+    "description": "خيار الأوقات المحسنة بالذكاء الاصطناعي"
+  },
+  "noDescriptionProvided": "لا يوجد وصف",
+  "@noDescriptionProvided": {
+    "description": "رسالة عدم وجود وصف"
+  },
+  "delivery": "التسليم",
+  "@delivery": {
+    "description": "تسمية وقت التسليم"
+  },
+  "generatingSOW": "جاري إنشاء نطاق العمل...",
+  "@generatingSOW": {
+    "description": "رسالة تحميل عند إنشاء نطاق العمل"
+  },
+  "generateSOW": "إنشاء نطاق العمل",
+  "@generateSOW": {
+    "description": "نص زر إنشاء نطاق العمل"
+  },
+  "creating": "جاري الإنشاء...",
+  "@creating": {
+    "description": "رسالة تحميل أثناء الإنشاء"
+  },
+  "viewContract": "عرض العقد",
+  "@viewContract": {
+    "description": "نص زر عرض العقد"
+  },
+  "viewContractComingSoon": "عرض العقد - قريباً",
+  "@viewContractComingSoon": {
+    "description": "رسالة ميزة قادمة"
+  },
+  "proposalAccepted": "تم قبول العرض",
+  "@proposalAccepted": {
+    "description": "عنوان عند قبول العرض"
+  },
+  "contractCreatedMessage": "تم إنشاء عقد. يمكنك الآن التواصل مع المستقل.",
+  "@contractCreatedMessage": {
+    "description": "رسالة عند إنشاء العقد"
+  },
+  "proposalRejected": "تم رفض العرض",
+  "@proposalRejected": {
+    "description": "عنوان عند رفض العرض"
+  },
+  "proposalRejectedMessage": "تم رفض هذا العرض. يمكنك التواصل مع المستقل إذا لزم الأمر.",
+  "@proposalRejectedMessage": {
+    "description": "رسالة عند رفض العرض"
+  },
+  "failedToCreateContract": "فشل في إنشاء العقد",
+  "@failedToCreateContract": {
+    "description": "رسالة خطأ عند فشل إنشاء العقد"
+  },
+  "aiInterviewInvitationMessage": "قام الذكاء الاصطناعي بتحليل التوفر واقترح الأوقات المثالية. الرجاء اختيار الوقت المناسب لك.",
+  "@aiInterviewInvitationMessage": {
+    "description": "رسالة دعوة المقابلة الذكية"
+  },
+  "smartInterviewInvitationSent": "✅ تم إرسال دعوة المقابلة الذكية إلى المستقل!",
+  "@smartInterviewInvitationSent": {
+    "description": "رسالة نجاح عند إرسال دعوة المقابلة الذكية"
+  },
+  "aiSuggestedTimesSent": "تم إرسال الأوقات المقترحة من الذكاء الاصطناعي",
+  "@aiSuggestedTimesSent": {
+    "description": "عنوان نافذة الأوقات المقترحة من الذكاء الاصطناعي"
+  },
+  "aiTimesSentDescription": "تم إرسال الأوقات المحسنة من الذكاء الاصطناعي إلى المستقل. سيقوم باختيار الوقت المناسب له.",
+  "@aiTimesSentDescription": {
+    "description": "وصف نافذة الأوقات المقترحة"
+  },
+  "scheduleInterview": "جدولة المقابلة",
+  "@scheduleInterview": {
+    "description": "عنوان نافذة جدولة المقابلة"
+  },
+  "selectPreferredTimes": "اختر 1-3 أوقات مفضلة للمقابلة",
+  "@selectPreferredTimes": {
+    "description": "تعليمات اختيار أوقات المقابلة"
+  },
+  "addTime": "إضافة وقت",
+  "@addTime": {
+    "description": "زر إضافة وقت للمقابلة"
+  },
+  "optionalMessageHint": "أضف رسالة للمستقل (اختياري)",
+  "@optionalMessageHint": {
+    "description": "تلميح حقل الرسالة الاختياري"
+  },
+  "sendInvitation": "إرسال الدعوة",
+  "@sendInvitation": {
+    "description": "زر إرسال دعوة المقابلة"
+  },
+  "interviewInvitationMessage": "أود إجراء مقابلة معك لهذا المشروع. الرجاء اختيار الوقت المناسب لك.",
+  "@interviewInvitationMessage": {
+    "description": "الرسالة الافتراضية لدعوة المقابلة"
+  },
+  "interviewInvitationSent": "✅ تم إرسال دعوة المقابلة!",
+  "@interviewInvitationSent": {
+    "description": "رسالة نجاح عند إرسال دعوة المقابلة"
+  },
+  "errorSendingInvitation": "خطأ في إرسال الدعوة",
+  "@errorSendingInvitation": {
+    "description": "رسالة خطأ عند فشل إرسال الدعوة"
+  },
+  "at": "الساعة",
+  "@at": {
+    "description": "حرف جر للوقت (مثال: الساعة 10:00)"
+  },
+  "gotIt": "حسناً",
+  "@gotIt": {
+    "description": "نص زر التأكيد"
+  },
+  "clearFilter" : "مسح الفلتر",
+  "showAllContracts": "عرض كل العقود",
+  "noActiveContracts":"لا توجد عقود نشطة",
+  "noDraftContracts":"لا توجد مسودات عقود",
+  "noCompletedContracts":"لا توجد عقود مكتملة",
+  "noSignedContracts":"لا توجد عقود موقعة",
+  "active":"نشط",
+"draft":"مسودة",
+"back":"رجوع",
+"ratingsAndReviews": "التقييمات والمراجعات",
+  "viewAllReviews": "عرض جميع المراجعات",
+  "seeMore": "عرض المزيد",
+  "verified": "موثق",
+  "topRated": "الأعلى تقييماً",
+  "risingTalent": "موهبة صاعدة",
+  "acceptingWork": "متاح للعمل",
+  "limited": "محدود",
+  "done": "مكتمل",
+  "message": "رسالة",
+  "hireForProject": "توظيف للمشروع",
+  "contact": "تواصل",
+  "atAGlance": "لمحة سريعة",
+  "completed": "مكتمل",
+  "reviews": "مراجعات",
+  "active": "نشط",
+  "portfolio": "أعمال سابقة",
+  "response": "الرد",
+  "rating": "التقييم",
+  "experience": "الخبرة",
+  "years": "سنوات",
+  "hourly": "بالساعة",
+  "hour": "ساعة",
+  "availability": "التوفر",
+  "commitment": "الالتزام",
+  "weeklyHours": "ساعات أسبوعياً",
+  "hours": "ساعات",
+  "skillsAndExpertise": "المهارات والخبرات",
+  "languages": "اللغات",
+  "categories": "التصنيفات",
+  "about": "نبذة",
+  "memberSince": "عضو منذ",
+  "profileViews": "مشاهدات الملف",
+  "workExperience": "الخبرات العملية",
+  "education": "التعليم",
+  "certifications": "الشهادات",
+  "links": "روابط",
+  "website": "الموقع الإلكتروني",
+  "gitHub": "جيت هاب",
+  "linkedIn": "لينكد إن",
+  "behance": "بيهانس",
+  "dribbble": "دريبل",
+  "twitter": "تويتر",
+  "project": "مشروع",
+  "featured": "مميز",
+  "recentlyDelivered": "المشاريع المكتملة مؤخراً",
+  "deliveredProject": "مشروع مكتمل",
+  "delivered": "تم التسليم",
+  "clientReviews": "مراجعات العملاء",
+  "client": "عميل",
+  "couldNotLoadProfile": "لا يمكن تحميل هذا الملف الشخصي",
+  "retry": "إعادة المحاولة",
+  "profile": "الملف الشخصي",
+  "fullTime": "دوام كامل",
+  "partTime": "دوام جزئي",
+  "asNeeded": "حسب الحاجة",
+  "notAvailable": "غير متاح",
+  "errorLoadingProfile": "خطأ في تحميل الملف الشخصي",
+  "failedToStartChat": "فشل في بدء المحادثة",
+  "freelancerProfile": "ملف المستقل الشخصي",
+  "professionalFreelancer": "مستقل محترف",
+  "findFreelancers": "البحث عن مستقلين",
+  "searchFreelancers": "ابحث عن مستقلين...",
+  "noFreelancersFound": "لم يتم العثور على مستقلين",
+  "tryDifferentFilters": "جرب فلاتر مختلفة",
+  "freelancersFound": "مستقل تم العثور عليه",
+  "selected": "مختار",
+  "activeFilters": "الفلاتر النشطة",
+  "clearAll": "مسح الكل",
+  "allSkills": "كل المهارات",
+  "minRating": "الحد الأدنى للتقييم",
+  "minExperience": "الحد الأدنى للخبرة",
+  "maxHourlyRate": "الحد الأقصى للسعر بالساعة",
+  "lowestFirst": "الأقل أولاً",
+  "highestFirst": "الأعلى أولاً",
+  "mostFirst": "الأكثر أولاً",
+  "sortBy": "ترتيب حسب",
+  "filters": "فلاتر",
+  "apply": "تطبيق",
+  "hireRequestSent": "تم إرسال طلب التوظيف!",
+  "hr": "س",
+  "prj": "مشروع",
+  "compare": "مقارنة",
+"skill": "مهارة",
+"sendOfferTo": "إرسال عرض إلى",
+  "offerAmountOptional": "قيمة العرض (اختياري)",
+  "enterAmount": "أدخل المبلغ",
+  "messageOptional": "رسالة (اختياري)",
+  "writeMessageHere": "اكتب رسالتك هنا...",
+  "sendOffer": "إرسال العرض",
+  "offerSentSuccessfully": "تم إرسال العرض بنجاح!",
+  "noOpenProjects": "ليس لديك أي مشاريع مفتوحة",
+  "createProjectNow": "إنشاء مشروع الآن",
+  "hireFreelancer": "توظيف مستقل",
+  "sendCustomOfferToFreelancer": "إرسال عرض عمل مخصص لهذا المستقل",
+  "sendMessage": "إرسال رسالة",
+  "discussBeforeHiring": "ناقش التفاصيل قبل التوظيف",
+  "scheduleVideoCallInterview": "جدولة مكالمة فيديو",
+  "offers": "العروض",
+  "noOffersYet": "لا توجد عروض بعد",
+  "whenYouReceiveOffers": "عندما تستلم عروض عمل، ستظهر هنا",
+  "offerAccepted": "تم قبول العرض",
+  "offerDeclined": "تم رفض العرض",
+  "decline": "رفض",
+  "accept": "قبول",
+  "noOpenProjects": "لا توجد مشاريع مفتوحة",
+  "createProjectFirst": "قم بإنشاء مشروع أولاً لتوظيف المستقلين",
+  "createProject": "إنشاء مشروع"
+
 }
+
