@@ -53,62 +53,97 @@ router.post(
   authorizeRoles("client", "freelancer"),
   async (req, res) => {
     try {
-      const { title, description, category, skills, budget } = req.body;
+      const { title, description, category, skills, budget, duration } =
+        req.body;
 
-      console.log("🤖 Analyzing project:", {
-        title,
-        description: description?.substring(0, 100),
-        skills: skills?.length || 0,
-      });
+      console.log("🤖 [ANALYZE] Starting AI project analysis...");
+      console.log(`📋 Project: "${title}" (${category || "general"})`);
+      console.log(`🔧 Skills: ${skills?.length || 0} skills provided`);
 
-      const defaultAnalysis = AIService.getDefaultProjectAnalysis({
-        title,
-        description,
-        category,
-        skills,
-        budget,
-      });
+      let aiAnalysis;
+      try {
+        aiAnalysis = await AIService.analyzeProject({
+          title: title || "",
+          description: description || "",
+          category: category || "general",
+          skills: skills || [],
+          budget: budget || 1000,
+          duration: duration || 21,
+        });
 
-      console.log("✅ Default analysis generated:", {
-        hasMilestones: defaultAnalysis?.suggested_milestones?.length > 0,
-        milestonesCount: defaultAnalysis?.suggested_milestones?.length || 0,
-        firstMilestone: defaultAnalysis?.suggested_milestones?.[0]?.title,
-      });
-
-      const responseData = {
-        success: true,
-        analysis: {
-          difficulty_level: defaultAnalysis.difficulty_level || "intermediate",
-          estimated_duration_days:
-            defaultAnalysis.estimated_duration_days || 21,
-          price_range: defaultAnalysis.price_range || {
-            min: 1000,
-            max: 2000,
-            recommended: 1500,
-            currency: "USD",
-          },
-          complexity_factors: defaultAnalysis.complexity_factors || [
-            "Standard Development",
-          ],
-          market_comparison: defaultAnalysis.market_comparison || {
-            lowest: 800,
-            average: 1500,
-            highest: 2500,
-          },
-          suggested_milestones: defaultAnalysis.suggested_milestones || [],
-          risks: defaultAnalysis.risks || ["Timeline management"],
-          tips: defaultAnalysis.tips || ["Communicate regularly"],
-        },
-      };
-
-      if (responseData.analysis.suggested_milestones.length === 0) {
         console.log(
-          "⚠️ WARNING: No milestones in response! Adding default milestones.",
+          `✅ AI analysis successful with ${aiAnalysis.suggested_milestones?.length || 0} milestones`,
         );
-        responseData.analysis.suggested_milestones = [
+      } catch (aiError) {
+        console.error("⚠️ AI analysis failed, using default:", aiError.message);
+        aiAnalysis = AIService.getDefaultProjectAnalysis({
+          title,
+          description,
+          category,
+          skills,
+          budget,
+        });
+      }
+
+      const ensureValidMilestones = (milestones, title, description) => {
+        if (milestones && Array.isArray(milestones) && milestones.length > 0) {
+          const validMilestones = milestones.filter(
+            (m) =>
+              m.title && typeof m.percentage === "number" && m.percentage > 0,
+          );
+
+          if (validMilestones.length > 0) {
+            const total = validMilestones.reduce(
+              (sum, m) => sum + m.percentage,
+              0,
+            );
+            if (total !== 100 && total > 0) {
+              const factor = 100 / total;
+              validMilestones.forEach((m) => {
+                m.percentage = Math.round(m.percentage * factor);
+              });
+            }
+            return validMilestones;
+          }
+        }
+
+        const text = `${title} ${description}`.toLowerCase();
+
+        if (
+          text.includes("ecommerce") ||
+          text.includes("shop") ||
+          text.includes("clothes")
+        ) {
+          return [
+            {
+              title: "Project Setup & Database Design",
+              description:
+                "Setup project structure, database schema, authentication system",
+              percentage: 20,
+            },
+            {
+              title: "Product & Category Management",
+              description: "Product catalog, categories, inventory management",
+              percentage: 30,
+            },
+            {
+              title: "Shopping Cart & Payment Integration",
+              description: "Cart functionality, payment gateway integration",
+              percentage: 30,
+            },
+            {
+              title: "Testing & Deployment",
+              description: "QA testing, bug fixes, production deployment",
+              percentage: 20,
+            },
+          ];
+        }
+
+        return [
           {
             title: "Project Setup & Planning",
-            description: "Initial setup and requirements",
+            description:
+              "Initial setup, requirements analysis, timeline planning",
             percentage: 20,
           },
           {
@@ -117,19 +152,64 @@ router.post(
             percentage: 50,
           },
           {
-            title: "Testing & Delivery",
-            description: "QA and final delivery",
+            title: "Testing & Final Delivery",
+            description: "Quality assurance, bug fixes, final delivery",
             percentage: 30,
           },
         ];
-      }
+      };
+
+      const responseData = {
+        success: true,
+        analysis: {
+          difficulty_level: aiAnalysis.difficulty_level || "intermediate",
+          estimated_duration_days:
+            aiAnalysis.estimated_duration_days || duration || 21,
+          price_range: aiAnalysis.price_range || {
+            min: Math.round((budget || 1000) * 0.8),
+            max: Math.round((budget || 1000) * 1.2),
+            recommended: budget || 1500,
+            currency: "USD",
+          },
+          complexity_factors: aiAnalysis.complexity_factors || [
+            "Standard Development",
+            "Requirements analysis",
+            "Quality assurance",
+          ],
+          market_comparison: aiAnalysis.market_comparison || {
+            lowest: Math.round((budget || 1000) * 0.7),
+            average: budget || 1500,
+            highest: Math.round((budget || 1000) * 1.3),
+          },
+          suggested_milestones: ensureValidMilestones(
+            aiAnalysis.suggested_milestones,
+            title,
+            description,
+          ),
+          risks: aiAnalysis.risks || [
+            "Timeline management",
+            "Scope creep",
+            "Communication clarity",
+          ],
+          tips: aiAnalysis.tips || [
+            "Define clear requirements before starting",
+            "Use version control (Git)",
+            "Schedule regular progress meetings",
+          ],
+          confidence_score: aiAnalysis.confidence_score || 85,
+        },
+      };
 
       console.log(
-        `✅ Sending response with ${responseData.analysis.suggested_milestones.length} milestones`,
+        `📊 Final response: ${responseData.analysis.suggested_milestones.length} milestones`,
       );
+      responseData.analysis.suggested_milestones.forEach((m, i) => {
+        console.log(`   ${i + 1}. ${m.title} (${m.percentage}%)`);
+      });
+
       res.json(responseData);
     } catch (error) {
-      console.error("❌ Analysis error:", error);
+      console.error("❌ [ANALYZE] Fatal error:", error);
 
       res.json({
         success: true,
@@ -151,7 +231,8 @@ router.post(
           suggested_milestones: [
             {
               title: "Project Setup & Planning",
-              description: "Initial setup and requirements",
+              description:
+                "Initial setup, requirements analysis, and architecture design",
               percentage: 20,
             },
             {
@@ -161,17 +242,137 @@ router.post(
             },
             {
               title: "Testing & Delivery",
-              description: "QA and final delivery",
+              description: "Quality assurance, bug fixes, and final delivery",
               percentage: 30,
             },
           ],
           risks: ["Timeline management"],
-          tips: ["Communicate regularly"],
+          tips: ["Communicate regularly", "Use version control"],
+          confidence_score: 50,
         },
       });
     }
   },
 );
+
+function _ensureValidMilestones(milestones, title, description) {
+  if (milestones && Array.isArray(milestones) && milestones.length > 0) {
+    const validMilestones = milestones.filter(
+      (m) => m.title && typeof m.percentage === "number" && m.percentage > 0,
+    );
+
+    if (validMilestones.length > 0) {
+      const total = validMilestones.reduce((sum, m) => sum + m.percentage, 0);
+      if (total !== 100 && total > 0) {
+        const factor = 100 / total;
+        validMilestones.forEach((m) => {
+          m.percentage = Math.round(m.percentage * factor);
+        });
+      }
+      return validMilestones;
+    }
+  }
+
+  const text = `${title} ${description}`.toLowerCase();
+
+  if (text.includes("ecommerce") || text.includes("shop")) {
+    return [
+      {
+        title: "Project Setup & Database Design",
+        description:
+          "Setup project structure, database schema, authentication system",
+        percentage: 20,
+      },
+      {
+        title: "Product & Category Management",
+        description: "Product catalog, categories, inventory management",
+        percentage: 30,
+      },
+      {
+        title: "Shopping Cart & Payment Integration",
+        description: "Cart functionality, payment gateway integration",
+        percentage: 30,
+      },
+      {
+        title: "Testing & Deployment",
+        description: "QA testing, bug fixes, production deployment",
+        percentage: 20,
+      },
+    ];
+  }
+
+  if (
+    text.includes("mobile") ||
+    text.includes("flutter") ||
+    text.includes("android") ||
+    text.includes("ios")
+  ) {
+    return [
+      {
+        title: "UI/UX Design & Setup",
+        description: "App design, project setup, navigation structure",
+        percentage: 20,
+      },
+      {
+        title: "Core Features Development",
+        description: "Main functionality implementation",
+        percentage: 40,
+      },
+      {
+        title: "API Integration & Testing",
+        description: "Backend integration, unit testing, bug fixes",
+        percentage: 25,
+      },
+      {
+        title: "Store Submission & Launch",
+        description: "App store preparation, submission, launch",
+        percentage: 15,
+      },
+    ];
+  }
+
+  if (
+    text.includes("web") ||
+    text.includes("website") ||
+    text.includes("react")
+  ) {
+    return [
+      {
+        title: "Frontend Development",
+        description: "UI components, responsive design, state management",
+        percentage: 35,
+      },
+      {
+        title: "Backend Development",
+        description: "API development, database integration, authentication",
+        percentage: 35,
+      },
+      {
+        title: "Testing & Deployment",
+        description: "QA testing, performance optimization, deployment",
+        percentage: 30,
+      },
+    ];
+  }
+
+  return [
+    {
+      title: "Project Setup & Planning",
+      description: "Initial setup, requirements analysis, timeline planning",
+      percentage: 20,
+    },
+    {
+      title: "Core Development",
+      description: "Main features implementation",
+      percentage: 50,
+    },
+    {
+      title: "Testing & Final Delivery",
+      description: "Quality assurance, bug fixes, final delivery",
+      percentage: 30,
+    },
+  ];
+}
 
 router.get(
   "/smart-pricing/:projectId",

@@ -1665,7 +1665,8 @@
   "accept": "قبول",
   "noOpenProjects": "لا توجد مشاريع مفتوحة",
   "createProjectFirst": "قم بإنشاء مشروع أولاً لتوظيف المستقلين",
-  "createProject": "إنشاء مشروع"
+  "createProject": "إنشاء مشروع",
+  "mySubscription":"اشتراكي"
 
 }
 

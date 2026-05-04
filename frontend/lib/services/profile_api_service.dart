@@ -1,3 +1,5 @@
+// lib/services/profile_api_service.dart
+
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
@@ -58,6 +60,8 @@ class ProfileApiService {
         if (value != null) {
           if (value is List || value is Map) {
             request.fields[key] = jsonEncode(value);
+          } else if (value is DateTime) {
+            request.fields[key] = value.toIso8601String();
           } else {
             request.fields[key] = value.toString();
           }
@@ -87,23 +91,43 @@ class ProfileApiService {
 
       final streamed = await request.send();
       final body = await streamed.stream.bytesToString();
-      return jsonDecode(body);
+
+      if (streamed.statusCode == 200 || streamed.statusCode == 201) {
+        return jsonDecode(body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${streamed.statusCode}',
+        };
+      }
     } catch (e) {
       print('updateFreelancerProfile: $e');
-      return {'message': 'Connection error'};
+      return {'success': false, 'message': 'Connection error: $e'};
     }
   }
 
   static Future<Map<String, dynamic>> getMyClientProfile() async {
     try {
+      final token = await TokenStorage.getToken();
       final res = await http.get(
         Uri.parse('$baseUrl/profiles/me/client'),
-        headers: headers,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
-      if (res.statusCode == 200) return jsonDecode(res.body);
-      return {};
+
+      print('📡 GET /profiles/me/client - Status: ${res.statusCode}');
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        print('✅ Profile loaded: ${data.keys}');
+        return data;
+      }
+      return {'user': {}, 'profile': {}, 'stats': {}};
     } catch (e) {
-      return {};
+      print('❌ getMyClientProfile error: $e');
+      return {'user': {}, 'profile': {}, 'stats': {}};
     }
   }
 
@@ -129,6 +153,10 @@ class ProfileApiService {
   }) async {
     try {
       final token = await TokenStorage.getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
       var request = http.MultipartRequest(
         'PUT',
         Uri.parse('$baseUrl/profiles/me/client'),
@@ -139,9 +167,14 @@ class ProfileApiService {
         if (value != null) {
           if (value is List || value is Map) {
             request.fields[key] = jsonEncode(value);
+          } else if (value is DateTime) {
+            request.fields[key] = value.toIso8601String();
+          } else if (value is bool) {
+            request.fields[key] = value.toString();
           } else {
             request.fields[key] = value.toString();
           }
+          print('📤 Field: $key = ${request.fields[key]}');
         }
       });
 
@@ -150,27 +183,49 @@ class ProfileApiService {
           http.MultipartFile.fromBytes(
             'avatar',
             avatarBytes,
-            filename: avatarFileName ?? 'avatar.jpg',
+            filename:
+                avatarFileName ??
+                'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
             contentType: MediaType('image', 'jpeg'),
           ),
         );
+        print('📤 Uploading avatar: ${avatarFileName ?? 'avatar.jpg'}');
       }
+
       if (coverBytes != null) {
         request.files.add(
           http.MultipartFile.fromBytes(
             'cover',
             coverBytes,
-            filename: coverFileName ?? 'cover.jpg',
+            filename:
+                coverFileName ??
+                'cover_${DateTime.now().millisecondsSinceEpoch}.jpg',
             contentType: MediaType('image', 'jpeg'),
           ),
         );
+        print('📤 Uploading cover: ${coverFileName ?? 'cover.jpg'}');
       }
 
       final streamed = await request.send();
       final body = await streamed.stream.bytesToString();
-      return jsonDecode(body);
+
+      print('📡 PUT /profiles/me/client - Status: ${streamed.statusCode}');
+      print(
+        '📡 Response: ${body.substring(0, body.length > 200 ? 200 : body.length)}...',
+      );
+
+      if (streamed.statusCode == 200 || streamed.statusCode == 201) {
+        return jsonDecode(body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${streamed.statusCode}',
+          'response': body,
+        };
+      }
     } catch (e) {
-      return {'message': 'Connection error'};
+      print('❌ updateClientProfile error: $e');
+      return {'success': false, 'message': 'Connection error: $e'};
     }
   }
 
@@ -180,6 +235,10 @@ class ProfileApiService {
   ) async {
     try {
       final token = await TokenStorage.getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/profiles/me/client/logo'),
@@ -193,11 +252,17 @@ class ProfileApiService {
           contentType: MediaType('image', 'jpeg'),
         ),
       );
+
       final streamed = await request.send();
       final body = await streamed.stream.bytesToString();
-      return jsonDecode(body);
+
+      if (streamed.statusCode == 200 || streamed.statusCode == 201) {
+        return jsonDecode(body);
+      }
+      return {'success': false, 'message': 'Upload failed'};
     } catch (e) {
-      return {'message': 'Connection error'};
+      print('uploadCompanyLogo error: $e');
+      return {'success': false, 'message': 'Connection error'};
     }
   }
 
@@ -217,23 +282,31 @@ class ProfileApiService {
         'sort': sort,
         'page': '$page',
         if (q != null && q.isNotEmpty) 'q': q,
-        if (skills != null) 'skills': skills,
+        if (skills != null && skills.isNotEmpty) 'skills': skills,
         if (minRate != null) 'min_rate': '$minRate',
         if (maxRate != null) 'max_rate': '$maxRate',
         if (availability != null) 'availability': availability,
         if (minRating != null) 'min_rating': '$minRating',
-        if (location != null) 'location': location,
+        if (location != null && location.isNotEmpty) 'location': location,
       };
+
       final uri = Uri.parse(
         '$baseUrl/profiles/freelancers/search',
       ).replace(queryParameters: params);
+
       final res = await http.get(uri, headers: headers);
+
       if (res.statusCode == 200) return jsonDecode(res.body);
       return {'freelancers': [], 'total': 0};
     } catch (e) {
+      print('searchFreelancers error: $e');
       return {'freelancers': [], 'total': 0};
     }
   }
 
-  static String fullImageUrl(String? path) => apiMediaUrl(path);
+  static String fullImageUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http')) return path;
+    return apiMediaUrl(path);
+  }
 }

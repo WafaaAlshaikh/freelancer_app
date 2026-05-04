@@ -3244,4 +3244,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get createProject => 'إنشاء مشروع';
+
+  @override
+  String get mySubscription => 'اشتراكي';
 }

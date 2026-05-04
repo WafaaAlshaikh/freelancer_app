@@ -51,28 +51,37 @@ class DashboardOverview {
     required this.topFreelancers,
   });
 
-  factory DashboardOverview.fromJson(Map<String, dynamic> j) =>
-      DashboardOverview(
-        stats: _Stats.fromJson(j['stats'] ?? {}),
-        monthlySpending: ((j['monthlySpending'] ?? []) as List)
-            .map((e) => _MonthlyPoint.fromJson(e))
-            .toList(),
-        statusBreakdown: ((j['statusBreakdown'] ?? []) as List)
-            .map((e) => _StatusSlice.fromJson(e))
-            .toList(),
-        recentProposals: ((j['recentProposals'] ?? []) as List)
-            .map((e) => _ProposalItem.fromJson(e))
-            .toList(),
-        activeContracts: ((j['activeContracts'] ?? []) as List)
-            .map((e) => _ContractItem.fromJson(e))
-            .toList(),
-        recentActivity: ((j['recentActivity'] ?? []) as List)
-            .map((e) => NotificationModel.fromJson(e))
-            .toList(),
-        topFreelancers: ((j['topFreelancers'] ?? []) as List)
-            .map((e) => _FreelancerChip.fromJson(e))
-            .toList(),
-      );
+  factory DashboardOverview.fromJson(Map<String, dynamic> j) {
+    final trendData =
+        j['spending_trend'] ?? {'percentage': 0, 'direction': 'up'};
+    return DashboardOverview(
+      stats: _Stats.fromJson(
+        j['stats'] ??
+            {
+              'spendingTrend': trendData['percentage'], 
+              'trendDirection': trendData['direction'],
+            },
+      ),
+      monthlySpending: ((j['monthlySpending'] ?? []) as List)
+          .map((e) => _MonthlyPoint.fromJson(e))
+          .toList(),
+      statusBreakdown: ((j['statusBreakdown'] ?? []) as List)
+          .map((e) => _StatusSlice.fromJson(e))
+          .toList(),
+      recentProposals: ((j['recentProposals'] ?? []) as List)
+          .map((e) => _ProposalItem.fromJson(e))
+          .toList(),
+      activeContracts: ((j['activeContracts'] ?? []) as List)
+          .map((e) => _ContractItem.fromJson(e))
+          .toList(),
+      recentActivity: ((j['recentActivity'] ?? []) as List)
+          .map((e) => NotificationModel.fromJson(e))
+          .toList(),
+      topFreelancers: ((j['topFreelancers'] ?? []) as List)
+          .map((e) => _FreelancerChip.fromJson(e))
+          .toList(),
+    );
+  }
 }
 
 class _Stats {
@@ -80,6 +89,8 @@ class _Stats {
   final int totalProposals, pendingProposals, acceptedProposals;
   final double totalSpent, escrowHeld, totalReleased;
   final int proposalAcceptRate;
+  final double spendingTrend;
+  final String trendDirection;
 
   _Stats({
     this.totalProjects = 0,
@@ -93,6 +104,8 @@ class _Stats {
     this.escrowHeld = 0,
     this.totalReleased = 0,
     this.proposalAcceptRate = 0,
+    this.spendingTrend = 0,
+    this.trendDirection = 'up',
   });
 
   factory _Stats.fromJson(Map<String, dynamic> j) => _Stats(
@@ -107,6 +120,8 @@ class _Stats {
     escrowHeld: _d(j['escrowHeld']),
     totalReleased: _d(j['totalReleased']),
     proposalAcceptRate: j['proposalAcceptRate'] ?? 0,
+    spendingTrend: _d(j['spendingTrend'] ?? 0),
+    trendDirection: j['trendDirection'] ?? 'up',
   );
 
   static double _d(dynamic v) {
@@ -850,6 +865,7 @@ class _StatCard extends StatelessWidget {
   final String trend;
   final bool trendUp;
   final double progress;
+  final double trendValue;
 
   const _StatCard({
     required this.icon,
@@ -861,6 +877,7 @@ class _StatCard extends StatelessWidget {
     this.trend = '',
     this.trendUp = true,
     this.progress = 0.5,
+    this.trendValue = 0,
   });
 
   @override
@@ -900,7 +917,7 @@ class _StatCard extends StatelessWidget {
                 child: Icon(icon, color: iconColor, size: 17),
               ),
               const Spacer(),
-              if (trend.isNotEmpty)
+              if (trendValue != 0)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 7,
@@ -910,13 +927,26 @@ class _StatCard extends StatelessWidget {
                     color: trendUp ? AppColors.successBg : AppColors.warningBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    trend,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: trendUp ? AppColors.success : AppColors.warning,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        trendUp ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 10,
+                        color: trendUp ? AppColors.success : AppColors.warning,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${trendValue.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: trendUp
+                              ? AppColors.success
+                              : AppColors.warning,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -2116,10 +2146,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
       },
       itemBuilder: (_) => [
         _menuItem('profile', Icons.person_outline, t.profile),
-        _menuItem('plans', Icons.star_border, t.upgrade),
         _menuItem('mysub', Icons.subscriptions, 'My Subscription'),
-        _menuItem('compare', Icons.compare_arrows, 'Compare Plans'),
-        _menuItem('interviews', Icons.interpreter_mode, t.interviews),
         const PopupMenuDivider(),
         _menuItem('logout', Icons.logout, t.logout, color: AppColors.danger),
       ],
@@ -2321,11 +2348,14 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _QuickAction(
-                        icon: Icons.people_outline,
-                        bg: AppColors.successBg,
-                        color: AppColors.success,
-                        label: t.findWork,
-                        onTap: () => setState(() => _selectedNav = 6),
+                        icon: Icons.subscriptions, 
+                        bg: const Color(0xFFF3E8FF), 
+                        color: const Color(0xFF7C3AED), 
+                        label: t.mySubscription, 
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          '/subscription/my',
+                        ),
                       ),
                     ),
                   ],
@@ -2378,7 +2408,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
                           label: t.totalSpent,
                           sub:
                               'Escrow: \$${_data!.stats.escrowHeld.toStringAsFixed(0)}',
-                          trend: '↑ 18%',
+                          trendValue: _data!.stats.spendingTrend,
+                          trendUp: _data!.stats.trendDirection == 'up',
                           progress: 0.75,
                         ),
                       ),

@@ -1655,7 +1655,8 @@
   "accept": "Accept",
   "noOpenProjects": "No open projects",
   "createProjectFirst": "Create a project first to hire freelancers",
-  "createProject": "Create Project"
+  "createProject": "Create Project",
+  "mySubscription":"My Subscription"
 
 }
 

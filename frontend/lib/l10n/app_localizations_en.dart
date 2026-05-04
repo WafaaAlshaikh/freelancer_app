@@ -3268,4 +3268,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createProject => 'Create Project';
+
+  @override
+  String get mySubscription => 'My Subscription';
 }

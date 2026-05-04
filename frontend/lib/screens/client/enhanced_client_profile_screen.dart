@@ -343,6 +343,52 @@ class _EnhancedClientProfileScreenState
     );
   }
 
+  String _getClientTypeIcon() {
+    final clientType = _data['profile']?['client_type'] ?? 'individual';
+    return clientType == 'company' ? '🏢' : '👤';
+  }
+
+  String _getClientTypeText() {
+    final clientType = _data['profile']?['client_type'] ?? 'individual';
+    return clientType == 'company' ? 'Verified Business' : 'Individual Client';
+  }
+
+  Widget _buildClientTypeBadge() {
+    final clientType = _data['profile']?['client_type'] ?? 'individual';
+    final isCompany = clientType == 'company';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isCompany
+              ? [_success, _success.withOpacity(0.8)]
+              : [_primary, _primaryDark],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isCompany ? Icons.business : Icons.person,
+            size: 14,
+            color: _white,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            _getClientTypeText(),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButton(IconData icon, String tooltip, VoidCallback onTap) {
     return Tooltip(
       message: tooltip,
@@ -563,6 +609,10 @@ class _EnhancedClientProfileScreenState
                             ),
                           ),
                         ),
+                        if (companyName.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          _buildClientTypeBadge(),
+                        ],
                         if (!_isOwnProfile)
                           Container(
                             decoration: BoxDecoration(

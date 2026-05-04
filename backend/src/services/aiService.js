@@ -1,5 +1,11 @@
-// services/aiService.js 
-import { Project, Proposal, FreelancerProfile, User,Contract } from "../models/index.js";
+// services/aiService.js
+import {
+  Project,
+  Proposal,
+  FreelancerProfile,
+  User,
+  Contract,
+} from "../models/index.js";
 import { Op } from "sequelize";
 import fs from "fs";
 import Groq from "groq-sdk";
@@ -1676,6 +1682,137 @@ Return ONLY valid JSON:
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  static async analyzeProjectEnhanced(projectData) {
+    try {
+      console.log("🚀 [ENHANCED] Starting enhanced project analysis...");
+
+      const aiResult = await this.analyzeProject(projectData);
+
+      const marketInsights = await this.getMarketInsights(projectData);
+
+      let confidenceScore = 85;
+
+      if (marketInsights && marketInsights.similar_projects_count > 0) {
+        confidenceScore = Math.min(
+          95,
+          70 + marketInsights.similar_projects_count,
+        );
+      }
+
+      return {
+        ...aiResult,
+        confidence_score: confidenceScore,
+        market_insights: marketInsights,
+        analyzed_at: new Date().toISOString(),
+        ai_provider: "groq-llama-3.3-70b",
+      };
+    } catch (error) {
+      console.error("❌ Enhanced analysis failed:", error);
+      return this.getDefaultProjectAnalysis(projectData);
+    }
+  }
+
+  static async analyzeProjectQuick(projectData) {
+    try {
+      console.log("⚡ [QUICK] Quick project analysis...");
+
+      const prompt = `
+Quickly analyze this project and return JSON (keep it brief):
+
+Title: ${projectData.title || "Untitled"}
+Category: ${projectData.category || "general"}
+
+Return ONLY:
+{
+  "difficulty": "beginner|intermediate|expert",
+  "duration_days": number (5-60),
+  "price_min": number,
+  "price_max": number,
+  "key_skill": "main skill needed"
+}`;
+
+      const completion = await groqClient.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        max_tokens: 200,
+      });
+
+      const quickResult = this.extractJSONFromResponse(
+        completion.choices[0].message.content,
+      );
+
+      return {
+        difficulty_level: quickResult.difficulty || "intermediate",
+        estimated_duration_days: quickResult.duration_days || 14,
+        price_range: {
+          min: quickResult.price_min || 500,
+          max: quickResult.price_max || 1500,
+          recommended:
+            (quickResult.price_min + quickResult.price_max) / 2 || 1000,
+          currency: "USD",
+        },
+        key_skill: quickResult.key_skill || "General",
+        quick_analysis: true,
+      };
+    } catch (error) {
+      console.error("Quick analysis failed:", error);
+      return null;
+    }
+  }
+
+  static ensureValidMilestones(milestones, title, description) {
+    if (milestones && Array.isArray(milestones) && milestones.length > 0) {
+      const validMilestones = milestones.filter(
+        (m) => m.title && typeof m.percentage === "number" && m.percentage > 0,
+      );
+
+      if (validMilestones.length > 0) {
+        const total = validMilestones.reduce((sum, m) => sum + m.percentage, 0);
+        if (total !== 100 && total > 0) {
+          const factor = 100 / total;
+          validMilestones.forEach((m) => {
+            m.percentage = Math.round(m.percentage * factor);
+          });
+        }
+        return validMilestones;
+      }
+    }
+
+    const text = `${title} ${description}`.toLowerCase();
+
+    if (text.includes("ecommerce") || text.includes("shop")) {
+      return [
+        {
+          title: "Project Setup",
+          description: "Initial setup",
+          percentage: 20,
+        },
+        {
+          title: "Product Management",
+          description: "Products & categories",
+          percentage: 30,
+        },
+        {
+          title: "Cart & Payment",
+          description: "Shopping cart & payment",
+          percentage: 30,
+        },
+        {
+          title: "Testing & Deployment",
+          description: "QA & deployment",
+          percentage: 20,
+        },
+      ];
+    }
+
+    return [
+      { title: "Setup", description: "Initial setup", percentage: 20 },
+      { title: "Development", description: "Core features", percentage: 50 },
+      { title: "Delivery", description: "Testing & delivery", percentage: 30 },
+    ];
   }
 }
 

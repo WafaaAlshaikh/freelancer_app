@@ -6331,6 +6331,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create Project'**
   String get createProject;
+
+  /// No description provided for @mySubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'My Subscription'**
+  String get mySubscription;
 }
 
 class _AppLocalizationsDelegate
