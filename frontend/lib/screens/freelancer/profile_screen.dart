@@ -17,6 +17,7 @@ import 'package:freelancer_platform/screens/freelancer/offers_screen.dart';
 import 'package:freelancer_platform/screens/notifications/notifications_screen.dart';
 import 'package:freelancer_platform/screens/rating/reviews_screen.dart';
 import 'package:freelancer_platform/screens/skill_tests/skill_tests_screen.dart';
+import 'package:freelancer_platform/widgets/ad_banner.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -497,6 +498,14 @@ class _Sidebar extends StatelessWidget {
                   ),
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: AdBanner(
+              placement: 'home_bottom',
+              height: 150,
+              margin: EdgeInsets.zero,
             ),
           ),
 
@@ -2552,6 +2561,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
           children: [
             _buildProfileHeaderCard(),
             const SizedBox(height: 12),
+            AdBanner(placement: 'home_top', height: 100),
+            const SizedBox(height: 12),
             if (_usage != null &&
                 _usage!.hasProposalLimit &&
                 (_usage!.remainingProposals <= 2))
@@ -2722,6 +2733,8 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       child: Column(
         children: [
           const _FreelancerHomeScheduleCard(),
+          const SizedBox(height: 14),
+          AdBanner(placement: 'sidebar_top', height: 120),
           const SizedBox(height: 14),
           _PremiumCard(
             onSubscribe: () =>

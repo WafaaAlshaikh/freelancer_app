@@ -6337,6 +6337,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My Subscription'**
   String get mySubscription;
+
+  /// No description provided for @ads.
+  ///
+  /// In en, this message translates to:
+  /// **'Ads'**
+  String get ads;
+
+  /// No description provided for @myCampaigns.
+  ///
+  /// In en, this message translates to:
+  /// **'My Campaigns'**
+  String get myCampaigns;
+
+  /// No description provided for @createCampaign.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Campaign'**
+  String get createCampaign;
 }
 
 class _AppLocalizationsDelegate

@@ -3271,4 +3271,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mySubscription => 'My Subscription';
+
+  @override
+  String get ads => 'Ads';
+
+  @override
+  String get myCampaigns => 'My Campaigns';
+
+  @override
+  String get createCampaign => 'Create Campaign';
 }

@@ -1,11 +1,23 @@
 // controllers/adminController.js
-import { User, Project, Contract, FreelancerProfile, ClientProfile, Rating, Transaction, sequelize } from "../models/index.js";
+import {
+  User,
+  Project,
+  Contract,
+  FreelancerProfile,
+  ClientProfile,
+  Rating,
+  Transaction,
+  sequelize,
+} from "../models/index.js";
 import { Op } from "sequelize";
+import AdCampaign from "../models/AdCampaign.js";
+import AdPaymentService from "../services/adPaymentService.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
-    console.log('📊 Fetching admin dashboard stats...');
-    
+    console.log("📊 Fetching admin dashboard stats...");
+    const adRevenueStats = await AdPaymentService.getAdminStats();
+
     const [
       totalUsers,
       totalFreelancers,
@@ -23,7 +35,9 @@ export const getDashboardStats = async (req, res) => {
       User.count({ where: { role: "client" } }),
       Project.count(),
       Contract.count(),
-      Transaction.sum("amount", { where: { type: "platform_fee", status: "completed" } }),
+      Transaction.sum("amount", {
+        where: { type: "platform_fee", status: "completed" },
+      }),
       Project.count({ where: { status: "pending_review" } }),
       Contract.count({ where: { status: "active" } }),
       Contract.count({ where: { status: "completed" } }),
@@ -36,7 +50,15 @@ export const getDashboardStats = async (req, res) => {
           [Op.gte]: new Date(new Date() - 7 * 24 * 60 * 60 * 1000),
         },
       },
-      attributes: ["id", "name", "email", "role", "avatar", "createdAt", "account_status"],
+      attributes: [
+        "id",
+        "name",
+        "email",
+        "role",
+        "avatar",
+        "createdAt",
+        "account_status",
+      ],
       order: [["createdAt", "DESC"]],
       limit: 10,
     });
@@ -78,8 +100,11 @@ export const getDashboardStats = async (req, res) => {
         activeContracts,
         completedContracts,
         pendingDisputes,
+        adRevenue: adRevenueStats.total_ad_revenue || 0,
+        activeAdCampaigns: adRevenueStats.active_campaigns || 0,
+        totalAdSpend: adRevenueStats.total_campaign_spend || 0,
       },
-      recentUsers: recentUsers.map(user => ({
+      recentUsers: recentUsers.map((user) => ({
         id: user.id,
         name: user.name,
         email: user.email,
@@ -91,9 +116,8 @@ export const getDashboardStats = async (req, res) => {
       recentProjects,
       monthlyStats: monthlyStats[0] || [],
     });
-    
-    console.log('✅ Dashboard stats fetched successfully');
-    
+
+    console.log("✅ Dashboard stats fetched successfully");
   } catch (err) {
     console.error("❌ Error in getDashboardStats:", err);
     res.json({
@@ -134,7 +158,9 @@ export const getAllUsers = async (req, res) => {
 
     const { count, rows } = await User.findAndCountAll({
       where,
-      attributes: { exclude: ["password", "verification_code", "reset_password_token"] },
+      attributes: {
+        exclude: ["password", "verification_code", "reset_password_token"],
+      },
       include: [
         {
           model: FreelancerProfile,
@@ -161,9 +187,9 @@ export const getAllUsers = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in getAllUsers:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error", 
+    res.status(500).json({
+      success: false,
+      message: "Server error",
       error: err.message,
       users: [],
       total: 0,
@@ -191,26 +217,26 @@ export const getUserDetails = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const projects = await Project.count({ where: { UserId: userId } });
-    const contracts = await Contract.count({ 
-      where: { 
-        [Op.or]: [
-          { FreelancerId: userId },
-          { ClientId: userId }
-        ]
-      } 
+    const contracts = await Contract.count({
+      where: {
+        [Op.or]: [{ FreelancerId: userId }, { ClientId: userId }],
+      },
     });
     const ratings = await Rating.findAll({
       where: { toUserId: userId },
       attributes: ["rating"],
     });
-    
-    const avgRating = ratings.length > 0
-      ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-      : 0;
+
+    const avgRating =
+      ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+        : 0;
 
     res.json({
       success: true,
@@ -224,7 +250,9 @@ export const getUserDetails = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in getUserDetails:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -235,7 +263,9 @@ export const updateUserStatus = async (req, res) => {
 
     const user = await User.findByPk(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     await user.update({ account_status: status });
@@ -248,7 +278,9 @@ export const updateUserStatus = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in updateUserStatus:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -259,7 +291,9 @@ export const verifyUser = async (req, res) => {
 
     const user = await User.findByPk(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     await user.update({ is_verified: verified });
@@ -267,12 +301,12 @@ export const verifyUser = async (req, res) => {
     if (user.role === "freelancer") {
       await FreelancerProfile.update(
         { is_verified: verified },
-        { where: { UserId: userId } }
+        { where: { UserId: userId } },
       );
     } else if (user.role === "client") {
       await ClientProfile.update(
         { id_verified: verified },
-        { where: { UserId: userId } }
+        { where: { UserId: userId } },
       );
     }
 
@@ -284,7 +318,9 @@ export const verifyUser = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in verifyUser:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -326,7 +362,9 @@ export const getAllProjects = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in getAllProjects:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -336,7 +374,9 @@ export const deleteProject = async (req, res) => {
 
     const project = await Project.findByPk(projectId);
     if (!project) {
-      return res.status(404).json({ success: false, message: "Project not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
     }
 
     await project.destroy();
@@ -349,7 +389,9 @@ export const deleteProject = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in deleteProject:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -393,7 +435,9 @@ export const getAllContracts = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in getAllContracts:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -404,7 +448,9 @@ export const resolveDispute = async (req, res) => {
 
     const contract = await Contract.findByPk(contractId);
     if (!contract) {
-      return res.status(404).json({ success: false, message: "Contract not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Contract not found" });
     }
 
     await contract.update({
@@ -421,6 +467,8 @@ export const resolveDispute = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in resolveDispute:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };

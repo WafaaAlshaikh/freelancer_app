@@ -1666,7 +1666,10 @@
   "noOpenProjects": "لا توجد مشاريع مفتوحة",
   "createProjectFirst": "قم بإنشاء مشروع أولاً لتوظيف المستقلين",
   "createProject": "إنشاء مشروع",
-  "mySubscription":"اشتراكي"
+  "mySubscription":"اشتراكي",
+  "ads": "الاعلانات",
+  "myCampaigns": "حملاتي",
+  "createCampaign": "انشاء حملة"
 
 }
 

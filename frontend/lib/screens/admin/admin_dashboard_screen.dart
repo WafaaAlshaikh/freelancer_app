@@ -1,8 +1,8 @@
-// screens/admin/admin_dashboard_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:freelancer_platform/screens/admin/admin_ads_management_screen.dart';
 import 'package:freelancer_platform/screens/admin/subscription_management_screen.dart';
+import 'package:freelancer_platform/screens/ads/ads_management_screen.dart';
 import '../../models/admin_stats.dart';
 import '../../services/api_service.dart';
 import 'contracts_management_screen.dart';
@@ -64,6 +64,11 @@ class _AdminSidebar extends StatelessWidget {
       icon: Icons.subscriptions_outlined,
       selectedIcon: Icons.subscriptions,
       label: 'Subscriptions',
+    ),
+    _NavItem(
+      icon: Icons.campaign_outlined,
+      selectedIcon: Icons.campaign,
+      label: 'Ads',
     ),
     _NavItem(
       icon: Icons.settings_outlined,
@@ -254,6 +259,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedIndex = 0;
   int _dashboardTab = 0;
   String? errorMessage;
+  double _adRevenue = 0;
 
   @override
   void initState() {
@@ -275,9 +281,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         final statsData = response['stats'] ?? {};
         final monthlyStatsData = response['monthlyStats'] ?? [];
 
+        final adRevenue = response['stats']?['adRevenue'] ?? 0;
+
         setState(() {
           stats = AdminStats.fromJson(statsData);
           monthlyStats = List<Map<String, dynamic>>.from(monthlyStatsData);
+          _adRevenue = adRevenue.toDouble();
           loading = false;
         });
       } else {
@@ -295,6 +304,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             pendingDisputes: 0,
           );
           monthlyStats = [];
+          _adRevenue = 0;
           loading = false;
           errorMessage = 'No data available';
         });
@@ -316,6 +326,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           completedContracts: 0,
           pendingDisputes: 0,
         );
+        _adRevenue = 0;
         monthlyStats = [];
       });
     }
@@ -416,6 +427,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       'Projects',
       'Contracts',
       'Subscriptions',
+      'Ads',
       'Settings',
     ];
 
@@ -735,6 +747,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 '\$${stats!.totalEarnings.toStringAsFixed(0)}',
                 Icons.attach_money,
                 AppColors.green,
+              ),
+              _buildStatCard(
+                'Ad Revenue',
+                '\$${_adRevenue.toStringAsFixed(0)}',
+                Icons.ads_click,
+                Colors.teal,
               ),
               _buildStatCard(
                 'Pending Projects',
@@ -1422,6 +1440,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 4:
         return const SubscriptionManagementScreen();
       case 5:
+        return const AdminAdsManagementScreen();
+      case 6:
         return const AdminSettingsScreen();
       default:
         return _buildDashboardContent();

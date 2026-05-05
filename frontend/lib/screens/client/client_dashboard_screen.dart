@@ -2,6 +2,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:freelancer_platform/screens/ads/ads_management_screen.dart';
+import 'package:freelancer_platform/widgets/ad_banner.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:freelancer_platform/models/usage_limits_model.dart';
 import 'package:freelancer_platform/screens/client/compare_freelancers_screen.dart';
@@ -58,7 +60,7 @@ class DashboardOverview {
       stats: _Stats.fromJson(
         j['stats'] ??
             {
-              'spendingTrend': trendData['percentage'], 
+              'spendingTrend': trendData['percentage'],
               'trendDirection': trendData['direction'],
             },
       ),
@@ -392,6 +394,7 @@ class _Sidebar extends StatelessWidget {
       icon: Icons.account_balance_wallet_outlined,
       labelKey: 'wallet',
     ),
+    _SidebarItem(icon: Icons.campaign_outlined, labelKey: 'ads'),
     _SidebarItem(icon: Icons.people_outline, labelKey: 'findFreelancers'),
     _SidebarItem(icon: Icons.bar_chart_outlined, labelKey: 'analytics'),
   ];
@@ -577,6 +580,23 @@ class _Sidebar extends StatelessWidget {
               },
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: AdBanner(
+              placement: 'sidebar_top',
+              height: 200,
+              margin: EdgeInsets.zero,
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: AdBanner(
+              placement: 'sidebar_bottom',
+              height: 200,
+              margin: EdgeInsets.zero,
+            ),
+          ),
 
           Padding(
             padding: const EdgeInsets.all(16),
@@ -624,6 +644,8 @@ class _Sidebar extends StatelessWidget {
         return t.interviews;
       case 'wallet':
         return t.myWallet;
+      case 'ads':
+        return t.ads;
       case 'findFreelancers':
         return t.findWork;
       case 'analytics':
@@ -2216,8 +2238,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 5:
         return _buildPlaceholder(t.myWallet);
       case 6:
-        return const FindFreelancersScreen();
+        return const AdsManagementScreen();
       case 7:
+        return const FindFreelancersScreen();
+      case 8:
         return _buildPlaceholder(t.analytics);
       default:
         return _buildOverviewTab();
@@ -2298,6 +2322,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
                   onFindFreelancers: () => setState(() => _selectedNav = 6),
                 ),
                 const SizedBox(height: 16),
+                AdBanner(placement: 'home_top', height: 120),
+
+                const SizedBox(height: 16),
 
                 Row(
                   children: [
@@ -2348,14 +2375,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _QuickAction(
-                        icon: Icons.subscriptions, 
-                        bg: const Color(0xFFF3E8FF), 
-                        color: const Color(0xFF7C3AED), 
-                        label: t.mySubscription, 
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/subscription/my',
-                        ),
+                        icon: Icons.subscriptions,
+                        bg: const Color(0xFFF3E8FF),
+                        color: const Color(0xFF7C3AED),
+                        label: t.mySubscription,
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/subscription/my'),
                       ),
                     ),
                   ],
@@ -2486,6 +2511,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
                   const SizedBox(height: 14),
 
                   _buildActivityFeed(),
+                  const SizedBox(height: 14),
+                  AdBanner(placement: 'home_bottom', height: 100),
                   const SizedBox(height: 14),
 
                   if (wide)

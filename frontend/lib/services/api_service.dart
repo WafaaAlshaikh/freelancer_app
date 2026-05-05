@@ -3945,6 +3945,300 @@ class ApiService {
       return {'success': false, 'message': e.toString()};
     }
   }
+
+  static Future<Map<String, dynamic>> getActiveAds({
+    required String placement,
+    int limit = 3,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ads/active?placement=$placement&limit=$limit'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> trackAdClick(int campaignId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ads/$campaignId/click'),
+        headers: await headers,
+        body: jsonEncode({}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getMyAdCampaigns({
+    String? status,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      String url = '$BASE_URL/ads/my-campaigns?page=$page&limit=$limit';
+      if (status != null) {
+        url += '&status=$status';
+      }
+      final response = await http.get(Uri.parse(url), headers: await headers);
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': e.toString(),
+        'campaigns': [],
+        'total': 0,
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> createAdCampaign(
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ads/campaigns'),
+        headers: await headers,
+        body: jsonEncode(data),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> activateAdCampaign(int campaignId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/ads/$campaignId/activate'),
+        headers: await headers,
+        body: jsonEncode({}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> pauseAdCampaign(int campaignId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/ads/$campaignId/pause'),
+        headers: await headers,
+        body: jsonEncode({}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createAdPaymentSession(
+    int campaignId, {
+    required String successUrl,
+    required String cancelUrl,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ads/$campaignId/create-payment'),
+        headers: await headers,
+        body: jsonEncode({'successUrl': successUrl, 'cancelUrl': cancelUrl}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> payAdWithWallet(int campaignId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ads/$campaignId/pay-with-wallet'),
+        headers: await headers,
+        body: jsonEncode({}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdPaymentStatus(int campaignId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ads/$campaignId/payment-status'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdRevenueStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ads/admin/revenue-stats'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString(), 'stats': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> recordManualAdPayment(
+    int campaignId, {
+    required double amount,
+    required String reference,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/ads/admin/$campaignId/record-payment'),
+        headers: await headers,
+        body: jsonEncode({'amount': amount, 'reference': reference}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> adminGetAllCampaigns({
+    String status = 'all',
+    String search = '',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final queryParams = {
+        'status': status,
+        'search': search,
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/ads/admin/campaigns?${Uri(queryParameters: queryParams).query}',
+        ),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'campaigns': [], 'total': 0, 'totalPages': 0};
+    }
+  }
+
+  static Future<Map<String, dynamic>> adminGetCampaignDetails(
+    int campaignId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/ads/admin/campaigns/$campaignId'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false};
+    }
+  }
+
+  static Future<Map<String, dynamic>> adminUpdateCampaign(
+    int campaignId,
+    Map<String, dynamic> updateData,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$BASE_URL/ads/admin/campaigns/$campaignId'),
+        headers: await headers,
+        body: jsonEncode(updateData),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> adminChangeCampaignStatus(
+    int campaignId,
+    String status, {
+    String? reason,
+  }) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$BASE_URL/ads/admin/campaigns/$campaignId/status'),
+        headers: await headers,
+        body: jsonEncode({'status': status, 'reason': reason}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> adminDeleteCampaign(
+    int campaignId,
+  ) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$BASE_URL/ads/admin/campaigns/$campaignId'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> adminGetAdAnalytics({
+    String? period,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (period != null) queryParams['period'] = period;
+      if (startDate != null)
+        queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/ads/admin/analytics?${Uri(queryParameters: queryParams).query}',
+        ),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'analytics': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> adminGetPaymentTransactions({
+    int? campaignId,
+    int page = 1,
+    int limit = 50,
+  }) async {
+    try {
+      final queryParams = {'page': page.toString(), 'limit': limit.toString()};
+      if (campaignId != null) queryParams['campaignId'] = campaignId.toString();
+
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/ads/admin/payments?${Uri(queryParameters: queryParams).query}',
+        ),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'transactions': [], 'total': 0};
+    }
+  }
 }
 
 class FinancialStatsResponse {

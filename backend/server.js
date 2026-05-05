@@ -46,6 +46,7 @@ import interviewRoutes from "./src/routes/interviewRoutes.js";
 import { initWebSocket } from "./src/services/websocketService.js";
 import SmartReminderService from "./src/services/smartReminderService.js";
 import clientSearchRoutes from "./src/routes/clientSearchRoutes.js";
+import AdRoutes from "./src/routes/adRoutes.js";
 
 dotenv.config();
 
@@ -140,6 +141,7 @@ app.use("/api/financial", financialRoutes);
 app.use("/api/search", advancedSearchRoutes);
 app.use("/api/interviews", interviewRoutes);
 app.use("/api/client/search", clientSearchRoutes);
+app.use("/api/ads", AdRoutes);
 app.use(
   "/api/admin/landing",
   protect,

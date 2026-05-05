@@ -1656,7 +1656,10 @@
   "noOpenProjects": "No open projects",
   "createProjectFirst": "Create a project first to hire freelancers",
   "createProject": "Create Project",
-  "mySubscription":"My Subscription"
+  "mySubscription":"My Subscription",
+  "ads": "Ads",
+  "myCampaigns": "My Campaigns",
+  "createCampaign": "Create Campaign"
 
 }
 

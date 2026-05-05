@@ -3247,4 +3247,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mySubscription => 'اشتراكي';
+
+  @override
+  String get ads => 'الاعلانات';
+
+  @override
+  String get myCampaigns => 'حملاتي';
+
+  @override
+  String get createCampaign => 'انشاء حملة';
 }

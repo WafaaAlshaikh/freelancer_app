@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:freelancer_platform/screens/ads/create_ad_campaign_screen.dart';
 import 'package:freelancer_platform/screens/auth/reset_password_screen.dart';
 import 'package:freelancer_platform/screens/settings/settings_screen.dart';
 import 'package:provider/provider.dart';
@@ -199,7 +200,7 @@ class _FreelancerAppState extends State<FreelancerApp> {
                 const SubscriptionComparisonScreen(),
             '/subscription/usage': (_) => const SubscriptionUsageScreen(),
             '/chats': (_) => ChatsListScreen(),
-
+            '/create-ad-campaign': (context) => const CreateAdCampaignScreen(),
             '/favorites': (_) => const FavoritesScreen(),
             '/financial-dashboard': (_) => const FinancialDashboardScreen(),
             '/advanced-search': (_) => const AdvancedSearchScreen(),
@@ -233,6 +234,11 @@ class _FreelancerAppState extends State<FreelancerApp> {
                     milestoneIndex: args['milestoneIndex'],
                     milestone: args['milestone'],
                   ),
+                );
+
+              case '/create-ad-campaign':
+                return MaterialPageRoute(
+                  builder: (_) => const CreateAdCampaignScreen(),
                 );
 
               case '/subscription_success':

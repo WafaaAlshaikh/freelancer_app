@@ -1,4 +1,4 @@
-// routes/dashboardRoutes.js  — أضف هاد الملف للـ backend
+// routes/dashboardRoutes.js
 import express from "express";
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 import {
@@ -8,8 +8,17 @@ import {
 
 const router = express.Router();
 
-router.use(protect, authorizeRoles("client"));
-router.get("/overview", getDashboardOverview);
-router.get("/projects-summary", getProjectsSummary);
+router.use(protect);
+
+router.get(
+  "/overview",
+  authorizeRoles("client", "admin"),
+  getDashboardOverview,
+);
+router.get(
+  "/projects-summary",
+  authorizeRoles("client", "admin"),
+  getProjectsSummary,
+);
 
 export default router;
