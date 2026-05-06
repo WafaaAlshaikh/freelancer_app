@@ -141,10 +141,17 @@ export const updateMilestoneProgress = async (req, res) => {
 
 export const getWallet = async (req, res) => {
   try {
+    console.log("🔍 ===== GET /api/freelancer/wallet =====");
+    console.log("📌 User ID:", req.user.id);
+    console.log("📌 User Role:", req.user.role);
+
     let wallet = await Wallet.findOne({ where: { UserId: req.user.id } });
+    console.log("📌 Wallet found:", wallet ? "YES" : "NO");
 
     if (!wallet) {
+      console.log("📌 Creating new wallet for UserId:", req.user.id);
       wallet = await Wallet.create({ UserId: req.user.id, balance: 0 });
+      console.log("📌 Wallet created:", wallet ? "YES" : "NO");
     }
 
     const transactions = await Transaction.findAll({
@@ -152,13 +159,14 @@ export const getWallet = async (req, res) => {
       order: [["createdAt", "DESC"]],
       limit: 50,
     });
+    console.log("📌 Transactions count:", transactions.length);
 
     res.json({
       wallet,
       transactions,
     });
   } catch (err) {
-    console.error("Error in getWallet:", err);
+    console.error("❌ Error in getWallet:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -332,8 +340,7 @@ export const updateProfile = async (req, res) => {
         if (typeof body[field] === "string") {
           try {
             body[field] = JSON.parse(body[field]);
-          } catch {
-          }
+          } catch {}
         }
         if (Array.isArray(body[field]) || typeof body[field] === "object") {
           body[field] = stringifyJSON(body[field]);
@@ -1141,8 +1148,13 @@ export const compareFreelancers = async (req, res) => {
         const skills = profile?.skills ? parseJSON(profile.skills) : [];
 
         let skillsMatch = 0;
-        if (project && project.required_skills) {
-          const projectSkills = parseJSON(project.required_skills, []);
+        if (project) {
+          const rawProjectSkills =
+            project.skills || project.required_skills || [];
+          const projectSkills = Array.isArray(rawProjectSkills)
+            ? rawProjectSkills
+            : parseJSON(rawProjectSkills, []);
+
           const matchingSkills = skills.filter((skill) =>
             projectSkills.some(
               (ps) => ps.toLowerCase() === skill.toLowerCase(),

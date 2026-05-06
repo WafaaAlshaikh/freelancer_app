@@ -19,14 +19,28 @@ class WalletModel {
   });
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
-    return WalletModel(
-      id: json['id'],
-      userId: json['UserId'],
-      balance: (json['balance'] ?? 0).toDouble(),
-      pendingBalance: (json['pending_balance'] ?? 0).toDouble(),
-      totalEarned: (json['total_earned'] ?? 0).toDouble(),
-      totalWithdrawn: (json['total_withdrawn'] ?? 0).toDouble(),
-      stripeAccountId: json['stripe_account_id'],
-    );
+    try {
+      double parseToDouble(dynamic value) {
+        if (value == null) return 0.0;
+        if (value is double) return value;
+        if (value is int) return value.toDouble();
+        if (value is String) return double.parse(value);
+        return 0.0;
+      }
+
+      return WalletModel(
+        id: json['id'],
+        userId: json['UserId'],
+        balance: parseToDouble(json['balance']),
+        pendingBalance: parseToDouble(json['pending_balance']),
+        totalEarned: parseToDouble(json['total_earned']),
+        totalWithdrawn: parseToDouble(json['total_withdrawn']),
+        stripeAccountId: json['stripe_account_id'],
+      );
+    } catch (e) {
+      print('❌ Error creating WalletModel from JSON: $e');
+      print('📄 JSON data: $json');
+      rethrow;
+    }
   }
 }

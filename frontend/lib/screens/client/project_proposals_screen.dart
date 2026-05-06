@@ -381,9 +381,17 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
               slivers: [
                 SliverToBoxAdapter(child: _interviewUsageStrip(t)),
 
+                if (!loadingSuggestions)
+                  SliverToBoxAdapter(child: _buildAIProjectHint(t, isDark)),
+
                 if (!loadingSuggestions && suggestedFreelancers.isNotEmpty)
                   SliverToBoxAdapter(
                     child: _buildSuggestedFreelancersSection(t, isDark),
+                  ),
+
+                if (!loadingSuggestions && suggestedFreelancers.isEmpty)
+                  SliverToBoxAdapter(
+                    child: _buildNoAISuggestionsNotice(t, isDark),
                   ),
 
                 SliverToBoxAdapter(
@@ -468,15 +476,52 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  t.aiRecommendedFreelancers,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.dark,
+                Expanded(
+                  child: Text(
+                    t.aiRecommendedFreelancers,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.dark,
+                    ),
                   ),
                 ),
+                if (suggestedFreelancers.length >= 2)
+                  TextButton.icon(
+                    onPressed: () {
+                      final freelancerIds = suggestedFreelancers
+                          .map((f) => f['id'] as int)
+                          .toList();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CompareFreelancersScreen(
+                            projectId: widget.projectId,
+                            freelancerIds: freelancerIds,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.compare_arrows),
+                    label: Text(t.compareFreelancers),
+                  ),
               ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'These AI recommendations are based on this project only. Compare top matches to choose the best freelancer for this job.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : Colors.grey.shade600,
+                height: 1.4,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -738,6 +783,73 @@ class _ProjectProposalsScreenState extends State<ProjectProposalsScreen> {
               fontSize: 10,
               color: color,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIProjectHint(AppLocalizations t, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: isDark ? AppColors.accent : AppColors.accent,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              t.aiRecommendationsProjectHint,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoAISuggestionsNotice(AppLocalizations t, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.hourglass_empty,
+            color: isDark ? AppColors.warning : AppColors.warning,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              t.noAiFreelancerSuggestions,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : Colors.grey.shade700,
+              ),
             ),
           ),
         ],

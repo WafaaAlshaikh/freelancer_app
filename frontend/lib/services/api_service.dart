@@ -21,7 +21,16 @@ import '../models/subscription_stats_model.dart';
 import 'package:dio/dio.dart';
 
 class ApiService {
-  static const String BASE_URL = 'http://localhost:5001/api';
+  static String get BASE_URL {
+    if (kIsWeb) {
+      return 'http://localhost:5001/api';
+    }
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:5001/api';
+    }
+    return 'http://localhost:5001/api';
+  }
+
   static String? _token;
 
   static final Dio _dio = Dio(
@@ -40,7 +49,10 @@ class ApiService {
     if (kIsWeb) {
       return 'http://localhost:5001/api';
     }
-    return BASE_URL;
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:5001/api';
+    }
+    return 'http://localhost:5001/api';
   }
 
   static Map<String, String> get headers => {
@@ -1629,13 +1641,43 @@ class ApiService {
   static Future<Map<String, dynamic>> getWallet() async {
     try {
       final response = await http.get(
-        Uri.parse('$BASE_URL/client/wallet'),
+        Uri.parse('$baseUrl/client/wallet'),
         headers: headers,
       );
-      return jsonDecode(response.body);
-    } catch (e) {
-      print('Error getting wallet: $e');
-      return {'wallet': null, 'transactions': []};
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        return {
+          'success': true,
+          'wallet': decoded['wallet'],
+          'transactions': decoded['transactions'] ?? [],
+        };
+      }
+
+      try {
+        final result = jsonDecode(response.body);
+        return {
+          'success': false,
+          'wallet': null,
+          'transactions': [],
+          'message': result['message'] ?? 'Error getting wallet',
+        };
+      } catch (_) {
+        return {
+          'success': false,
+          'wallet': null,
+          'transactions': [],
+          'message': 'Error getting wallet',
+        };
+      }
+    } catch (error) {
+      print('Error in getWallet: $error');
+      return {
+        'success': false,
+        'wallet': null,
+        'transactions': [],
+        'message': 'Network error: Unable to get wallet',
+      };
     }
   }
 
@@ -1694,14 +1736,114 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getFreelancerWallet() async {
     try {
+      final token = await TokenStorage.getToken();
+      print('📡 GET /api/freelancer/wallet');
+      print('🔗 URL: $baseUrl/freelancer/wallet');
+      print('🔑 Token exists: ${token != null}');
+
       final response = await http.get(
-        Uri.parse('$BASE_URL/freelancer/wallet'),
-        headers: headers,
+        Uri.parse('$baseUrl/freelancer/wallet'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       );
-      return jsonDecode(response.body);
+
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        try {
+          final decoded = jsonDecode(response.body);
+          print('📡 Decoded response: $decoded');
+
+          return {
+            'success': true,
+            'wallet': decoded['wallet'],
+            'transactions': decoded['transactions'] ?? [],
+          };
+        } catch (e) {
+          print('❌ Error decoding JSON: $e');
+          return {
+            'success': false,
+            'wallet': null,
+            'transactions': [],
+            'message': 'Invalid JSON response',
+          };
+        }
+      } else if (response.statusCode == 401) {
+        print('❌ Unauthorized - Token expired');
+        return {
+          'success': false,
+          'wallet': null,
+          'transactions': [],
+          'message': 'Session expired. Please login again.',
+          'requiresLogin': true,
+        };
+      } else if (response.statusCode == 404) {
+        print('📝 Wallet not found, attempting to create...');
+        final createResult = await createFreelancerWallet();
+        if (createResult['success'] == true) {
+          return getFreelancerWallet();
+        }
+        return {
+          'success': false,
+          'wallet': null,
+          'transactions': [],
+          'message': 'Wallet not found and could not be created',
+        };
+      } else {
+        try {
+          final result = jsonDecode(response.body);
+          return {
+            'success': false,
+            'wallet': null,
+            'transactions': [],
+            'message':
+                result['message'] ??
+                'Error getting wallet (${response.statusCode})',
+          };
+        } catch (_) {
+          return {
+            'success': false,
+            'wallet': null,
+            'transactions': [],
+            'message': 'Error getting wallet: ${response.statusCode}',
+          };
+        }
+      }
+    } catch (error) {
+      print('❌ Error in getFreelancerWallet: $error');
+      return {
+        'success': false,
+        'wallet': null,
+        'transactions': [],
+        'message': 'Network error: Unable to get wallet',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> createFreelancerWallet() async {
+    try {
+      final token = await TokenStorage.getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/freelancer/wallet/create'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📡 Create freelancer wallet response: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true};
+      }
+      return {'success': false, 'message': 'Failed to create wallet'};
     } catch (e) {
-      print('Error getting freelancer wallet: $e');
-      return {'wallet': null, 'transactions': []};
+      print('❌ Error creating freelancer wallet: $e');
+      return {'success': false, 'message': e.toString()};
     }
   }
 

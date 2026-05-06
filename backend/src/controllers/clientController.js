@@ -970,9 +970,10 @@ export const manualConfirmPayment = async (req, res) => {
     await contract.update({
       escrow_status: "funded",
       payment_status: "escrow",
+      funded_escrow_amount: agreedAmount,
     });
 
-    console.log("✅ Contract updated");
+    console.log("✅ Contract updated with funded_escrow_amount:", agreedAmount);
 
     let clientWallet = await Wallet.findOne({
       where: { UserId: contract.ClientId },
@@ -1001,7 +1002,7 @@ export const manualConfirmPayment = async (req, res) => {
       amount: agreedAmount,
       type: "deposit",
       status: "completed",
-      description: `Escrow deposit for contract #${contract.id}`,
+      description: `Manual escrow deposit for contract #${contract.id}`,
       reference_id: contract.id,
       reference_type: "contract",
       completed_at: new Date(),
@@ -1032,6 +1033,7 @@ export const manualConfirmPayment = async (req, res) => {
         id: contract.id,
         escrow_status: contract.escrow_status,
         payment_status: contract.payment_status,
+        funded_escrow_amount: agreedAmount,
       },
     });
   } catch (err) {

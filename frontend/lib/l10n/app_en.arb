@@ -561,6 +561,11 @@
   "escrowFundedDescription": "The payment is secured in escrow. Milestone payments will be released upon approval.",
   "paymentRequiredDescription": "To activate this contract and start working, please deposit the contract amount into escrow.",
   "contractCouponEscrow": "Contract coupon (escrow)",
+  "contractCoupon": "Contract coupon",
+  "paymentHeldSecurely": "Your payment is secured and will be released when the milestone is approved.",
+  "chargedNow": "Charged now",
+  "paymentStatus": "Payment status",
+  "pendingPayments": "Pending payments",
   "applyBeforePaying": "Apply before paying",
   "apply": "Apply",
   "remove": "Remove",
@@ -1097,6 +1102,14 @@
 "milestonesAddedHint": "Suggested milestones added to proposal",
 "open":"Open",
 "aiRecommendations":"Ai Recommendations",
+"aiRecommendationsProjectHint":"These AI recommendations are tailored for this project only, using the project requirements and freelancer match score.",
+"@aiRecommendationsProjectHint": {
+  "description": "Hint shown above AI recommended freelancers explaining the recommendations are project-specific"
+},
+"noAiFreelancerSuggestions":"No AI freelancer suggestions are available yet for this project. You can still review submitted proposals below.",
+"@noAiFreelancerSuggestions": {
+  "description": "Empty state message shown when no AI freelancer suggestions exist for this project"
+},
 "totalSpent":"Total Spent",
 
 

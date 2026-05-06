@@ -314,10 +314,6 @@ class PaymentService {
         throw new Error("Only client can release milestone payments");
       }
 
-      if (contract.escrow_status !== "funded") {
-        throw new Error("Escrow not funded");
-      }
-
       const milestones = this._parseMilestones(contract.milestones);
       const milestone = milestones[milestoneIndex];
 
@@ -341,7 +337,7 @@ class PaymentService {
       const milestoneAmt = parseFloat(milestone.amount || 0);
       if (alreadyReleased + milestoneAmt > pool + 0.01) {
         throw new Error(
-          "Release would exceed funded escrow. Adjust milestones or funding.",
+          "Release would exceed the contract amount. Adjust milestones or funding.",
         );
       }
 
@@ -374,12 +370,20 @@ class PaymentService {
       let clientWallet = await Wallet.findOne({
         where: { UserId: contract.ClientId },
       });
-      if (clientWallet) {
-        await clientWallet.update({
-          pending_balance:
-            parseFloat(clientWallet.pending_balance || 0) - milestoneAmt,
+      if (!clientWallet) {
+        clientWallet = await Wallet.create({
+          UserId: contract.ClientId,
+          balance: 0,
+          pending_balance: 0,
+          total_earned: 0,
+          total_withdrawn: 0,
         });
       }
+
+      const currentPending = parseFloat(clientWallet.pending_balance || 0);
+      await clientWallet.update({
+        pending_balance: Math.max(0, currentPending - milestoneAmt),
+      });
 
       await Transaction.create({
         wallet_id: freelancerWallet.id,

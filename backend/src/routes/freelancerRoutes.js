@@ -94,7 +94,7 @@ router.get("/proposals", getProposals);
 router.get("/projects", getProjects);
 router.get("/projects/:projectId/contract", getProjectContract);
 
-router.get("/wallet", getWallet);
+router.get("/wallet", protect, authorizeRoles("freelancer"), getWallet);
 
 router.get("/messages", getMessages);
 
@@ -110,13 +110,7 @@ router.get("/portfolio/:userId", getUserPortfolio);
 router.put("/portfolio/:id", updatePortfolio);
 router.delete("/portfolio/:id", deletePortfolio);
 
-router.get("/wallet", getFreelancerWallet);
 router.post("/wallet/withdraw", requestFreelancerWithdrawal);
-
-router.put(
-  "/contracts/:contractId/milestones/:milestoneIndex/progress",
-  updateMilestoneProgress,
-);
 
 router.get(
   "/offers",

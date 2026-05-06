@@ -122,38 +122,22 @@ export const approveMilestone = async (req, res) => {
     const alreadyReleased = parseFloat(contract.released_amount || 0);
     const milestoneAmt = parseFloat(milestone.amount || 0);
     if (alreadyReleased + milestoneAmt > pool + 0.01) {
-      await PaymentService.releaseMilestonePayment(
-        contractId,
-        milestoneIndex,
-        userId,
-      );
       return res.status(400).json({
         message:
-          "Cannot approve: total milestone releases would exceed funded escrow",
+          "Cannot approve: total milestone releases would exceed the contract total.",
       });
     }
 
-    milestone.status = "approved";
-    milestone.approved_at = new Date();
-    milestones[milestoneIndex] = milestone;
-
-    await contract.update({
-      milestones: JSON.stringify(milestones),
-      released_amount:
-        (contract.released_amount || 0) + (milestone.amount || 0),
-    });
-
-    await NotificationService.createNotification({
-      userId: contract.FreelancerId,
-      type: "payment_released",
-      title: "Milestone Payment Released! 💰",
-      body: `$${milestone.amount} has been released for "${milestone.title}"`,
-      data: { contractId: contract.id, screen: "contract_progress" },
-    });
+    const result = await PaymentService.releaseMilestonePayment(
+      contractId,
+      milestoneIndex,
+      userId,
+    );
 
     res.json({
-      message: "✅ Milestone approved",
-      milestone,
+      message: "✅ Milestone approved and payment released",
+      milestone: result.milestone,
+      contract: result.contract,
     });
   } catch (err) {
     console.error("Error approving milestone:", err);

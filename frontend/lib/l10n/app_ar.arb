@@ -562,6 +562,11 @@
   "escrowFundedDescription": "الدفع مؤمن في الضمان. سيتم إطلاق دفعات المراحل بعد الموافقة.",
   "paymentRequiredDescription": "لتفعيل هذا العقد وبدء العمل، يرجى إيداع مبلغ العقد في الضمان.",
   "contractCouponEscrow": "قسيمة العقد (الضمان)",
+  "contractCoupon": "قسيمة العقد",
+  "paymentHeldSecurely": "تم تأمين دفعتك وسيتم إطلاقها عند الموافقة على المرحلة.",
+  "chargedNow": "المدفوع الآن",
+  "paymentStatus": "حالة الدفع",
+  "pendingPayments": "الدفعات المعلقة",
   "applyBeforePaying": "طبق قبل الدفع",
   "apply": "تطبيق",
   "remove": "إزالة",
@@ -1412,6 +1417,14 @@
   "aiRecommendedFreelancers": "المستقلون الموصى بهم من الذكاء الاصطناعي",
   "@aiRecommendedFreelancers": {
     "description": "عنوان قسم المستقلين الموصى بهم من الذكاء الاصطناعي"
+  },
+  "aiRecommendationsProjectHint": "توصيات الذكاء الاصطناعي هذه مخصصة لهذا المشروع فقط، وتعتمد على متطلبات المشروع ودرجة التوافق مع المستقل.",
+  "@aiRecommendationsProjectHint": {
+    "description": "رسالة شرح توضح أن التوصيات مبنية على المشروع الحالي"
+  },
+  "noAiFreelancerSuggestions": "لا توجد توصيات ذكاء اصطناعي لهذا المشروع بعد. يمكنك مراجعة العروض المقدمة أدناه.",
+  "@noAiFreelancerSuggestions": {
+    "description": "رسالة حالة عندما لا توجد توصيات ذكاء اصطناعي للمشروع"
   },
   "match": "تطابق",
   "@match": {

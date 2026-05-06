@@ -1465,6 +1465,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get contractCouponEscrow => 'قسيمة العقد (الضمان)';
 
   @override
+  String get contractCoupon => 'قسيمة العقد';
+
+  @override
+  String get paymentHeldSecurely =>
+      'تم تأمين دفعتك وسيتم إطلاقها عند الموافقة على المرحلة.';
+
+  @override
+  String get chargedNow => 'المدفوع الآن';
+
+  @override
+  String get paymentStatus => 'حالة الدفع';
+
+  @override
+  String get pendingPayments => 'الدفعات المعلقة';
+
+  @override
   String get applyBeforePaying => 'طبق قبل الدفع';
 
   @override
@@ -2698,6 +2714,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aiRecommendations => 'توصيات الذكاء الاصطناعي';
+
+  @override
+  String get aiRecommendationsProjectHint =>
+      'توصيات الذكاء الاصطناعي هذه مخصصة لهذا المشروع فقط، وتعتمد على متطلبات المشروع ودرجة التوافق مع المستقل.';
+
+  @override
+  String get noAiFreelancerSuggestions =>
+      'لا توجد توصيات ذكاء اصطناعي لهذا المشروع بعد. يمكنك مراجعة العروض المقدمة أدناه.';
 
   @override
   String get totalSpent => 'إجمالي المصروفات';

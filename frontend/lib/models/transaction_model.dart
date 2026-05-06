@@ -27,21 +27,34 @@ class TransactionModel {
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
-    return TransactionModel(
-      id: json['id'],
-      amount: (json['amount'] ?? 0).toDouble(),
-      type: json['type'],
-      status: json['status'],
-      description: json['description'],
-      referenceId: json['reference_id'],
-      referenceType: json['reference_type'],
-      createdAt: DateTime.parse(json['createdAt']),
-      completedAt: json['completed_at'] != null 
-          ? DateTime.parse(json['completed_at']) 
-          : null,
-    );
-  }
+    try {
+      double parseToDouble(dynamic value) {
+        if (value == null) return 0.0;
+        if (value is double) return value;
+        if (value is int) return value.toDouble();
+        if (value is String) return double.parse(value);
+        return 0.0;
+      }
 
+      return TransactionModel(
+        id: json['id'],
+        amount: parseToDouble(json['amount']),
+        type: json['type'],
+        status: json['status'],
+        description: json['description'],
+        referenceId: json['reference_id'],
+        referenceType: json['reference_type'],
+        createdAt: DateTime.parse(json['createdAt']),
+        completedAt: json['completed_at'] != null
+            ? DateTime.parse(json['completed_at'])
+            : null,
+      );
+    } catch (e) {
+      print('❌ Error creating TransactionModel from JSON: $e');
+      print('📄 JSON data: $json');
+      rethrow;
+    }
+  }
   String get typeIcon {
     switch (type) {
       case 'deposit':

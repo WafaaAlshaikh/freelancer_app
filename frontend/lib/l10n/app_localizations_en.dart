@@ -1473,6 +1473,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contractCouponEscrow => 'Contract coupon (escrow)';
 
   @override
+  String get contractCoupon => 'Contract coupon';
+
+  @override
+  String get paymentHeldSecurely =>
+      'Your payment is secured and will be released when the milestone is approved.';
+
+  @override
+  String get chargedNow => 'Charged now';
+
+  @override
+  String get paymentStatus => 'Payment status';
+
+  @override
+  String get pendingPayments => 'Pending payments';
+
+  @override
   String get applyBeforePaying => 'Apply before paying';
 
   @override
@@ -2718,6 +2734,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiRecommendations => 'Ai Recommendations';
+
+  @override
+  String get aiRecommendationsProjectHint =>
+      'These AI recommendations are tailored for this project only, using the project requirements and freelancer match score.';
+
+  @override
+  String get noAiFreelancerSuggestions =>
+      'No AI freelancer suggestions are available yet for this project. You can still review submitted proposals below.';
 
   @override
   String get totalSpent => 'Total Spent';

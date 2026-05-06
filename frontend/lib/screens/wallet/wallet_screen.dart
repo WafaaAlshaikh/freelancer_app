@@ -47,24 +47,72 @@ class _WalletScreenState extends State<WalletScreen> {
         result = await ApiService.getFreelancerWallet();
       }
 
-      if (!mounted) return;
+      print('📱 Wallet result: $result');
 
-      setState(() {
-        if (result['wallet'] != null) {
-          wallet = WalletModel.fromJson(result['wallet']);
+      if (result['success'] == true) {
+        setState(() {
+          if (result['wallet'] != null) {
+            wallet = WalletModel.fromJson(result['wallet']);
+            print('✅ Wallet model created: ${wallet?.balance}');
+          }
+          if (result['transactions'] != null) {
+            transactions = (result['transactions'] as List)
+                .map((json) => TransactionModel.fromJson(json))
+                .toList();
+            print('✅ Transactions loaded: ${transactions.length}');
+          }
+          loading = false;
+        });
+      } else {
+        setState(() {
+          loading = false;
+          wallet = null;
+          transactions = [];
+        });
+
+        final errorMsg = result['message'] ?? t.errorLoadingWallet;
+        Fluttertoast.showToast(msg: errorMsg);
+
+        if (errorMsg.contains('no wallet') || errorMsg.contains('not found')) {
+          _showCreateWalletDialog();
         }
-        if (result['transactions'] != null) {
-          transactions = (result['transactions'] as List)
-              .map((json) => TransactionModel.fromJson(json))
-              .toList();
-        }
-        loading = false;
-      });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => loading = false);
       Fluttertoast.showToast(msg: t.errorLoadingWallet);
+      print('❌ Error loading wallet: $e');
     }
+  }
+
+  void _showCreateWalletDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Wallet'),
+        content: const Text(
+          'You don\'t have a wallet yet. Would you like to create one?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final result = await ApiService.createWallet();
+              if (result['success'] == true) {
+                _loadWallet(context);
+              } else {
+                Fluttertoast.showToast(msg: 'Failed to create wallet');
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _requestWithdrawal(BuildContext context) async {
@@ -360,7 +408,7 @@ class _WalletScreenState extends State<WalletScreen> {
       child: Column(
         children: [
           Text(
-            t.totalBalance,
+            t.availableBalance,
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 8),
@@ -377,7 +425,7 @@ class _WalletScreenState extends State<WalletScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildBalanceStat(
-                t.pending,
+                t.pendingPayments,
                 '${t.dollar}${wallet!.pendingBalance.toStringAsFixed(2)}',
                 Colors.white70,
               ),

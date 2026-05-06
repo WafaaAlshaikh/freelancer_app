@@ -2918,6 +2918,36 @@ abstract class AppLocalizations {
   /// **'Contract coupon (escrow)'**
   String get contractCouponEscrow;
 
+  /// No description provided for @contractCoupon.
+  ///
+  /// In en, this message translates to:
+  /// **'Contract coupon'**
+  String get contractCoupon;
+
+  /// No description provided for @paymentHeldSecurely.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment is secured and will be released when the milestone is approved.'**
+  String get paymentHeldSecurely;
+
+  /// No description provided for @chargedNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Charged now'**
+  String get chargedNow;
+
+  /// No description provided for @paymentStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment status'**
+  String get paymentStatus;
+
+  /// No description provided for @pendingPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending payments'**
+  String get pendingPayments;
+
   /// No description provided for @applyBeforePaying.
   ///
   /// In en, this message translates to:
@@ -5275,6 +5305,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ai Recommendations'**
   String get aiRecommendations;
+
+  /// Hint shown above AI recommended freelancers explaining the recommendations are project-specific
+  ///
+  /// In en, this message translates to:
+  /// **'These AI recommendations are tailored for this project only, using the project requirements and freelancer match score.'**
+  String get aiRecommendationsProjectHint;
+
+  /// Empty state message shown when no AI freelancer suggestions exist for this project
+  ///
+  /// In en, this message translates to:
+  /// **'No AI freelancer suggestions are available yet for this project. You can still review submitted proposals below.'**
+  String get noAiFreelancerSuggestions;
 
   /// No description provided for @totalSpent.
   ///
