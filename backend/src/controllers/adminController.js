@@ -1,4 +1,5 @@
 // controllers/adminController.js
+import bcrypt from "bcrypt";
 import {
   User,
   Project,
@@ -7,11 +8,20 @@ import {
   ClientProfile,
   Rating,
   Transaction,
+  Wallet,
+  Dispute,
   sequelize,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import AdCampaign from "../models/AdCampaign.js";
 import AdPaymentService from "../services/adPaymentService.js";
+import { sendDisputeResolvedEmail } from "../utils/mailer.js";
+
+const generateRandomPassword = (length = 12) => {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_";
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+};
 
 export const getDashboardStats = async (req, res) => {
   try {
@@ -194,6 +204,158 @@ export const getAllUsers = async (req, res) => {
       users: [],
       total: 0,
       totalPages: 0,
+    });
+  }
+};
+
+export const createUser = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      role,
+      phone,
+      national_id,
+      hourly_rate,
+      skills,
+      client_type,
+      company_name,
+      commercial_register_number,
+      tax_number,
+    } = req.body;
+
+    if (!name || !email || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, and role are required",
+      });
+    }
+
+    const validRoles = ["client", "freelancer", "admin"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role",
+      });
+    }
+
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "A user with this email already exists",
+      });
+    }
+
+    const initialPassword = generateRandomPassword(12);
+    const hashedPassword = await bcrypt.hash(initialPassword, 10);
+
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      is_verified: false,
+      account_status: "active",
+      agreed_to_terms_at: new Date(),
+      terms_accepted_version: "1.0",
+      phone: phone || null,
+      national_id: national_id || null,
+    });
+
+    if (role === "freelancer") {
+      let profileData = {
+        UserId: newUser.id,
+        hourly_rate: hourly_rate ? parseFloat(hourly_rate) : null,
+      };
+
+      if (skills) {
+        try {
+          const skillsArray =
+            typeof skills === "string" ? JSON.parse(skills) : skills;
+          if (skillsArray.length > 0) {
+            profileData.skills = JSON.stringify(skillsArray);
+          }
+        } catch (e) {
+          console.error("Invalid skills format:", e);
+        }
+      }
+
+      await FreelancerProfile.create(profileData);
+    } else if (role === "client") {
+      await ClientProfile.create({
+        UserId: newUser.id,
+        company_name: company_name || null,
+        client_type: client_type || "individual",
+        commercial_register_number: commercial_register_number || null,
+        tax_number: tax_number || null,
+      });
+    }
+
+    await Wallet.create({ UserId: newUser.id, balance: 0 });
+
+    try {
+      await sendAccountCreatedEmail(email, role, initialPassword);
+    } catch (emailError) {
+      console.error("⚠️ Account created but failed to send email:", emailError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Error in createUser:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+export const resendAccountEmail = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const newPassword = generateRandomPassword(12);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await user.update({ password: hashedPassword });
+
+    try {
+      await sendAccountCreatedEmail(user.email, user.role, newPassword);
+      res.json({
+        success: true,
+        message: "Account email resent successfully",
+      });
+    } catch (emailError) {
+      console.error("Failed to resend email:", emailError);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send email",
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error in resendAccountEmail:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
     });
   }
 };
@@ -467,6 +629,212 @@ export const resolveDispute = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in resolveDispute:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+export const getAllDisputes = async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {};
+    if (status && status !== "all") where.status = status;
+
+    const { rows: disputes, count } = await Dispute.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Contract,
+          include: [
+            { model: Project, attributes: ["title"] },
+            { model: User, as: "client", attributes: ["name", "email"] },
+            { model: User, as: "freelancer", attributes: ["name", "email"] },
+          ],
+        },
+        { model: User, as: "client", attributes: ["name", "email"] },
+        { model: User, as: "freelancer", attributes: ["name", "email"] },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit: parseInt(limit),
+      offset,
+    });
+
+    res.json({
+      success: true,
+      disputes: disputes,
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / parseInt(limit)),
+    });
+  } catch (err) {
+    console.error("❌ Error in getAllDisputes:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+export const getDisputeDetails = async (req, res) => {
+  try {
+    const { disputeId } = req.params;
+
+    const dispute = await Dispute.findByPk(disputeId, {
+      include: [
+        {
+          model: Contract,
+          include: [
+            { model: Project, attributes: ["title", "description"] },
+            { model: User, as: "client", attributes: ["name", "email"] },
+            { model: User, as: "freelancer", attributes: ["name", "email"] },
+          ],
+        },
+        { model: User, as: "client", attributes: ["name", "email"] },
+        { model: User, as: "freelancer", attributes: ["name", "email"] },
+      ],
+    });
+
+    if (!dispute) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Dispute not found" });
+    }
+
+    res.json({
+      success: true,
+      dispute,
+    });
+  } catch (err) {
+    console.error("❌ Error in getDisputeDetails:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+export const resolveDisputeAdmin = async (req, res) => {
+  try {
+    const { disputeId } = req.params;
+    const { resolution, refund_amount, admin_notes } = req.body;
+
+    const dispute = await Dispute.findByPk(disputeId, {
+      include: [
+        { model: Contract },
+        { model: User, as: "client" },
+        { model: User, as: "freelancer" },
+      ],
+    });
+
+    if (!dispute) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Dispute not found" });
+    }
+
+    if (dispute.status !== "open") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Dispute is already resolved" });
+    }
+
+    await dispute.update({
+      status: "resolved",
+      resolution,
+      refund_amount: refund_amount || null,
+      admin_notes,
+      decision_date: new Date(),
+    });
+
+    if (resolution === "full_refund" || resolution === "partial_refund") {
+      const refundAmount = resolution === "full_refund"
+        ? dispute.Contract.agreed_amount
+        : refund_amount;
+
+      const clientWallet = await Wallet.findOne({ where: { UserId: dispute.ClientId } });
+      if (clientWallet) {
+        await clientWallet.increment("balance", { by: refundAmount });
+      }
+
+      const freelancerWallet = await Wallet.findOne({ where: { UserId: dispute.FreelancerId } });
+      if (freelancerWallet) {
+        await freelancerWallet.decrement("balance", { by: refundAmount });
+      }
+
+      await Transaction.create({
+        wallet_id: clientWallet.id,
+        amount: refundAmount,
+        type: "credit",
+        description: `Dispute refund for contract #${dispute.ContractId}`,
+      });
+
+      await Transaction.create({
+        wallet_id: freelancerWallet.id,
+        amount: refundAmount,
+        type: "debit",
+        description: `Dispute refund deduction for contract #${dispute.ContractId}`,
+      });
+    }
+
+    console.log(`✅ Dispute ${disputeId} resolved with ${resolution}`);
+
+    try {
+      const resolutionText = resolution === 'full_refund' ? 'Full refund to client' :
+                           resolution === 'partial_refund' ? `Partial refund of \$${refund_amount} to client` :
+                           'No refund';
+
+      await sendDisputeResolvedEmail(dispute.client.email, dispute, resolutionText);
+      await sendDisputeResolvedEmail(dispute.freelancer.email, dispute, resolutionText);
+    } catch (emailError) {
+      console.error("⚠️ Dispute resolved but failed to send emails:", emailError);
+    }
+
+    res.json({
+      success: true,
+      message: "Dispute resolved successfully",
+    });
+  } catch (err) {
+    console.error("❌ Error in resolveDisputeAdmin:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+export const rejectDispute = async (req, res) => {
+  try {
+    const { disputeId } = req.params;
+    const { admin_notes } = req.body;
+
+    const dispute = await Dispute.findByPk(disputeId);
+
+    if (!dispute) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Dispute not found" });
+    }
+
+    if (dispute.status !== "open") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Dispute is already resolved" });
+    }
+
+    await dispute.update({
+      status: "rejected",
+      admin_notes,
+      decision_date: new Date(),
+    });
+
+    console.log(`✅ Dispute ${disputeId} rejected`);
+
+    res.json({
+      success: true,
+      message: "Dispute rejected successfully",
+    });
+  } catch (err) {
+    console.error("❌ Error in rejectDispute:", err);
     res
       .status(500)
       .json({ success: false, message: "Server error", error: err.message });

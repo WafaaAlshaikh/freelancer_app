@@ -9,8 +9,8 @@ class User {
   final String? email;
   final String? role;
   final String? avatar;
-  final bool? isVerified; 
-  final String? accountStatus;  
+  final bool? isVerified;
+  final String? accountStatus;
   final DateTime? createdAt;
   final DateTime? lastSeen;
   final String? location;
@@ -32,7 +32,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     print('📥 User.fromJson: $json');
-    
+
     return User(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
       name: json['name']?.toString(),
@@ -40,12 +40,15 @@ class User {
       role: json['role']?.toString(),
       avatar: json['avatar']?.toString(),
       isVerified: json['is_verified'] ?? json['isVerified'] ?? false,
-      accountStatus: json['account_status']?.toString() ?? json['accountStatus']?.toString() ?? 'active',
-      createdAt: json['createdAt'] != null 
-          ? DateTime.tryParse(json['createdAt'].toString()) 
+      accountStatus:
+          json['account_status']?.toString() ??
+          json['accountStatus']?.toString() ??
+          'active',
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
           : null,
-      lastSeen: json['last_seen'] != null 
-          ? DateTime.tryParse(json['last_seen'].toString()) 
+      lastSeen: json['last_seen'] != null
+          ? DateTime.tryParse(json['last_seen'].toString())
           : null,
       location: json['location']?.toString(),
       phone: json['phone']?.toString(),
@@ -67,10 +70,21 @@ class User {
       'phone': phone,
     };
   }
-  
+
   bool get isActive => accountStatus == 'active';
   bool get isSuspended => accountStatus == 'suspended';
   bool get isVerifiedUser => isVerified == true;
-  String get displayRole => role == 'freelancer' ? 'Freelancer' : role == 'client' ? 'Client' : 'User';
-  Color get roleColor => role == 'freelancer' ? Colors.blue : role == 'client' ? Colors.green : Colors.grey;
+  String get displayRole {
+    if (role == 'freelancer') return 'Freelancer';
+    if (role == 'client') return 'Client';
+    if (role == 'admin') return 'Admin';
+    return 'User';
+  }
+
+  Color get roleColor {
+    if (role == 'freelancer') return Colors.blue;
+    if (role == 'client') return Colors.green;
+    if (role == 'admin') return const Color(0xFF8A56FF);
+    return Colors.grey;
+  }
 }

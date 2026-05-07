@@ -49,6 +49,37 @@ export const sendVerificationEmail = async (to, code) => {
   }
 };
 
+export const sendAccountCreatedEmail = async (to, role, password) => {
+  try {
+    const mailOptions = {
+      from: process.env.SMTP_FROM,
+      to,
+      subject: "Your iPal account has been created",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #5B5BD6;">Your account is ready!</h2>
+          <p>An administrator created your iPal account with the role <strong>${role}</strong>.</p>
+          <p>Use the credentials below to sign in and then change your password.</p>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <p><strong>Email:</strong> ${to}</p>
+            <p><strong>Password:</strong> ${password}</p>
+          </div>
+          <p>Please change your password after first login for security.</p>
+          <p>If you did not expect this email, contact your administrator.</p>
+          <hr/>
+          <p style="font-size: 12px; color: #666;">iPal - Your Freelancing Platform</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Account creation email sent to", to);
+  } catch (err) {
+    console.error("❌ Failed to send account creation email:", err.message);
+    throw err;
+  }
+};
+
 export const sendResetPasswordEmail = async (email, resetUrl) => {
   try {
     const mailOptions = {
@@ -108,5 +139,66 @@ export const sendResetCodeEmail = async (email, code) => {
     console.log("✅ Reset code email sent to", email);
   } catch (err) {
     console.error("❌ Failed to send reset code email:", err.message);
+  }
+};
+
+export const sendDisputeCreatedEmail = async (to, dispute) => {
+  try {
+    const mailOptions = {
+      from: process.env.SMTP_FROM,
+      to,
+      subject: "New Dispute Created - iPal",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #5B5BD6;">New Dispute Created</h2>
+          <p>A new dispute has been created for contract #${dispute.ContractId}.</p>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <p><strong>Title:</strong> ${dispute.title}</p>
+            <p><strong>Description:</strong> ${dispute.description}</p>
+            <p><strong>Initiated by:</strong> ${dispute.InitiatedBy}</p>
+          </div>
+          <p>Please review the dispute and take appropriate action.</p>
+          <hr/>
+          <p style="font-size: 12px; color: #666;">iPal - Your Freelancing Platform</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Dispute notification email sent to", to);
+  } catch (err) {
+    console.error("❌ Failed to send dispute notification email:", err.message);
+    throw err;
+  }
+};
+
+export const sendDisputeResolvedEmail = async (to, dispute, resolution) => {
+  try {
+    const mailOptions = {
+      from: process.env.SMTP_FROM,
+      to,
+      subject: "Dispute Resolved - iPal",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #5B5BD6;">Dispute Resolved</h2>
+          <p>Your dispute for contract #${dispute.ContractId} has been resolved.</p>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <p><strong>Title:</strong> ${dispute.title}</p>
+            <p><strong>Resolution:</strong> ${resolution}</p>
+            ${dispute.refund_amount ? `<p><strong>Refund Amount:</strong> \$${dispute.refund_amount}</p>` : ''}
+            ${dispute.admin_notes ? `<p><strong>Admin Notes:</strong> ${dispute.admin_notes}</p>` : ''}
+          </div>
+          <p>If you have any questions, please contact support.</p>
+          <hr/>
+          <p style="font-size: 12px; color: #666;">iPal - Your Freelancing Platform</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Dispute resolution email sent to", to);
+  } catch (err) {
+    console.error("❌ Failed to send dispute resolution email:", err.message);
+    throw err;
   }
 };

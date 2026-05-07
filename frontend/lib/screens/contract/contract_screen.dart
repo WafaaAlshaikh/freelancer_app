@@ -10,6 +10,7 @@ import 'contract_sign_screen.dart';
 import '../rating/add_rating_screen.dart';
 import '../workspace/connect_github_screen.dart';
 import '../payment/payment_screen.dart';
+import '../disputes/create_dispute_screen.dart';
 import '../../theme/app_theme.dart';
 
 class ContractScreen extends StatefulWidget {
@@ -1198,6 +1199,34 @@ class _ContractScreenState extends State<ContractScreen> {
                       ),
                     ),
 
+                  if (contract!.status == 'active' ||
+                      contract!.status == 'completed')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _navigateToCreateDispute(),
+                          icon: const Icon(Icons.gavel, color: Colors.red),
+                          label: const Text(
+                            'رفع نزاع',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
                   if (contract!.status == 'active')
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
@@ -1781,6 +1810,16 @@ class _ContractScreenState extends State<ContractScreen> {
     if (result == true) {
       await fetchContract(context);
     }
+  }
+
+  void _navigateToCreateDispute() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            CreateDisputeScreen(contractId: widget.contractId),
+      ),
+    );
   }
 
   String _formatDate(DateTime? date) {

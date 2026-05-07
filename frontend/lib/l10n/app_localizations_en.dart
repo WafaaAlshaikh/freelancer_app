@@ -27,6 +27,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contracts => 'Contracts';
 
   @override
+  String get disputes => 'Disputes';
+
+  @override
   String get favorites => 'Favorites';
 
   @override
@@ -3304,4 +3307,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createCampaign => 'Create Campaign';
+
+  // Dispute Screen
+String get createDispute => 'Create Dispute';
+String get disputeInstruction => 'Please provide clear details about the dispute';
+String get disputeTitleHint => 'Dispute title';
+String get disputeDescriptionHint => 'Please explain the issue in detail';
+String get evidenceAttachments => 'Evidence Attachments';
+String get uploadEvidenceHint => 'Upload images, documents or screenshots (coming soon)';
+String get importantNotes => 'Important Notes';
+String get submitDispute => 'Submit Dispute';
+String get disputeSubmittedSuccess => 'Dispute submitted successfully. It will be reviewed by admin.';
+
+// Validation
+String get titleRequired => 'Please enter dispute title';
+String get titleTooShort => 'Title must be at least 5 characters';
+String get descriptionRequired => 'Please enter dispute description';
+String get descriptionTooShort => 'Description must be at least 20 characters';
+
+// Notes
+String get disputeNote1 => 'Dispute will be reviewed by admin team';
+String get disputeNote2 => 'Please provide clear and reliable evidence';
+String get disputeNote3 => 'Dispute resolution may take several days';
+String get disputeNote4 => 'All parties will be notified of final decision';
+
+// Dispute Details Screen
+@override
+String get disputeDetails => 'Dispute Details';
+
+@override
+String get disputeInfo => 'Dispute Information';
+
+@override
+String get disputeId => 'Dispute ID';
+
+@override
+String get disputeTitle => 'Title';
+
+@override
+String get disputeDescription => 'Description';
+
+@override
+String get createdAt => 'Created At';
+
+@override
+String get lastUpdated => 'Last Updated';
+
+@override
+String get disputeNotFound => 'Dispute not found';
+
+
+
+@override
+String get errorLoadingDetails => 'Error loading details';
+
+// Contract Info
+@override
+String get contractInfo => 'Contract Information';
+
+@override
+String get contractId => 'Contract ID';
+
+
+
+@override
+String get viewContractDetails => 'View Contract Details';
+
+@override
+String get notSpecified => 'Not specified';
+
+// Evidence
+@override
+String get evidenceFiles => 'Evidence Files';
+
+// Status
+@override
+String get disputeStatusPending => 'Pending';
+
+@override
+String get disputeStatusUnderReview => 'Under Review';
+
+@override
+String get disputeStatusResolved => 'Resolved';
+
+@override
+String get disputeStatusRejected => 'Rejected';
+
+@override
+String get disputeStatusPendingDesc => 'Dispute is pending admin review';
+
+@override
+String get disputeStatusUnderReviewDesc => 'Dispute is under review and investigation';
+
+@override
+String get disputeStatusResolvedDesc => 'Dispute has been resolved with appropriate decision';
+
+@override
+String get disputeStatusRejectedDesc => 'Dispute has been rejected after review';
+
+// Resolution
+@override
+String get disputeResolved => 'Dispute Resolved';
+
+@override
+String get disputeRejected => 'Dispute Rejected';
+
+@override
+String get refundAmount => 'Refund Amount';
+
+
+
+@override
+String get connectionError => 'Connection error. Please try again';
+
+@override
+String get myDisputes => 'My Disputes';
+
+@override
+String get filterByStatus => 'Filter by Status';
+
+@override
+String get allDisputes => 'All Disputes';
+
+@override
+String get noDisputes => 'No disputes found';
+
+@override
+String get noDisputesDesc => 'You haven\'t raised any disputes yet';
+
+@override
+String get errorLoadingDisputes => 'Error loading disputes';
+
+
 }

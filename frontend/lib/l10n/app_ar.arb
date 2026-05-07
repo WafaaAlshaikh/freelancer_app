@@ -7,6 +7,7 @@
   "myProposals": "عروضي",
   "myProjects": "مشاريعي",
   "contracts": "العقود",
+  "disputes": "النزاعات",
   "favorites": "المفضلة",
   "financial": "المالية",
   "advancedSearch": "بحث متقدم",
@@ -1682,7 +1683,75 @@
   "mySubscription":"اشتراكي",
   "ads": "الاعلانات",
   "myCampaigns": "حملاتي",
-  "createCampaign": "انشاء حملة"
+  "createCampaign": "انشاء حملة",
+"createDispute": "رفع نزاع",
+"disputeInstruction": "يرجى تقديم تفاصيل النزاع بوضوح",
+"disputeTitleHint": "عنوان النزاع",
+"disputeDescriptionHint": "يرجى شرح المشكلة بالتفصيل",
+"evidenceAttachments": "المرفقات والإثباتات",
+"uploadEvidenceHint": "رفع صور، مستندات أو لقطات شاشة (قريباً)",
+"importantNotes": "ملاحظات مهمة",
+"submitDispute": "إرسال النزاع",
+"disputeSubmittedSuccess": "تم إرسال النزاع بنجاح. سيتم مراجعته من قبل الإدارة",
+
+"titleRequired": "الرجاء إدخال عنوان النزاع",
+"titleTooShort": "يجب أن لا يقل العنوان عن 5 أحرف",
+"descriptionRequired": "الرجاء إدخال تفاصيل النزاع",
+"descriptionTooShort": "يجب أن لا تقل التفاصيل عن 20 حرف",
+"connectionError": "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.",
+
+"disputeNote1": "سيتم مراجعة النزاع من قبل فريق الإدارة",
+"disputeNote2": "يرجى تقديم أدلة واضحة وموثوقة",
+"disputeNote3": "قد يستغرق حل النزاع عدة أيام",
+"disputeNote4": "سيتم إشعار جميع الأطراف بالقرار النهائي",
+"disputeDetails": "تفاصيل النزاع",
+"disputeInfo": "معلومات النزاع",
+"disputeId": "رقم النزاع",
+"disputeTitle": "العنوان",
+"disputeDescription": "وصف النزاع",
+"createdAt": "تاريخ الإنشاء",
+"lastUpdated": "آخر تحديث",
+"disputeNotFound": "لم يتم العثور على النزاع",
+"refresh": "تحديث",
+"errorLoadingDetails": "حدث خطأ في تحميل التفاصيل",
+
+"contractInfo": "معلومات العقد",
+"contractId": "رقم العقد",
+"projectTitle": "عنوان المشروع",
+"client": "العميل",
+"freelancer": "الفريلانسر",
+"contractAmount": "قيمة العقد",
+"viewContractDetails": "عرض تفاصيل العقد",
+"notSpecified": "غير محدد",
+
+"evidenceFiles": "ملفات الأدلة",
+
+"disputeStatusPending": "في الانتظار",
+"disputeStatusUnderReview": "قيد المراجعة",
+"disputeStatusResolved": "تم الحل",
+"disputeStatusRejected": "مرفوض",
+
+"disputeStatusPendingDesc": "النزاع في انتظار المراجعة من قبل الإدارة",
+"disputeStatusUnderReviewDesc": "النزاع قيد المراجعة والتحقيق",
+"disputeStatusResolvedDesc": "تم حل النزاع واتخاذ القرار المناسب",
+"disputeStatusRejectedDesc": "تم رفض النزاع بعد المراجعة",
+
+"disputeResolved": "تم حل النزاع",
+"disputeRejected": "تم رفض النزاع",
+"refundAmount": "مبلغ الاسترداد",
+"currency": "ريال",
+"connectionError": "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى",
+"myDisputes":"النزاعات",
+
+"filterByStatus ":"تصفية حسب الحالة",
+
+"allDisputes ":"جميع النزاعات",
+
+"noDisputes":"لا توجد نزاعات",
+
+"noDisputesDesc ":"لم تقم برفع أي نزاع حتى الآن",
+
+"errorLoadingDisputes":"حدث خطأ في تحميل النزاعات"
 
 }
 

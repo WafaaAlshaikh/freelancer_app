@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:freelancer_platform/screens/admin/admin_ads_management_screen.dart';
+import 'package:freelancer_platform/screens/admin/disputes_management_screen.dart';
 import 'package:freelancer_platform/screens/admin/subscription_management_screen.dart';
 import 'package:freelancer_platform/screens/ads/ads_management_screen.dart';
 import '../../models/admin_stats.dart';
@@ -59,6 +60,11 @@ class _AdminSidebar extends StatelessWidget {
       icon: Icons.description_outlined,
       selectedIcon: Icons.description,
       label: 'Contracts',
+    ),
+    _NavItem(
+      icon: Icons.gavel_outlined,
+      selectedIcon: Icons.gavel,
+      label: 'Disputes',
     ),
     _NavItem(
       icon: Icons.subscriptions_outlined,
@@ -426,6 +432,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       'Users',
       'Projects',
       'Contracts',
+      'Disputes',
       'Subscriptions',
       'Ads',
       'Settings',
@@ -1432,16 +1439,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 0:
         return _buildDashboardContent();
       case 1:
-        return const UsersManagementScreen();
+        return const Scaffold(
+          backgroundColor: AppColors.pageBg,
+          body: UsersManagementScreen(),
+        );
       case 2:
         return const ProjectsManagementScreen();
       case 3:
         return const ContractsManagementScreen();
       case 4:
-        return const SubscriptionManagementScreen();
+        return const DisputesManagementScreen();
       case 5:
-        return const AdminAdsManagementScreen();
+        return const SubscriptionManagementScreen();
       case 6:
+        return const AdminAdsManagementScreen();
+      case 7:
         return const AdminSettingsScreen();
       default:
         return _buildDashboardContent();

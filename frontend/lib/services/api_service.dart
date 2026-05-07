@@ -2097,6 +2097,67 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> createAdminUser({
+    required String name,
+    required String email,
+    required String role,
+    String? phone,
+    String? nationalId,
+    double? hourlyRate,
+    List<String>? skills,
+    String? clientType,
+    String? companyName,
+    String? commercialRegisterNumber,
+    String? taxNumber,
+  }) async {
+    try {
+      final Map<String, dynamic> body = {
+        'name': name,
+        'email': email,
+        'role': role,
+      };
+
+      if (phone != null && phone.isNotEmpty) body['phone'] = phone;
+      if (nationalId != null && nationalId.isNotEmpty)
+        body['national_id'] = nationalId;
+      if (hourlyRate != null) body['hourly_rate'] = hourlyRate.toString();
+      if (skills != null && skills.isNotEmpty)
+        body['skills'] = jsonEncode(skills);
+      if (clientType != null && clientType.isNotEmpty)
+        body['client_type'] = clientType;
+      if (companyName != null && companyName.isNotEmpty)
+        body['company_name'] = companyName;
+      if (commercialRegisterNumber != null &&
+          commercialRegisterNumber.isNotEmpty)
+        body['commercial_register_number'] = commercialRegisterNumber;
+      if (taxNumber != null && taxNumber.isNotEmpty)
+        body['tax_number'] = taxNumber;
+
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/users'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating admin user: $e');
+      return {'success': false, 'message': 'Failed to create user'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> resendAccountEmail(int userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/users/$userId/resend-email'),
+        headers: headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error resending account email: $e');
+      return {'success': false, 'message': 'Failed to resend email'};
+    }
+  }
+
   static Future<Map<String, dynamic>> getAdminDashboardStats() async {
     try {
       final response = await http.get(
@@ -4379,6 +4440,123 @@ class ApiService {
       return jsonDecode(response.body);
     } catch (e) {
       return {'success': false, 'transactions': [], 'total': 0};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminDisputes({
+    String status = 'all',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/admin/disputes?status=$status&page=$page&limit=$limit',
+        ),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting admin disputes: $e');
+      return {'success': false, 'disputes': [], 'total': 0};
+    }
+  }
+
+  static Future<Map<String, dynamic>> resolveDispute({
+    required int disputeId,
+    required String resolution,
+    double? refundAmount,
+    String? adminNotes,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/disputes/$disputeId/resolve'),
+        headers: await headers,
+        body: jsonEncode({
+          'resolution': resolution,
+          'refundAmount': refundAmount,
+          'adminNotes': adminNotes,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error resolving dispute: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> rejectDispute({
+    required int disputeId,
+    required String adminNotes,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/disputes/$disputeId/reject'),
+        headers: await headers,
+        body: jsonEncode({'adminNotes': adminNotes}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error rejecting dispute: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createDispute({
+    required int contractId,
+    required String title,
+    required String description,
+    List<String> evidenceFiles = const [],
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/disputes'),
+        headers: await headers,
+        body: jsonEncode({
+          'contractId': contractId,
+          'title': title,
+          'description': description,
+          'evidenceFiles': evidenceFiles,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error creating dispute: $e');
+      return {'success': false, 'message': 'Connection error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserDisputes({
+    required String status,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/disputes/my?status=$status&page=$page&limit=$limit',
+        ),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting user disputes: $e');
+      return {'success': false, 'disputes': [], 'total': 0};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserDisputeDetails(
+    int disputeId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/disputes/$disputeId'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting dispute details: $e');
+      return {'success': false, 'dispute': null};
     }
   }
 }

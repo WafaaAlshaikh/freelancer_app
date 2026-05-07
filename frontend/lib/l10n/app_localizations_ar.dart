@@ -27,6 +27,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get contracts => 'العقود';
 
   @override
+  String get disputes => 'النزاعات';
+
+  @override
   String get favorites => 'المفضلة';
 
   @override
@@ -3280,4 +3283,133 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get createCampaign => 'انشاء حملة';
+
+  // Dispute Screen
+String get createDispute => 'رفع نزاع';
+String get disputeInstruction => 'يرجى تقديم تفاصيل النزاع بوضوح';
+String get disputeTitleHint => 'عنوان النزاع';
+String get disputeDescriptionHint => 'يرجى شرح المشكلة بالتفصيل';
+String get evidenceAttachments => 'المرفقات والإثباتات';
+String get uploadEvidenceHint => 'رفع صور، مستندات أو لقطات شاشة (قريباً)';
+String get importantNotes => 'ملاحظات مهمة';
+String get submitDispute => 'إرسال النزاع';
+String get disputeSubmittedSuccess => 'تم إرسال النزاع بنجاح. سيتم مراجعته من قبل الإدارة';
+
+// Validation
+String get titleRequired => 'الرجاء إدخال عنوان النزاع';
+String get titleTooShort => 'يجب أن لا يقل العنوان عن 5 أحرف';
+String get descriptionRequired => 'الرجاء إدخال تفاصيل النزاع';
+String get descriptionTooShort => 'يجب أن لا تقل التفاصيل عن 20 حرف';
+
+// Notes
+String get disputeNote1 => 'سيتم مراجعة النزاع من قبل فريق الإدارة';
+String get disputeNote2 => 'يرجى تقديم أدلة واضحة وموثوقة';
+String get disputeNote3 => 'قد يستغرق حل النزاع عدة أيام';
+String get disputeNote4 => 'سيتم إشعار جميع الأطراف بالقرار النهائي';
+// Dispute Details Screen
+@override
+String get disputeDetails => 'تفاصيل النزاع';
+
+@override
+String get disputeInfo => 'معلومات النزاع';
+
+@override
+String get disputeId => 'رقم النزاع';
+
+@override
+String get disputeTitle => 'العنوان';
+
+@override
+String get disputeDescription => 'وصف النزاع';
+
+@override
+String get createdAt => 'تاريخ الإنشاء';
+
+@override
+String get lastUpdated => 'آخر تحديث';
+
+@override
+String get disputeNotFound => 'لم يتم العثور على النزاع';
+
+
+
+@override
+String get errorLoadingDetails => 'حدث خطأ في تحميل التفاصيل';
+
+// Contract Info
+@override
+String get contractInfo => 'معلومات العقد';
+
+@override
+String get contractId => 'رقم العقد';
+
+
+@override
+String get viewContractDetails => 'عرض تفاصيل العقد';
+
+@override
+String get notSpecified => 'غير محدد';
+
+// Evidence
+@override
+String get evidenceFiles => 'ملفات الأدلة';
+
+// Status
+@override
+String get disputeStatusPending => 'في الانتظار';
+
+@override
+String get disputeStatusUnderReview => 'قيد المراجعة';
+
+@override
+String get disputeStatusResolved => 'تم الحل';
+
+@override
+String get disputeStatusRejected => 'مرفوض';
+
+@override
+String get disputeStatusPendingDesc => 'النزاع في انتظار المراجعة من قبل الإدارة';
+
+@override
+String get disputeStatusUnderReviewDesc => 'النزاع قيد المراجعة والتحقيق';
+
+@override
+String get disputeStatusResolvedDesc => 'تم حل النزاع واتخاذ القرار المناسب';
+
+@override
+String get disputeStatusRejectedDesc => 'تم رفض النزاع بعد المراجعة';
+
+// Resolution
+@override
+String get disputeResolved => 'تم حل النزاع';
+
+@override
+String get disputeRejected => 'تم رفض النزاع';
+
+@override
+String get refundAmount => 'مبلغ الاسترداد';
+
+
+
+@override
+String get connectionError => 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى';
+
+// My Disputes Screen
+@override
+String get myDisputes => 'النزاعات';
+
+@override
+String get filterByStatus => 'تصفية حسب الحالة';
+
+@override
+String get allDisputes => 'جميع النزاعات';
+
+@override
+String get noDisputes => 'لا توجد نزاعات';
+
+@override
+String get noDisputesDesc => 'لم تقم برفع أي نزاع حتى الآن';
+
+@override
+String get errorLoadingDisputes => 'حدث خطأ في تحميل النزاعات';
 }

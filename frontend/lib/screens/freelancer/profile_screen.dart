@@ -9,6 +9,7 @@ import 'package:freelancer_platform/screens/affiliate/affiliate_screen.dart';
 import 'package:freelancer_platform/screens/chat/chats_list_screen.dart';
 import 'package:freelancer_platform/screens/contract/my_contracts_screen.dart';
 import 'package:freelancer_platform/screens/features/features_shop_screen.dart';
+import 'package:freelancer_platform/screens/disputes/my_disputes_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/edit_profile_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
@@ -312,6 +313,7 @@ class _Sidebar extends StatelessWidget {
       badge: 2,
       badgeGreen: true,
     ),
+    _SidebarItem(icon: Icons.gavel_outlined, labelKey: 'disputes'),
     _SidebarItem(icon: Icons.favorite_border, labelKey: 'favorites'),
     _SidebarItem(icon: Icons.attach_money, labelKey: 'financial'),
     _SidebarItem(icon: Icons.filter_alt, labelKey: 'advancedSearch'),
@@ -541,6 +543,8 @@ class _Sidebar extends StatelessWidget {
         return t.myProjects;
       case 'contracts':
         return t.contracts;
+      case 'disputes':
+        return t.disputes;
       case 'favorites':
         return t.favorites;
       case 'financial':
@@ -2839,15 +2843,17 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       case 4:
         return const MyContractsScreen(userRole: 'freelancer');
       case 5:
-        return const FavoritesScreen();
+        return const MyDisputesScreen();
       case 6:
-        return const FinancialDashboardScreen();
+        return const FavoritesScreen();
       case 7:
-        return AdvancedSearchScreen();
+        return const FinancialDashboardScreen();
       case 8:
+        return AdvancedSearchScreen();
+      case 9:
         print('🟢 Going to OffersScreen');
         return const OffersScreen();
-      case 9:
+      case 10:
         return const SkillTestsScreen();
       default:
         return _buildHomeTabWithRightPanel();

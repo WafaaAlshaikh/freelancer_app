@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:freelancer_platform/screens/ads/ads_management_screen.dart';
+import 'package:freelancer_platform/screens/disputes/my_disputes_screen.dart';
 import 'package:freelancer_platform/widgets/ad_banner.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:freelancer_platform/models/usage_limits_model.dart';
@@ -389,6 +390,7 @@ class _Sidebar extends StatelessWidget {
       badge: 2,
       badgeGreen: true,
     ),
+    _SidebarItem(icon: Icons.gavel_outlined, labelKey: 'disputes'),
     _SidebarItem(icon: Icons.interpreter_mode, labelKey: 'interviews'),
     _SidebarItem(
       icon: Icons.account_balance_wallet_outlined,
@@ -640,6 +642,8 @@ class _Sidebar extends StatelessWidget {
         return t.proposals;
       case 'contracts':
         return t.contracts;
+      case 'disputes':
+        return t.disputes;
       case 'interviews':
         return t.interviews;
       case 'wallet':
@@ -2234,14 +2238,16 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 3:
         return const MyContractsScreen(userRole: 'client');
       case 4:
-        return const InterviewsScreen();
+        return const MyDisputesScreen();
       case 5:
-        return _buildPlaceholder(t.myWallet);
+        return const InterviewsScreen();
       case 6:
-        return const AdsManagementScreen();
+        return _buildPlaceholder(t.myWallet);
       case 7:
-        return const FindFreelancersScreen();
+        return const AdsManagementScreen();
       case 8:
+        return const FindFreelancersScreen();
+      case 9:
         return _buildPlaceholder(t.analytics);
       default:
         return _buildOverviewTab();

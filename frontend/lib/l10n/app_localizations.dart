@@ -134,6 +134,12 @@ abstract class AppLocalizations {
   /// **'Contracts'**
   String get contracts;
 
+  /// No description provided for @disputes.
+  ///
+  /// In en, this message translates to:
+  /// **'Disputes'**
+  String get disputes;
+
   /// No description provided for @favorites.
   ///
   /// In en, this message translates to:
@@ -6397,6 +6403,76 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create Campaign'**
   String get createCampaign;
+  // Dispute Screen
+  String get createDispute;
+  String get disputeInstruction;
+  String get disputeTitleHint;
+  String get disputeDescriptionHint;
+  String get evidenceAttachments;
+  String get uploadEvidenceHint;
+  String get submitDispute;
+  String get disputeSubmittedSuccess;
+
+  // Validation
+  String get titleRequired;
+  String get titleTooShort;
+  String get descriptionRequired;
+  String get descriptionTooShort;
+
+  // Notes
+  String get disputeNote1;
+  String get disputeNote2;
+  String get disputeNote3;
+  String get disputeNote4;
+
+  String get disputeDetails;
+  String get disputeInfo;
+  String get disputeId;
+  String get disputeTitle;
+  String get disputeDescription;
+  String get createdAt;
+  String get lastUpdated;
+  String get disputeNotFound;
+  String get errorLoadingDetails;
+  String get contractInfo;
+  String get contractId;
+
+  String get notSpecified;
+  String get evidenceFiles;
+  String get disputeStatusPending;
+  String get disputeStatusUnderReview;
+
+  String get disputeStatusResolved;
+  String get viewContractDetails;
+
+  String get disputeStatusRejected;
+
+  String get disputeStatusPendingDesc;
+  String get disputeStatusUnderReviewDesc;
+  String get disputeStatusResolvedDesc;
+
+  String get disputeStatusRejectedDesc;
+
+  String get disputeResolved;
+
+  String get disputeRejected;
+
+  String get refundAmount;
+
+  String get connectionError;
+
+  String get myDisputes;
+
+  String get filterByStatus;
+
+  String get allDisputes;
+
+  String get noDisputes;
+
+  String get noDisputesDesc;
+
+  String get errorLoadingDisputes;
+  String get importantNotes;
 }
 
 class _AppLocalizationsDelegate

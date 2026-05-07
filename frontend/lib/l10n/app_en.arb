@@ -6,6 +6,7 @@
   "myProposals": "My Proposals",
   "myProjects": "My Projects",
   "contracts": "Contracts",
+  "disputes": "Disputes",
   "favorites": "Favorites",
   "financial": "Financial",
   "advancedSearch": "Advanced Search",
@@ -1672,8 +1673,80 @@
   "mySubscription":"My Subscription",
   "ads": "Ads",
   "myCampaigns": "My Campaigns",
-  "createCampaign": "Create Campaign"
+  "createCampaign": "Create Campaign",
+"createDispute": "Create Dispute",
+"disputeInstruction": "Please provide clear details about the dispute",
+"disputeTitleHint": "Dispute title",
+"disputeDescriptionHint": "Please explain the issue in detail",
+"evidenceAttachments": "Evidence Attachments",
+"uploadEvidenceHint": "Upload images, documents or screenshots (coming soon)",
+"importantNotes": "Important Notes",
+"submitDispute": "Submit Dispute",
+"disputeSubmittedSuccess": "Dispute submitted successfully. It will be reviewed by admin.",
 
+"titleRequired": "Please enter dispute title",
+"titleTooShort": "Title must be at least 5 characters",
+"descriptionRequired": "Please enter dispute description",
+"descriptionTooShort": "Description must be at least 20 characters",
+"connectionError": "Connection error. Please try again.",
+
+"disputeNote1": "Dispute will be reviewed by admin team",
+"disputeNote2": "Please provide clear and reliable evidence",
+"disputeNote3": "Dispute resolution may take several days",
+"disputeNote4": "All parties will be notified of final decision",
+
+"disputeDetails": "Dispute Details",
+"disputeInfo": "Dispute Information",
+"disputeId": "Dispute ID",
+"disputeTitle": "Title",
+"disputeDescription": "Description",
+"createdAt": "Created At",
+"lastUpdated": "Last Updated",
+"disputeNotFound": "Dispute not found",
+"refresh": "Refresh",
+"errorLoadingDetails": "Error loading details",
+
+"contractInfo": "Contract Information",
+"contractId": "Contract ID",
+"projectTitle": "Project Title",
+"client": "Client",
+"freelancer": "Freelancer",
+"contractAmount": "Contract Amount",
+"viewContractDetails": "View Contract Details",
+"notSpecified": "Not specified",
+
+"evidenceFiles": "Evidence Files",
+
+"disputeStatusPending": "Pending",
+"disputeStatusUnderReview": "Under Review",
+"disputeStatusResolved": "Resolved",
+"disputeStatusRejected": "Rejected",
+
+"disputeStatusPendingDesc": "Dispute is pending admin review",
+"disputeStatusUnderReviewDesc": "Dispute is under review and investigation",
+"disputeStatusResolvedDesc": "Dispute has been resolved with appropriate decision",
+"disputeStatusRejectedDesc": "Dispute has been rejected after review",
+
+"disputeResolved": "Dispute Resolved",
+"disputeRejected": "Dispute Rejected",
+"refundAmount": "Refund Amount",
+"currency": "SAR",
+"connectionError": "Connection error. Please try again",
+
+
+"connectionError":"Connection error. Please try again",
+
+"myDisputes" :"My Disputes",
+
+"filterByStatus":"Filter by Status",
+
+"allDisputes":"All Disputes",
+
+"noDisputes ":"No disputes found",
+
+"noDisputesDesc":"You haven't raised any disputes yet",
+
+"errorLoadingDisputes":"Error loading disputes"
 }
 
 

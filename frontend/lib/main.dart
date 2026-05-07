@@ -11,12 +11,16 @@ import 'package:freelancer_platform/models/contract_model.dart';
 import 'package:freelancer_platform/models/interview_model.dart';
 import 'package:freelancer_platform/models/project_model.dart';
 import 'package:freelancer_platform/models/proposal_model.dart';
+import 'package:freelancer_platform/models/dispute_model.dart' hide Project;
 import 'package:freelancer_platform/screens/admin/admin_dashboard_screen.dart';
 import 'package:freelancer_platform/screens/admin/users_management_screen.dart';
 import 'package:freelancer_platform/screens/ai/ai_chat_screen.dart';
 import 'package:freelancer_platform/screens/chat/chat_screen.dart';
 import 'package:freelancer_platform/screens/client/compare_freelancers_screen.dart';
 import 'package:freelancer_platform/screens/client/negotiation_screen.dart';
+import 'package:freelancer_platform/screens/disputes/create_dispute_screen.dart';
+import 'package:freelancer_platform/screens/disputes/my_disputes_screen.dart';
+import 'package:freelancer_platform/screens/disputes/dispute_details_screen.dart';
 import 'package:freelancer_platform/screens/features/features_shop_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/advanced_search_screen.dart';
 import 'package:freelancer_platform/screens/freelancer/favorites_screen.dart';
@@ -211,6 +215,7 @@ class _FreelancerAppState extends State<FreelancerApp> {
                   'client';
               return MyContractsScreen(userRole: userRole);
             },
+            '/my-disputes': (_) => const MyDisputesScreen(),
           },
           onGenerateRoute: (settings) {
             switch (settings.name) {
@@ -249,6 +254,18 @@ class _FreelancerAppState extends State<FreelancerApp> {
               case '/subscription_cancel':
                 return MaterialPageRoute(
                   builder: (_) => const SubscriptionCancelScreen(),
+                );
+
+              case '/create-dispute':
+                final contractId = settings.arguments as int;
+                return MaterialPageRoute(
+                  builder: (_) => CreateDisputeScreen(contractId: contractId),
+                );
+
+              case '/dispute-details':
+                final dispute = settings.arguments as Dispute;
+                return MaterialPageRoute(
+                  builder: (_) => DisputeDetailsScreen(dispute: dispute),
                 );
 
               case '/subscription/plans':

@@ -34,6 +34,7 @@ import Offer from "./offerModel.js";
 import AdCampaign from "./AdCampaign.js";
 import AdImpression from "./AdImpression.js";
 import AdTransaction from "./AdTransaction.js";
+import Dispute from "./Dispute.js";
 
 Offer.belongsTo(User, { as: "client", foreignKey: "client_id" });
 Offer.belongsTo(User, { as: "freelancer", foreignKey: "freelancer_id" });
@@ -185,6 +186,15 @@ AdCampaign.hasMany(AdTransaction, {
   foreignKey: "campaign_id",
 });
 
+Dispute.belongsTo(Contract, { foreignKey: "ContractId" });
+Contract.hasMany(Dispute, { foreignKey: "ContractId" });
+
+Dispute.belongsTo(User, { as: "client", foreignKey: "ClientId" });
+Dispute.belongsTo(User, { as: "freelancer", foreignKey: "FreelancerId" });
+
+User.hasMany(Dispute, { as: "clientDisputes", foreignKey: "ClientId" });
+User.hasMany(Dispute, { as: "freelancerDisputes", foreignKey: "FreelancerId" });
+
 export {
   sequelize,
   User,
@@ -220,4 +230,5 @@ export {
   AdCampaign,
   AdImpression,
   AdTransaction,
+  Dispute,
 };
