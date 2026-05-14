@@ -4619,6 +4619,121 @@ class ApiService {
       return {'success': false, 'dispute': null};
     }
   }
+
+  static Future<Map<String, dynamic>> getTopPerformers({
+    String criteria = 'overall',
+    int limit = 10,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/admin/analytics/top-performers?criteria=$criteria&limit=$limit',
+        ),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting top performers: $e');
+      return {'success': false, 'performers': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getPredictiveAnalytics() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/admin/analytics/predictive'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting predictive analytics: $e');
+      return {'success': false, 'predictions': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getActiveInsights() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/admin/analytics/insights'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting insights: $e');
+      return {'success': false, 'insights': []};
+    }
+  }
+
+  static Future<Map<String, dynamic>> resolveInsight(int insightId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$BASE_URL/admin/analytics/insights/$insightId/resolve'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error resolving insight: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAuditLogs({
+    String? adminId,
+    String? action,
+    String? targetType,
+    String? severity,
+    String? startDate,
+    String? endDate,
+    int? limit,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (adminId != null) queryParams['adminId'] = adminId;
+      if (action != null) queryParams['action'] = action;
+      if (targetType != null) queryParams['targetType'] = targetType;
+      if (severity != null) queryParams['severity'] = severity;
+      if (startDate != null) queryParams['startDate'] = startDate;
+      if (endDate != null) queryParams['endDate'] = endDate;
+      if (limit != null) queryParams['limit'] = limit.toString();
+
+      final response = await http.get(
+        Uri.parse(
+          '$BASE_URL/admin/analytics/audit-logs?${Uri(queryParameters: queryParams).query}',
+        ),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting audit logs: $e');
+      return {'success': false, 'logs': []};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdvancedStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/admin/analytics/advanced-stats'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting advanced stats: $e');
+      return {'success': false, 'stats': {}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserSatisfaction() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$BASE_URL/admin/analytics/satisfaction'),
+        headers: await headers,
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error getting user satisfaction: $e');
+      return {'success': false, 'analysis': {}};
+    }
+  }
 }
 
 class FinancialStatsResponse {

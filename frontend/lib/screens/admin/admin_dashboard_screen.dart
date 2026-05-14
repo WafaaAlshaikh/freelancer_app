@@ -3,6 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:freelancer_platform/l10n/app_localizations.dart';
+import 'package:freelancer_platform/screens/admin/ai_insights_dashboard.dart';
+import 'package:freelancer_platform/screens/admin/audit_logs_screen.dart';
+import 'package:freelancer_platform/screens/admin/top_performers_screen.dart';
+import 'package:freelancer_platform/screens/admin/user_satisfaction_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:freelancer_platform/screens/admin/disputes_management_screen.dart';
 import 'package:freelancer_platform/screens/admin/subscription_management_screen.dart';
@@ -129,6 +133,26 @@ class _AdminSidebar extends StatelessWidget {
       icon: Icons.settings_outlined,
       selectedIcon: Icons.settings,
       label: 'Settings',
+    ),
+    _NavItem(
+      icon: Icons.analytics_outlined,
+      selectedIcon: Icons.analytics,
+      label: 'Analytics',
+    ),
+    _NavItem(
+      icon: Icons.auto_awesome_outlined,
+      selectedIcon: Icons.auto_awesome,
+      label: 'AI Insights',
+    ),
+    _NavItem(
+      icon: Icons.insights_outlined,
+      selectedIcon: Icons.insights,
+      label: 'Satisfaction',
+    ),
+    _NavItem(
+      icon: Icons.history_outlined,
+      selectedIcon: Icons.history,
+      label: 'Audit Logs',
     ),
   ];
 
@@ -915,6 +939,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       'Subscriptions',
       'Ads',
       'Settings',
+      'Analytics',
+      'AI Insights',
+      'Satisfaction',
+      'Audit Logs',
     ];
 
     return Container(
@@ -2351,6 +2379,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         return const AdminAdsManagementScreen();
       case 7:
         return const AdminSettingsScreen();
+      case 8:
+        return const TopPerformersScreen();
+      case 9:
+        return const AIInsightsDashboard();
+      case 10:
+        return const UserSatisfactionScreen();
+      case 11:
+        return const AuditLogsScreen();
       default:
         return _buildDashboardContent();
     }

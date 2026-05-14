@@ -35,6 +35,8 @@ import AdCampaign from "./AdCampaign.js";
 import AdImpression from "./AdImpression.js";
 import AdTransaction from "./AdTransaction.js";
 import Dispute from "./Dispute.js";
+import AdminAuditLog from "./AdminAuditLog.js";
+import AdminInsight from "./AdminInsight.js";
 
 Offer.belongsTo(User, { as: "client", foreignKey: "client_id" });
 Offer.belongsTo(User, { as: "freelancer", foreignKey: "freelancer_id" });
@@ -231,4 +233,6 @@ export {
   AdImpression,
   AdTransaction,
   Dispute,
+  AdminAuditLog,
+  AdminInsight,
 };
