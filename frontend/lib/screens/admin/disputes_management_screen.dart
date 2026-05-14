@@ -73,11 +73,16 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
       );
 
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: t?.disputeResolvedSuccess ?? 'Dispute resolved successfully');
+        Fluttertoast.showToast(
+          msg: t?.disputeResolvedSuccess ?? 'Dispute resolved successfully',
+        );
         _loadDisputes();
       } else {
         Fluttertoast.showToast(
-          msg: response['message'] ?? t?.failedToResolveDispute ?? 'Failed to resolve dispute',
+          msg:
+              response['message'] ??
+              t?.failedToResolveDispute ??
+              'Failed to resolve dispute',
         );
       }
     } catch (e) {
@@ -94,11 +99,16 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
       );
 
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: t?.disputeRejectedSuccess ?? 'Dispute rejected successfully');
+        Fluttertoast.showToast(
+          msg: t?.disputeRejectedSuccess ?? 'Dispute rejected successfully',
+        );
         _loadDisputes();
       } else {
         Fluttertoast.showToast(
-          msg: response['message'] ?? t?.failedToRejectDispute ?? 'Failed to reject dispute',
+          msg:
+              response['message'] ??
+              t?.failedToRejectDispute ??
+              'Failed to reject dispute',
         );
       }
     } catch (e) {
@@ -117,7 +127,9 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text(
             t.resolveDispute,
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -127,9 +139,15 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow(t.contract, dispute.contract?.project?.title ?? t.notSpecified),
+                _buildInfoRow(
+                  t.contract,
+                  dispute.contract?.project?.title ?? t.notSpecified,
+                ),
                 const SizedBox(height: 8),
-                _buildInfoRow(t.initiatedBy, '${dispute.initiatedBy} (${_getUserName(dispute, t)})'),
+                _buildInfoRow(
+                  t.initiatedBy,
+                  '${dispute.initiatedBy} (${_getUserName(dispute, t)})',
+                ),
                 const SizedBox(height: 8),
                 _buildInfoRow(t.disputeTitle, dispute.title),
                 const SizedBox(height: 16),
@@ -142,9 +160,18 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                   value: resolution,
                   isExpanded: true,
                   items: [
-                    DropdownMenuItem(value: 'full_refund', child: Text(t.fullRefundToClient)),
-                    DropdownMenuItem(value: 'partial_refund', child: Text(t.partialRefundToClient)),
-                    DropdownMenuItem(value: 'no_refund', child: Text(t.noRefund)),
+                    DropdownMenuItem(
+                      value: 'full_refund',
+                      child: Text(t.fullRefundToClient),
+                    ),
+                    DropdownMenuItem(
+                      value: 'partial_refund',
+                      child: Text(t.partialRefundToClient),
+                    ),
+                    DropdownMenuItem(
+                      value: 'no_refund',
+                      child: Text(t.noRefund),
+                    ),
                   ],
                   onChanged: (value) => setState(() => resolution = value!),
                 ),
@@ -256,7 +283,7 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
     );
   }
 
- String _getUserName(Dispute dispute, AppLocalizations t) {
+  String _getUserName(Dispute dispute, AppLocalizations t) {
     if (dispute.initiatedBy == 'client') {
       return dispute.client?.name ?? t.notSpecified;
     } else {
@@ -275,9 +302,7 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
         ),
-        Expanded(
-          child: Text(value),
-        ),
+        Expanded(child: Text(value)),
       ],
     );
   }
@@ -355,7 +380,9 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          color: isDark ? Colors.white : const Color(0xFF1A1B3E),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF1A1B3E),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -374,7 +401,7 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${t.initiatedBy}: ${dispute.initiatedBy} (${_getUserName(dispute,t)})',
+                  '${t.initiatedBy}: ${dispute.initiatedBy} (${_getUserName(dispute, t)})',
                   style: TextStyle(
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 13,
@@ -396,14 +423,18 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                     Icon(
                       Icons.access_time,
                       size: 14,
-                      color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                      color: isDark
+                          ? Colors.grey.shade600
+                          : Colors.grey.shade400,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       _formatDate(dispute.createdAt),
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                        color: isDark
+                            ? Colors.grey.shade500
+                            : Colors.grey.shade500,
                       ),
                     ),
                   ],
@@ -489,7 +520,11 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
             children: [
               _buildDetailRow(t.status, dispute.status, isDark),
               const SizedBox(height: 8),
-              _buildDetailRow(t.contract, dispute.contract?.project?.title ?? t.notSpecified, isDark),
+              _buildDetailRow(
+                t.contract,
+                dispute.contract?.project?.title ?? t.notSpecified,
+                isDark,
+              ),
               const SizedBox(height: 8),
               _buildDetailRow(t.initiatedBy, dispute.initiatedBy, isDark),
               const SizedBox(height: 12),
@@ -516,16 +551,22 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                     color: isDark ? Colors.white : const Color(0xFF1A1B3E),
                   ),
                 ),
-                ...dispute.evidenceFiles.map((file) => Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 4),
-                  child: Text('• $file', style: TextStyle(fontSize: 12)),
-                )),
+                ...dispute.evidenceFiles.map(
+                  (file) => Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 4),
+                    child: Text('• $file', style: TextStyle(fontSize: 12)),
+                  ),
+                ),
               ],
               if (dispute.resolution != null) ...[
                 const SizedBox(height: 12),
                 _buildDetailRow(t.resolution, dispute.resolution!, isDark),
                 if (dispute.refundAmount != null)
-                  _buildDetailRow(t.refundAmount, '\$${dispute.refundAmount}', isDark),
+                  _buildDetailRow(
+                    t.refundAmount,
+                    '\$${dispute.refundAmount}',
+                    isDark,
+                  ),
                 if (dispute.adminNotes != null) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -538,7 +579,9 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                   Text(
                     dispute.adminNotes!,
                     style: TextStyle(
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade700,
                     ),
                   ),
                 ],
@@ -593,17 +636,10 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.AppColors.darkBackground : const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: Text(
-          t.disputesManagement,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-        backgroundColor: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        elevation: 0,
-      ),
+      backgroundColor: isDark
+          ? AppTheme.AppColors.darkBackground
+          : const Color(0xFFF8F9FA),
+
       body: Column(
         children: [
           _buildHeader(t, isDark),
@@ -616,12 +652,16 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                     ),
                   )
                 : disputes.isEmpty
-                    ? _buildEmptyState(t, isDark)
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: disputes.length,
-                        itemBuilder: (_, i) => _buildDisputeCard(disputes[i], t, isDark),
-                      ),
+                ? _buildEmptyState(t, isDark)
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemCount: disputes.length,
+                    itemBuilder: (_, i) =>
+                        _buildDisputeCard(disputes[i], t, isDark),
+                  ),
           ),
           if (totalPages > 1) _buildPagination(t, isDark),
         ],
@@ -636,22 +676,18 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            t.disputes,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : const Color(0xFF1A1B3E),
-            ),
-          ),
           const SizedBox(height: 12),
           Container(
             height: 44,
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF8F9FA),
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200,
+                color: isDark
+                    ? AppTheme.AppColors.grayDark
+                    : Colors.grey.shade200,
               ),
             ),
             child: Row(
@@ -667,15 +703,26 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
                 DropdownButton<String>(
                   value: selectedStatus,
                   underline: const SizedBox(),
-                  dropdownColor: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
+                  dropdownColor: isDark
+                      ? AppTheme.AppColors.darkSurface
+                      : Colors.white,
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                   items: [
                     DropdownMenuItem(value: 'all', child: Text(t.allDisputes)),
-                    DropdownMenuItem(value: 'open', child: Text(t.disputeStatusOpen)),
-                    DropdownMenuItem(value: 'resolved', child: Text(t.disputeStatusResolved)),
-                    DropdownMenuItem(value: 'rejected', child: Text(t.disputeStatusRejected)),
+                    DropdownMenuItem(
+                      value: 'open',
+                      child: Text(t.disputeStatusOpen),
+                    ),
+                    DropdownMenuItem(
+                      value: 'resolved',
+                      child: Text(t.disputeStatusResolved),
+                    ),
+                    DropdownMenuItem(
+                      value: 'rejected',
+                      child: Text(t.disputeStatusRejected),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value != null) {
@@ -729,7 +776,9 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF8F9FA),
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF8F9FA),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -778,7 +827,9 @@ class _DisputesManagementScreenState extends State<DisputesManagementScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF8F9FA),
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

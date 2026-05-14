@@ -4386,4 +4386,40 @@ class AppLocalizationsAr extends AppLocalizations {
   String clientsCount_plural(Object count) {
     return '$count clients';
   }
+
+  @override
+  String get exportStarted => 'بدأ التصدير بنجاح';
+
+  @override
+  String get exportFailed => 'فشل التصدير';
+
+  @override
+  String get searchContracts => 'البحث في العقود...';
+
+  @override
+  String get campaignsManagement => 'إدارة الحملات';
+
+  @override
+  String get usersManagement => 'إدارة المستخدمين';
+
+  @override
+  String get advancedFilters => 'فلترة متقدمة';
+
+  @override
+  String get moreOptions => 'خيارات إضافية';
+
+  @override
+  String get joinedDate => ' تاريخ الانضمام';
+
+  @override
+  String get from => 'من';
+
+  @override
+  String get to => 'إلى';
+
+  @override
+  String get phone => 'هاتف';
+
+  @override
+  String get actions => 'أحداث';
 }

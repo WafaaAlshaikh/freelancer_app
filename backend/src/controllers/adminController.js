@@ -15,12 +15,18 @@ import {
 import { Op } from "sequelize";
 import AdCampaign from "../models/AdCampaign.js";
 import AdPaymentService from "../services/adPaymentService.js";
-import { sendDisputeResolvedEmail } from "../utils/mailer.js";
+import {
+  sendDisputeResolvedEmail,
+  sendAccountCreatedEmail,
+} from "../utils/mailer.js";
 
 const generateRandomPassword = (length = 12) => {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_";
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return Array.from(
+    { length },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join("");
 };
 
 export const getDashboardStats = async (req, res) => {
@@ -151,10 +157,50 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
+export const getUserStats = async (req, res) => {
+  try {
+    const totalUsers = await User.count();
+    const activeUsers = await User.count({
+      where: { account_status: "active" },
+    });
+    const freelancersCount = await User.count({
+      where: { role: "freelancer" },
+    });
+    const suspendedCount = await User.count({
+      where: { account_status: "suspended" },
+    });
+
+    res.json({
+      success: true,
+      totalUsers,
+      activeUsers,
+      freelancersCount,
+      suspendedCount,
+    });
+  } catch (err) {
+    console.error("❌ Error in getUserStats:", err);
+    res.status(500).json({
+      success: false,
+      totalUsers: 0,
+      activeUsers: 0,
+      freelancersCount: 0,
+      suspendedCount: 0,
+    });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     const { role, status, search, page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    console.log("📥 getAllUsers called with:", {
+      role,
+      status,
+      search,
+      page,
+      limit,
+    });
 
     const where = {};
     if (role && role !== "all") where.role = role;
@@ -188,13 +234,41 @@ export const getAllUsers = async (req, res) => {
       offset,
     });
 
-    res.json({
+    console.log("📊 Users found:", count);
+
+    const activeUsers = await User.count({
+      where: { account_status: "active" },
+    });
+
+    const freelancersCount = await User.count({
+      where: { role: "freelancer" },
+    });
+
+    const suspendedCount = await User.count({
+      where: { account_status: "suspended" },
+    });
+
+    console.log("📈 Stats:", {
+      totalUsers: count,
+      activeUsers,
+      freelancersCount,
+      suspendedCount,
+    });
+
+    const responseData = {
       success: true,
       users: rows,
-      total: count,
+      totalUsers: count,
+      activeUsers: activeUsers,
+      freelancersCount: freelancersCount,
+      suspendedCount: suspendedCount,
       page: parseInt(page),
       totalPages: Math.ceil(count / parseInt(limit)),
-    });
+    };
+
+    console.log("📤 Response keys:", Object.keys(responseData));
+
+    res.json(responseData);
   } catch (err) {
     console.error("❌ Error in getAllUsers:", err);
     res.status(500).json({
@@ -202,7 +276,10 @@ export const getAllUsers = async (req, res) => {
       message: "Server error",
       error: err.message,
       users: [],
-      total: 0,
+      totalUsers: 0,
+      activeUsers: 0,
+      freelancersCount: 0,
+      suspendedCount: 0,
       totalPages: 0,
     });
   }
@@ -488,7 +565,16 @@ export const verifyUser = async (req, res) => {
 
 export const getAllProjects = async (req, res) => {
   try {
-    const { status, category, search, page = 1, limit = 20 } = req.query;
+    const {
+      status,
+      category,
+      search,
+      page = 1,
+      limit = 20,
+      startDate,
+      endDate,
+      budgetRange,
+    } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {};
@@ -499,6 +585,25 @@ export const getAllProjects = async (req, res) => {
         { title: { [Op.like]: `%${search}%` } },
         { description: { [Op.like]: `%${search}%` } },
       ];
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        where.createdAt[Op.lte] = new Date(endDate);
+      }
+    }
+
+    if (budgetRange && budgetRange !== "all") {
+      if (budgetRange === "5000+") {
+        where.budget = { [Op.gte]: 5000 };
+      } else {
+        const [min, max] = budgetRange.split("-").map(Number);
+        where.budget = { [Op.between]: [min, max] };
+      }
     }
 
     const { count, rows } = await Project.findAndCountAll({
@@ -559,11 +664,35 @@ export const deleteProject = async (req, res) => {
 
 export const getAllContracts = async (req, res) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query;
+    const {
+      status,
+      search,
+      page = 1,
+      limit = 20,
+      startDate,
+      endDate,
+    } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {};
     if (status && status !== "all") where.status = status;
+    if (search) {
+      where[Op.or] = [
+        { "$Project.title$": { [Op.like]: `%${search}%` } },
+        { "$Client.name$": { [Op.like]: `%${search}%` } },
+        { "$Freelancer.name$": { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        where.createdAt[Op.lte] = new Date(endDate);
+      }
+    }
 
     const { count, rows } = await Contract.findAndCountAll({
       where,
@@ -748,16 +877,21 @@ export const resolveDisputeAdmin = async (req, res) => {
     });
 
     if (resolution === "full_refund" || resolution === "partial_refund") {
-      const refundAmount = resolution === "full_refund"
-        ? dispute.Contract.agreed_amount
-        : refund_amount;
+      const refundAmount =
+        resolution === "full_refund"
+          ? dispute.Contract.agreed_amount
+          : refund_amount;
 
-      const clientWallet = await Wallet.findOne({ where: { UserId: dispute.ClientId } });
+      const clientWallet = await Wallet.findOne({
+        where: { UserId: dispute.ClientId },
+      });
       if (clientWallet) {
         await clientWallet.increment("balance", { by: refundAmount });
       }
 
-      const freelancerWallet = await Wallet.findOne({ where: { UserId: dispute.FreelancerId } });
+      const freelancerWallet = await Wallet.findOne({
+        where: { UserId: dispute.FreelancerId },
+      });
       if (freelancerWallet) {
         await freelancerWallet.decrement("balance", { by: refundAmount });
       }
@@ -780,14 +914,28 @@ export const resolveDisputeAdmin = async (req, res) => {
     console.log(`✅ Dispute ${disputeId} resolved with ${resolution}`);
 
     try {
-      const resolutionText = resolution === 'full_refund' ? 'Full refund to client' :
-                           resolution === 'partial_refund' ? `Partial refund of \$${refund_amount} to client` :
-                           'No refund';
+      const resolutionText =
+        resolution === "full_refund"
+          ? "Full refund to client"
+          : resolution === "partial_refund"
+            ? `Partial refund of \$${refund_amount} to client`
+            : "No refund";
 
-      await sendDisputeResolvedEmail(dispute.client.email, dispute, resolutionText);
-      await sendDisputeResolvedEmail(dispute.freelancer.email, dispute, resolutionText);
+      await sendDisputeResolvedEmail(
+        dispute.client.email,
+        dispute,
+        resolutionText,
+      );
+      await sendDisputeResolvedEmail(
+        dispute.freelancer.email,
+        dispute,
+        resolutionText,
+      );
     } catch (emailError) {
-      console.error("⚠️ Dispute resolved but failed to send emails:", emailError);
+      console.error(
+        "⚠️ Dispute resolved but failed to send emails:",
+        emailError,
+      );
     }
 
     res.json({

@@ -49,10 +49,7 @@ class _SubscriptionManagementScreenState
           ? AppTheme.AppColors.darkBackground
           : const Color(0xFFF5F6F8),
       appBar: AppBar(
-        title: Text(
-          t.subscriptionManagement,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        automaticallyImplyLeading: false,
         backgroundColor: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black,
         elevation: 0,
@@ -64,18 +61,9 @@ class _SubscriptionManagementScreenState
           unselectedLabelColor: isDark ? Colors.grey.shade500 : Colors.grey,
           indicatorSize: TabBarIndicatorSize.tab,
           tabs: [
-            Tab(
-              text: t.statistics,
-              icon: const Icon(Icons.analytics),
-            ),
-            Tab(
-              text: t.plans,
-              icon: const Icon(Icons.subscriptions),
-            ),
-            Tab(
-              text: t.coupons,
-              icon: const Icon(Icons.local_offer),
-            ),
+            Tab(text: t.statistics, icon: const Icon(Icons.analytics)),
+            Tab(text: t.plans, icon: const Icon(Icons.subscriptions)),
+            Tab(text: t.coupons, icon: const Icon(Icons.local_offer)),
           ],
         ),
       ),

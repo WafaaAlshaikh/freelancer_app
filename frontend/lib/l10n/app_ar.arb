@@ -2041,7 +2041,18 @@
 "totalUsersCount_plural": "{count} مستخدمين",
 "activeCount": "{count} نشط",
 "freelancersCount": "{count} مستقل",
-"clientsCount": "{count} عميل"
-
+"clientsCount": "{count} عميل",
+  "exportStarted": "بدأ التصدير بنجاح",
+  "exportFailed": "فشل التصدير",
+    "searchContracts": "البحث في العقود...",
+    "campaignsManagement":"إدارة الحملات",
+"usersManagement": "إدارة المستخدمين",
+"advancedFilters": "فلترة متقدمة",
+"moreOptions": "خيارات إضافية",
+"joinedDate":" تاريخ الانضمام",
+"from":"من",
+"to":"إلى",
+"phone":"هاتف",
+"actions":"أحداث"
 }
 

@@ -4418,4 +4418,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String clientsCount_plural(Object count) {
     return '$count clients';
   }
+
+  @override
+  String get exportStarted => 'Export started successfully';
+
+  @override
+  String get exportFailed => 'Export failed';
+
+  @override
+  String get searchContracts => 'Search contracts...';
+
+  @override
+  String get campaignsManagement => 'campaigns Management';
+
+  @override
+  String get usersManagement => 'Users Management';
+
+  @override
+  String get advancedFilters => 'Advanced Filters';
+
+  @override
+  String get moreOptions => 'more Options';
+
+  @override
+  String get joinedDate => 'Joined date';
+
+  @override
+  String get from => 'from';
+
+  @override
+  String get to => 'to';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get actions => 'Actions';
 }

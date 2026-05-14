@@ -54,7 +54,8 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          t?.deletePlanConfirmation(plan.name) ?? 'Are you sure you want to delete "${plan.name}"? This cannot be undone.',
+          t?.deletePlanConfirmation(plan.name) ??
+              'Are you sure you want to delete "${plan.name}"? This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -113,9 +114,7 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
 
     if (_loading) {
       return Center(
-        child: CircularProgressIndicator(
-          color: theme.colorScheme.primary,
-        ),
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
       );
     }
 
@@ -174,7 +173,9 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.grey.shade500 : const Color(0xFF888888),
+                  color: isDark
+                      ? Colors.grey.shade500
+                      : const Color(0xFF888888),
                 ),
               ),
               const Spacer(),
@@ -186,7 +187,10 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
           child: _plans.isEmpty
               ? _buildEmpty(t, isDark)
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   itemCount: _plans.length,
                   itemBuilder: (_, i) => _buildPlanCard(_plans[i], t, isDark),
                 ),
@@ -234,7 +238,11 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
     );
   }
 
-  Widget _buildPlanCard(SubscriptionPlan plan, AppLocalizations t, bool isDark) {
+  Widget _buildPlanCard(
+    SubscriptionPlan plan,
+    AppLocalizations t,
+    bool isDark,
+  ) {
     final theme = Theme.of(context);
     final isRecommended = plan.isRecommended;
     final isFree = plan.price == 0;
@@ -247,7 +255,9 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
         border: isRecommended
             ? Border.all(color: const Color(0xFF14A800), width: 2)
             : Border.all(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                color: isDark
+                    ? AppTheme.AppColors.grayDark
+                    : Colors.grey.shade100,
               ),
         boxShadow: [
           BoxShadow(
@@ -267,11 +277,17 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
             decoration: BoxDecoration(
               color: isRecommended
                   ? const Color(0xFF14A800).withOpacity(0.05)
-                  : (isDark ? AppTheme.AppColors.darkSurface : Colors.grey.shade50),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  : (isDark
+                        ? AppTheme.AppColors.darkSurface
+                        : Colors.grey.shade50),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
+              ),
               border: Border(
                 bottom: BorderSide(
-                  color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                  color: isDark
+                      ? AppTheme.AppColors.grayDark
+                      : Colors.grey.shade100,
                 ),
               ),
             ),
@@ -286,20 +302,20 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
                             colors: [Color(0xFF888888), Color(0xFF555555)],
                           )
                         : isRecommended
-                            ? const LinearGradient(
-                                colors: [Color(0xFF14A800), Color(0xFF0A6E00)],
-                              )
-                            : const LinearGradient(
-                                colors: [Color(0xFF5B58E2), Color(0xFF3D35CC)],
-                              ),
+                        ? const LinearGradient(
+                            colors: [Color(0xFF14A800), Color(0xFF0A6E00)],
+                          )
+                        : const LinearGradient(
+                            colors: [Color(0xFF5B58E2), Color(0xFF3D35CC)],
+                          ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     isFree
                         ? Icons.card_giftcard_rounded
                         : isRecommended
-                            ? Icons.stars_rounded
-                            : Icons.subscriptions_rounded,
+                        ? Icons.stars_rounded
+                        : Icons.subscriptions_rounded,
                     color: Colors.white,
                     size: 22,
                   ),
@@ -316,7 +332,9 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : const Color(0xFF1A1B3E),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1A1B3E),
                             ),
                           ),
                           if (isRecommended) ...[
@@ -328,7 +346,10 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
                               ),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF14A800), Color(0xFF0A6E00)],
+                                  colors: [
+                                    Color(0xFF14A800),
+                                    Color(0xFF0A6E00),
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -353,7 +374,9 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: isFree
-                              ? (isDark ? Colors.grey.shade500 : Colors.grey.shade500)
+                              ? (isDark
+                                    ? Colors.grey.shade500
+                                    : Colors.grey.shade500)
                               : const Color(0xFF14A800),
                         ),
                       ),
@@ -385,12 +408,15 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (plan.description != null && plan.description!.isNotEmpty) ...[
+                if (plan.description != null &&
+                    plan.description!.isNotEmpty) ...[
                   Text(
                     plan.description!,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -423,24 +449,30 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,
-                    children: plan.features.map((f) => Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_rounded,
-                          size: 12,
-                          color: const Color(0xFF14A800),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          f,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                    children: plan.features
+                        .map(
+                          (f) => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_rounded,
+                                size: 12,
+                                color: const Color(0xFF14A800),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                f,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    )).toList(),
+                        )
+                        .toList(),
                   ),
                 ],
               ],
@@ -515,7 +547,9 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF0F2F8),
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF0F2F8),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -540,7 +574,6 @@ class _PlansManagementTabState extends State<PlansManagementTab> {
     );
   }
 }
-
 
 class PlanFormDialog extends StatefulWidget {
   final SubscriptionPlan? plan;
@@ -626,7 +659,9 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
     final data = {
       'name': _nameCtrl.text.trim(),
       'slug': _slugCtrl.text.trim(),
-      'description': _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      'description': _descCtrl.text.trim().isEmpty
+          ? null
+          : _descCtrl.text.trim(),
       'price': double.parse(_priceCtrl.text),
       'billing_period': _billingPeriod,
       'features': _features,
@@ -738,7 +773,12 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
               children: [
                 _row([
                   _field(_nameCtrl, t.planName, required: true, isDark: isDark),
-                  _field(_slugCtrl, t.slugExample, required: true, isDark: isDark),
+                  _field(
+                    _slugCtrl,
+                    t.slugExample,
+                    required: true,
+                    isDark: isDark,
+                  ),
                 ]),
                 _field(_descCtrl, t.description, maxLines: 2, isDark: isDark),
                 _row([
@@ -794,7 +834,9 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.grey.shade400 : const Color(0xFF555555),
+                    color: isDark
+                        ? Colors.grey.shade400
+                        : const Color(0xFF555555),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -802,7 +844,7 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
                   spacing: 6,
                   runSpacing: 4,
                   children: [
-                    ..._switches(t,isDark),
+                    ..._switches(t, isDark),
                     _switchChip(
                       t.recommended,
                       _isRecommended,
@@ -817,14 +859,20 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.grey.shade400 : const Color(0xFF555555),
+                    color: isDark
+                        ? Colors.grey.shade400
+                        : const Color(0xFF555555),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Expanded(
-                      child: _field(_featureInputCtrl, t.addFeature, isDark: isDark),
+                      child: _field(
+                        _featureInputCtrl,
+                        t.addFeature,
+                        isDark: isDark,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
@@ -857,16 +905,26 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,
-                    children: _features.asMap().entries.map((e) => Chip(
-                      label: Text(
-                        e.value,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      onDeleted: () => setState(() => _features.removeAt(e.key)),
-                      deleteIconColor: Colors.grey.shade500,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: isDark ? AppTheme.AppColors.darkSurface : null,
-                    )).toList(),
+                    children: _features
+                        .asMap()
+                        .entries
+                        .map(
+                          (e) => Chip(
+                            label: Text(
+                              e.value,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            onDeleted: () =>
+                                setState(() => _features.removeAt(e.key)),
+                            deleteIconColor: Colors.grey.shade500,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: isDark
+                                ? AppTheme.AppColors.darkSurface
+                                : null,
+                          ),
+                        )
+                        .toList(),
                   ),
               ],
             ),
@@ -878,7 +936,9 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(
             t.cancel,
-            style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+            style: TextStyle(
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
           ),
         ),
         ElevatedButton(
@@ -900,15 +960,40 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
       ],
     );
   }
-  
+
   List<Widget> _switches(AppLocalizations t, bool isDark) => [
-    _switchChip(t.aiInsights, _aiInsights, (v) => setState(() => _aiInsights = v), isDark),
-    _switchChip(t.prioritySupport, _prioritySupport, (v) => setState(() => _prioritySupport = v), isDark),
-    _switchChip(t.apiAccess, _apiAccess, (v) => setState(() => _apiAccess = v), isDark),
-    _switchChip(t.customBranding, _customBranding, (v) => setState(() => _customBranding = v), isDark),
+    _switchChip(
+      t.aiInsights,
+      _aiInsights,
+      (v) => setState(() => _aiInsights = v),
+      isDark,
+    ),
+    _switchChip(
+      t.prioritySupport,
+      _prioritySupport,
+      (v) => setState(() => _prioritySupport = v),
+      isDark,
+    ),
+    _switchChip(
+      t.apiAccess,
+      _apiAccess,
+      (v) => setState(() => _apiAccess = v),
+      isDark,
+    ),
+    _switchChip(
+      t.customBranding,
+      _customBranding,
+      (v) => setState(() => _customBranding = v),
+      isDark,
+    ),
   ];
 
-  Widget _switchChip(String label, bool value, ValueChanged<bool> onChange, bool isDark) {
+  Widget _switchChip(
+    String label,
+    bool value,
+    ValueChanged<bool> onChange,
+    bool isDark,
+  ) {
     final theme = Theme.of(context);
     return GestureDetector(
       onTap: () => onChange(!value),
@@ -918,17 +1003,23 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
         decoration: BoxDecoration(
           color: value
               ? theme.colorScheme.primary.withOpacity(0.1)
-              : (isDark ? AppTheme.AppColors.darkSurface : Colors.grey.shade100),
+              : (isDark
+                    ? AppTheme.AppColors.darkSurface
+                    : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: value ? theme.colorScheme.primary.withOpacity(0.3) : Colors.transparent,
+            color: value
+                ? theme.colorScheme.primary.withOpacity(0.3)
+                : Colors.transparent,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              value ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+              value
+                  ? Icons.check_box_rounded
+                  : Icons.check_box_outline_blank_rounded,
               size: 14,
               color: value ? theme.colorScheme.primary : Colors.grey.shade400,
             ),
@@ -937,7 +1028,9 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
               label,
               style: TextStyle(
                 fontSize: 11,
-                color: value ? theme.colorScheme.primary : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                color: value
+                    ? theme.colorScheme.primary
+                    : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                 fontWeight: value ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -952,10 +1045,14 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: children
-            .map((w) => Expanded(child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: w,
-            )))
+            .map(
+              (w) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: w,
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -976,9 +1073,14 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
         controller: ctrl,
         maxLines: maxLines ?? 1,
         keyboardType: keyboardType,
-        validator: validator ?? (required
-            ? (v) => v == null || v.isEmpty ? (AppLocalizations.of(context)?.requiredField ?? 'Required') : null
-            : null),
+        validator:
+            validator ??
+            (required
+                ? (v) => v == null || v.isEmpty
+                      ? (AppLocalizations.of(context)?.requiredField ??
+                            'Required')
+                      : null
+                : null),
         style: TextStyle(
           color: isDark ? Colors.white : AppTheme.AppColors.lightTextPrimary,
         ),
@@ -990,19 +1092,32 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+            borderSide: BorderSide(
+              color: isDark
+                  ? AppTheme.AppColors.grayDark
+                  : Colors.grey.shade200,
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+            borderSide: BorderSide(
+              color: isDark
+                  ? AppTheme.AppColors.grayDark
+                  : Colors.grey.shade200,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: Color(0xFF5B58E2)),
           ),
           filled: true,
-          fillColor: isDark ? AppTheme.AppColors.darkSurface : const Color(0xFFF8F8F8),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          fillColor: isDark
+              ? AppTheme.AppColors.darkSurface
+              : const Color(0xFFF8F8F8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           isDense: true,
         ),
       ),
@@ -1029,19 +1144,32 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+            borderSide: BorderSide(
+              color: isDark
+                  ? AppTheme.AppColors.grayDark
+                  : Colors.grey.shade200,
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+            borderSide: BorderSide(
+              color: isDark
+                  ? AppTheme.AppColors.grayDark
+                  : Colors.grey.shade200,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: Color(0xFF5B58E2)),
           ),
           filled: true,
-          fillColor: isDark ? AppTheme.AppColors.darkSurface : const Color(0xFFF8F8F8),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          fillColor: isDark
+              ? AppTheme.AppColors.darkSurface
+              : const Color(0xFFF8F8F8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           isDense: true,
         ),
         dropdownColor: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
@@ -1049,13 +1177,17 @@ class _PlanFormDialogState extends State<PlanFormDialog> {
           fontSize: 13,
           color: isDark ? Colors.white : AppTheme.AppColors.lightTextPrimary,
         ),
-        items: options.map((o) => DropdownMenuItem(
-          value: o,
-          child: Text(
-            o == 'monthly' ? t.monthly : t.yearly,
-            style: const TextStyle(fontSize: 13),
-          ),
-        )).toList(),
+        items: options
+            .map(
+              (o) => DropdownMenuItem(
+                value: o,
+                child: Text(
+                  o == 'monthly' ? t.monthly : t.yearly,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            )
+            .toList(),
         onChanged: onChanged,
       ),
     );

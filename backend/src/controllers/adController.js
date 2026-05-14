@@ -403,6 +403,10 @@ export const adminGetAllCampaigns = async (req, res) => {
       search = "",
       sortBy = "created_at",
       sortOrder = "DESC",
+      startDate,
+      endDate,
+      budgetRange,
+      performanceFilter,
     } = req.query;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -418,6 +422,40 @@ export const adminGetAllCampaigns = async (req, res) => {
         { title: { [Op.like]: `%${search}%` } },
         { description: { [Op.like]: `%${search}%` } },
       ];
+    }
+
+    if (startDate || endDate) {
+      where.created_at = {};
+      if (startDate) {
+        where.created_at[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        where.created_at[Op.lte] = new Date(endDate);
+      }
+    }
+
+    if (budgetRange && budgetRange !== "all") {
+      where.daily_budget = {};
+      if (budgetRange === "5000+") {
+        where.daily_budget[Op.gte] = 5000;
+      } else {
+        const [min, max] = budgetRange.split("-").map(Number);
+        where.daily_budget[Op.between] = [min, max];
+      }
+    }
+
+    if (performanceFilter && performanceFilter !== "all") {
+      switch (performanceFilter) {
+        case "high":
+          where.status = ["active", "completed"];
+          break;
+        case "medium":
+          where.status = ["active", "paused"];
+          break;
+        case "low":
+          where.status = ["draft", "cancelled"];
+          break;
+      }
     }
 
     const { count, rows } = await AdCampaign.findAndCountAll({

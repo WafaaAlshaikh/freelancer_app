@@ -18,10 +18,9 @@ class AdminAdsManagementScreen extends StatefulWidget {
 }
 
 class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   List<Map<String, dynamic>> _campaigns = [];
   bool _loading = true;
-  bool _isMounted = true;
   String _selectedStatus = 'all';
   String _searchQuery = '';
   int _currentPage = 1;
@@ -30,40 +29,67 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
   Map<String, dynamic> _stats = {};
   late TabController _tabController;
   int _selectedTab = 0;
-  Map<String, List<Map<String, dynamic>>> _dailyStatsData = {};
 
   Map<String, dynamic> _analytics = {};
   bool _loadingAnalytics = false;
+
+  String _status = 'all';
+  String _budgetRange = 'all';
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  String _tempStatus = 'all';
+  String _tempBudgetRange = 'all';
+  DateTime? _tempStartDate;
+  DateTime? _tempEndDate;
+
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      setState(() {
-        _selectedTab = _tabController.index;
-      });
-      if (_selectedTab == 1) {
-        _loadAnalytics();
+      if (mounted) {
+        setState(() {
+          _selectedTab = _tabController.index;
+        });
+        if (_selectedTab == 1) {
+          _loadAnalytics();
+        }
       }
     });
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
     _loadCampaigns();
   }
 
   @override
   void dispose() {
-    _isMounted = false;
     _tabController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   Future<void> _loadCampaigns() async {
+    if (!mounted) return;
     setState(() => _loading = true);
+    _fadeController.reset();
     try {
       final response = await ApiService.adminGetAllCampaigns(
-        status: _selectedStatus,
+        status: _status,
         search: _searchQuery,
         page: _currentPage,
+        startDate: _startDate?.toIso8601String(),
+        endDate: _endDate?.toIso8601String(),
+        budgetRange: _budgetRange,
       );
 
       if (!mounted) return;
@@ -77,6 +103,7 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
         _stats = response['stats'] ?? {};
         _loading = false;
       });
+      _fadeController.forward();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -86,20 +113,20 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
   }
 
   Future<void> _loadAnalytics() async {
-    if (!_isMounted) return;
+    if (!mounted) return;
     setState(() => _loadingAnalytics = true);
     try {
       final response = await ApiService.adminGetAdAnalytics();
-      if (_isMounted && response['success'] == true) {
+      if (mounted && response['success'] == true) {
         setState(() {
           _analytics = response['analytics'] ?? {};
           _loadingAnalytics = false;
         });
-      } else if (_isMounted) {
+      } else if (mounted) {
         setState(() => _loadingAnalytics = false);
       }
     } catch (e) {
-      if (_isMounted) {
+      if (mounted) {
         setState(() => _loadingAnalytics = false);
       }
       debugPrint('Error loading analytics: $e');
@@ -120,12 +147,17 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
       );
 
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: t?.statusChangedTo(newStatus) ?? 'Status changed to $newStatus');
+        Fluttertoast.showToast(
+          msg: t?.statusChangedTo(newStatus) ?? 'Status changed to $newStatus',
+        );
         _loadCampaigns();
         if (_selectedTab == 1) _loadAnalytics();
       } else {
         Fluttertoast.showToast(
-          msg: response['message'] ?? t?.failedToChangeStatus ?? 'Failed to change status',
+          msg:
+              response['message'] ??
+              t?.failedToChangeStatus ??
+              'Failed to change status',
         );
       }
     } catch (e) {
@@ -145,7 +177,7 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
         ),
         content: Text(
           t?.deleteCampaignConfirmation(campaignName) ??
-          'Are you sure you want to delete "$campaignName"? This action cannot be undone.',
+              'Are you sure you want to delete "$campaignName"? This action cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -169,11 +201,15 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     try {
       final response = await ApiService.adminDeleteCampaign(campaignId);
       if (response['success'] == true) {
-        Fluttertoast.showToast(msg: t?.campaignDeleted ?? 'Campaign deleted successfully');
+        Fluttertoast.showToast(
+          msg: t?.campaignDeleted ?? 'Campaign deleted successfully',
+        );
         _loadCampaigns();
         if (_selectedTab == 1) _loadAnalytics();
       } else {
-        Fluttertoast.showToast(msg: response['message'] ?? t?.failedToDelete ?? 'Failed to delete');
+        Fluttertoast.showToast(
+          msg: response['message'] ?? t?.failedToDelete ?? 'Failed to delete',
+        );
       }
     } catch (e) {
       Fluttertoast.showToast(msg: '${t?.error}: $e');
@@ -229,15 +265,39 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildTextField(nameCtrl, t?.campaignName ?? 'Campaign Name', isDark),
+                _buildTextField(
+                  nameCtrl,
+                  t?.campaignName ?? 'Campaign Name',
+                  isDark,
+                ),
                 const SizedBox(height: 12),
-                _buildTextField(budgetCtrl, t?.totalBudget ?? 'Total Budget', isDark, isNumber: true),
+                _buildTextField(
+                  budgetCtrl,
+                  t?.totalBudget ?? 'Total Budget',
+                  isDark,
+                  isNumber: true,
+                ),
                 const SizedBox(height: 12),
-                _buildTextField(dailyBudgetCtrl, t?.dailyBudget ?? 'Daily Budget', isDark, isNumber: true),
+                _buildTextField(
+                  dailyBudgetCtrl,
+                  t?.dailyBudget ?? 'Daily Budget',
+                  isDark,
+                  isNumber: true,
+                ),
                 const SizedBox(height: 12),
-                _buildTextField(cpcCtrl, t?.costPerClick ?? 'Cost Per Click', isDark, isNumber: true),
+                _buildTextField(
+                  cpcCtrl,
+                  t?.costPerClick ?? 'Cost Per Click',
+                  isDark,
+                  isNumber: true,
+                ),
                 const SizedBox(height: 12),
-                _buildTextField(cpmCtrl, t?.costPerImpression ?? 'Cost Per Impression', isDark, isNumber: true),
+                _buildTextField(
+                  cpmCtrl,
+                  t?.costPerImpression ?? 'Cost Per Impression',
+                  isDark,
+                  isNumber: true,
+                ),
               ],
             ),
           ),
@@ -251,10 +311,15 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
             onPressed: () async {
               final updateData = {
                 'name': nameCtrl.text.trim(),
-                'total_budget': double.tryParse(budgetCtrl.text) ?? campaign['total_budget'],
+                'total_budget':
+                    double.tryParse(budgetCtrl.text) ??
+                    campaign['total_budget'],
                 'daily_budget': double.tryParse(dailyBudgetCtrl.text),
-                'cost_per_click': double.tryParse(cpcCtrl.text) ?? campaign['cost_per_click'],
-                'cost_per_impression': double.tryParse(cpmCtrl.text) ?? campaign['cost_per_impression'],
+                'cost_per_click':
+                    double.tryParse(cpcCtrl.text) ?? campaign['cost_per_click'],
+                'cost_per_impression':
+                    double.tryParse(cpmCtrl.text) ??
+                    campaign['cost_per_impression'],
               };
 
               final response = await ApiService.adminUpdateCampaign(
@@ -264,11 +329,14 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
               if (response['success'] == true) {
                 if (!mounted) return;
                 Navigator.pop(ctx);
-                Fluttertoast.showToast(msg: t?.campaignUpdated ?? 'Campaign updated');
+                Fluttertoast.showToast(
+                  msg: t?.campaignUpdated ?? 'Campaign updated',
+                );
                 _loadCampaigns();
               } else {
                 Fluttertoast.showToast(
-                  msg: response['message'] ?? t?.updateFailed ?? 'Update failed',
+                  msg:
+                      response['message'] ?? t?.updateFailed ?? 'Update failed',
                 );
               }
             },
@@ -283,7 +351,12 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, bool isDark, {bool isNumber = false}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    bool isDark, {
+    bool isNumber = false,
+  }) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -297,8 +370,8 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
             color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade300,
           ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFF5B58E2)),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF5B58E2)),
         ),
       ),
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
@@ -410,6 +483,53 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     return 0.0;
   }
 
+  int get _activeFilterCount {
+    int count = 0;
+    if (_status != 'all') count++;
+    if (_budgetRange != 'all') count++;
+    if (_startDate != null || _endDate != null) count++;
+    return count;
+  }
+
+  void _openFiltersDialog(AppLocalizations t, bool isDark) {
+    _tempStatus = _status;
+    _tempBudgetRange = _budgetRange;
+    _tempStartDate = _startDate;
+    _tempEndDate = _endDate;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (ctx) => _CampaignFiltersDialog(
+        isDark: isDark,
+        initialStatus: _tempStatus,
+        initialBudgetRange: _tempBudgetRange,
+        initialStartDate: _tempStartDate,
+        initialEndDate: _tempEndDate,
+        onApply: (status, budget, start, end) {
+          setState(() {
+            _status = status;
+            _budgetRange = budget;
+            _startDate = start;
+            _endDate = end;
+            _currentPage = 1;
+          });
+          _loadCampaigns();
+        },
+        onReset: () {
+          setState(() {
+            _status = 'all';
+            _budgetRange = 'all';
+            _startDate = null;
+            _endDate = null;
+            _currentPage = 1;
+          });
+          _loadCampaigns();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -417,26 +537,217 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.AppColors.darkBackground : const Color(0xFFF5F6F8),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        backgroundColor: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        elevation: 0,
+      backgroundColor: isDark
+          ? AppTheme.AppColors.darkBackground
+          : const Color(0xFFF0F2F8),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTopHeader(t, isDark, theme),
+            _buildSearchAndFilterBar(t, isDark, theme),
+            _buildStatsBar(t, isDark),
+            _buildTabBar(t, isDark),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedTab,
+                children: [
+                  _buildCampaignsList(t, isDark),
+                  _buildAnalyticsTab(t, isDark),
+                  _buildStatsTab(t, isDark),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildTopHeader(AppLocalizations t, bool isDark, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
         children: [
-          _buildFilterBar(t, isDark),
-          _buildTabBar(t, isDark),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.7),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.campaign, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.campaignsManagement,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF1A1B3E),
+                ),
+              ),
+              Text(
+                '$_totalCampaigns ${t.campaigns}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          _IconBtn(
+            icon: Icons.ios_share_rounded,
+            tooltip: 'Export CSV',
+            isDark: isDark,
+            onTap: _exportCampaigns,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilterBar(
+    AppLocalizations t,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      color: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
+      child: Row(
+        children: [
           Expanded(
-            child: IndexedStack(
-              index: _selectedTab,
-              children: [
-                _buildCampaignsList(t, isDark),
-                _buildAnalyticsTab(t, isDark),
-                _buildStatsTab(t, isDark),
-              ],
+            child: Container(
+              height: 42,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppTheme.AppColors.darkCard
+                    : const Color(0xFFF5F6FA),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? AppTheme.AppColors.grayDark
+                      : Colors.grey.shade200,
+                ),
+              ),
+              child: TextField(
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? Colors.white
+                      : AppTheme.AppColors.lightTextPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: t.searchCampaigns,
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onChanged: (v) {
+                  _searchQuery = v;
+                  _currentPage = 1;
+                  _loadCampaigns();
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => _openFiltersDialog(t, isDark),
+            child: Container(
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: _activeFilterCount > 0
+                    ? theme.colorScheme.primary
+                    : (isDark
+                          ? AppTheme.AppColors.darkCard
+                          : const Color(0xFFF5F6FA)),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _activeFilterCount > 0
+                      ? theme.colorScheme.primary
+                      : (isDark
+                            ? AppTheme.AppColors.grayDark
+                            : Colors.grey.shade200),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 18,
+                    color: _activeFilterCount > 0
+                        ? Colors.white
+                        : (isDark
+                              ? Colors.grey.shade300
+                              : Colors.grey.shade600),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Filters',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _activeFilterCount > 0
+                          ? Colors.white
+                          : (isDark
+                                ? Colors.grey.shade300
+                                : Colors.grey.shade700),
+                    ),
+                  ),
+                  if (_activeFilterCount > 0) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$_activeFilterCount',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ],
@@ -444,178 +755,46 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     );
   }
 
-  Widget _buildFilterBar(AppLocalizations t, bool isDark) {
-  return Container(
-    color: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
-    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12), 
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          height: 44,
-          decoration: BoxDecoration(
-            color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF5F6F8),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200,
-            ),
+  Widget _buildStatsBar(AppLocalizations t, bool isDark) {
+    final activeCount = _stats['active_campaigns'] ?? 0;
+    final pausedCount = _stats['paused_campaigns'] ?? 0;
+    final completedCount = _stats['completed_campaigns'] ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _StatPill(
+            label: 'Active',
+            count: activeCount,
+            color: const Color(0xFF14A800),
+            isDark: isDark,
           ),
-          child: Row(
-            children: [
-              const SizedBox(width: 12),
-              Icon(
-                Icons.search,
-                size: 20,
-                color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  style: TextStyle(
-                    color: isDark ? Colors.white : AppTheme.AppColors.lightTextPrimary,
-                    fontSize: 14,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: t.searchCampaigns,
-                    hintStyle: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.grey.shade500 : const Color(0xFFAAAAAA),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onChanged: (v) {
-                    _searchQuery = v;
-                    _currentPage = 1;
-                    _loadCampaigns();
-                  },
-                ),
-              ),
-              if (_searchQuery.isNotEmpty)
-                  IconButton(
-                    icon: Icon(
-                      Icons.clear,
-                      size: 18,
-                      color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
-                    ),
-                    onPressed: () {
-                      _searchQuery = '';
-                      _currentPage = 1;
-                      _loadCampaigns();
-                    },
-                  ),
-              const SizedBox(width: 8),
-            ],
+          _StatPill(
+            label: 'Paused',
+            count: pausedCount,
+            color: const Color(0xFFF59E0B),
+            isDark: isDark,
           ),
-        ),
-        const SizedBox(height: 16), 
-        
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.filter_list,
-                    size: 14,
-                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${t.status}:',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildStatusFilterChip(t.all, 'all', isDark),
-                    const SizedBox(width: 8),
-                    _buildStatusFilterChip(t.activeCampaigns, 'active', isDark),
-                    const SizedBox(width: 8),
-                    _buildStatusFilterChip(t.paused, 'paused', isDark),
-                    const SizedBox(width: 8),
-                    _buildStatusFilterChip(t.completed, 'completed', isDark),
-                    const SizedBox(width: 8),
-                    _buildStatusFilterChip(t.draft, 'draft', isDark),
-                    const SizedBox(width: 8),
-                    _buildStatusFilterChip(t.pendingApproval, 'pending_approval', isDark),
-                    const SizedBox(width: 8),
-                    _buildStatusFilterChip(t.cancelled, 'cancelled', isDark),
-                  ],
-                ),
-              ),
+          _StatPill(
+            label: 'Completed',
+            count: completedCount,
+            color: Colors.blue,
+            isDark: isDark,
+          ),
+          if (_loading) ...[
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ],
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildStatusFilterChip(String label, String value, bool isDark) {
-  final selected = _selectedStatus == value;
-  final theme = Theme.of(context);
-
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        _selectedStatus = value;
-        _currentPage = 1;
-      });
-      _loadCampaigns();
-    },
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: selected
-            ? theme.colorScheme.primary
-            : (isDark ? AppTheme.AppColors.darkCard : Colors.grey.shade100),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: selected
-              ? Colors.transparent
-              : (isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade300),
-          width: 0.8,
-        ),
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                )
-              ]
-            : null,
+        ],
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: selected
-              ? Colors.white
-              : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
-        ),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildTabBar(AppLocalizations t, bool isDark) {
     final theme = Theme.of(context);
@@ -627,78 +806,39 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
         indicatorColor: theme.colorScheme.primary,
         labelColor: theme.colorScheme.primary,
         unselectedLabelColor: isDark ? Colors.grey.shade500 : Colors.grey,
-        tabs: [
-          Tab(text: t.campaigns, icon: const Icon(Icons.campaign)),
-          Tab(text: t.analytics, icon: const Icon(Icons.bar_chart)),
-          Tab(text: t.statistics, icon: const Icon(Icons.analytics)),
+        tabs: const [
+          Tab(text: 'Campaigns', icon: Icon(Icons.campaign)),
+          Tab(text: 'Analytics', icon: Icon(Icons.bar_chart)),
+          Tab(text: 'Statistics', icon: Icon(Icons.analytics)),
         ],
       ),
     );
   }
 
   Widget _buildCampaignsList(AppLocalizations t, bool isDark) {
-    final theme = Theme.of(context);
-
     if (_loading && _campaigns.isEmpty) {
       return Center(
         child: CircularProgressIndicator(
-          color: theme.colorScheme.primary,
+          color: Theme.of(context).colorScheme.primary,
         ),
       );
     }
 
     if (_campaigns.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF0F2F8),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.campaign_outlined,
-                size: 40,
-                color: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              t.noCampaignsFound,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildEmpty(t, isDark);
     }
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF0F2F8),
-          child: Row(
-            children: [
-              _quickStatChip(t.total, _totalCampaigns.toString(), Colors.purple, isDark),
-              const SizedBox(width: 12),
-              _quickStatChip(t.activeCampaigns, _stats['active_campaigns']?.toString() ?? '0', const Color(0xFF14A800), isDark),
-              const SizedBox(width: 12),
-              _quickStatChip(t.revenue, '\$${(_stats['total_spent'] ?? 0).toDouble().toStringAsFixed(0)}', const Color(0xFFF59E0B), isDark),
-            ],
-          ),
-        ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: _campaigns.length,
-            itemBuilder: (_, i) => _buildCampaignCard(_campaigns[i], t, isDark),
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              itemCount: _campaigns.length,
+              itemBuilder: (_, i) =>
+                  _buildCampaignCard(_campaigns[i], t, isDark),
+            ),
           ),
         ),
         if (_totalPages > 1) _buildPagination(t, isDark),
@@ -706,40 +846,11 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     );
   }
 
-  Widget _quickStatChip(String label, String value, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$label: ',
-            style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade500 : Colors.grey.shade600),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCampaignCard(Map<String, dynamic> campaign, AppLocalizations t, bool isDark) {
+  Widget _buildCampaignCard(
+    Map<String, dynamic> campaign,
+    AppLocalizations t,
+    bool isDark,
+  ) {
     final theme = Theme.of(context);
     final advertiser = campaign['advertiser'] ?? {};
     final status = campaign['status'] ?? 'draft';
@@ -749,10 +860,17 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     final progress = budget > 0 ? spent / budget : 0.0;
     final impressions = campaign['impressions'] ?? 0;
     final clicks = campaign['clicks'] ?? 0;
-    final ctr = impressions > 0 ? (clicks / impressions * 100).toStringAsFixed(2) : '0';
+    final ctr = impressions > 0
+        ? (clicks / impressions * 100).toStringAsFixed(2)
+        : '0';
+
+    final advertiserName = advertiser['name']?.toString() ?? t.unknown;
+    final truncatedAdvertiser = advertiserName.length > 12
+        ? '${advertiserName.substring(0, 12)}...'
+        : advertiserName;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -761,126 +879,191 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.05),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [statusColor, statusColor.withOpacity(0.7)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.campaign, color: Colors.white, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        campaign['name'] ?? 'Unnamed',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF1A1B3E),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 12,
-                            color: isDark ? Colors.grey.shade600 : Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            advertiser['name'] ?? t.unknown,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.email_outlined,
-                            size: 12,
-                            color: isDark ? Colors.grey.shade600 : Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            advertiser['email'] ?? '',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _getStatusText(status, t),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.all(14),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    _infoChip(Icons.visibility, '$impressions', t.impressions, isDark),
-                    const SizedBox(width: 8),
-                    _infoChip(Icons.touch_app, '$clicks', t.clicks, isDark),
-                    const SizedBox(width: 8),
-                    _infoChip(Icons.trending_up, '$ctr%', t.ctr, isDark),
-                    const SizedBox(width: 8),
-                    _infoChip(
-                      Icons.attach_money,
-                      campaign['pricing_model']?.toUpperCase() ?? 'CPC',
-                      t.model,
-                      isDark,
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [statusColor, statusColor.withOpacity(0.7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: [
+                          BoxShadow(
+                            color: statusColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.campaign,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  campaign['name'] ?? 'Unnamed',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF1A1B3E),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _statusChip(
+                                _getStatusText(status, t),
+                                statusColor,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 14,
+                            runSpacing: 4,
+                            children: [
+                              _MetaItem(
+                                icon: Icons.person_outline_rounded,
+                                text: truncatedAdvertiser,
+                                isDark: isDark,
+                              ),
+                              _MetaItem(
+                                icon: Icons.attach_money_rounded,
+                                text: '\$${budget.toStringAsFixed(0)}',
+                                isDark: isDark,
+                                bold: true,
+                              ),
+                              _MetaItem(
+                                icon: Icons.touch_app,
+                                text: '$ctr% CTR',
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    PopupMenuButton<String>(
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppTheme.AppColors.darkSurface
+                              : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark
+                                ? AppTheme.AppColors.grayDark
+                                : Colors.grey.shade200,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.more_vert_rounded,
+                          size: 15,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade500,
+                        ),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      color: isDark
+                          ? AppTheme.AppColors.darkSurface
+                          : Colors.white,
+                      enableFeedback: true,
+                      tooltip: '',
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showEditDialog(campaign);
+                        } else if (value == 'status') {
+                          _showStatusDialog(campaign);
+                        } else if (value == 'delete') {
+                          _deleteCampaign(
+                            campaign['id'],
+                            campaign['name'] ?? t.campaign,
+                          );
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, size: 16),
+                              SizedBox(width: 10),
+                              Text('Edit', style: TextStyle(fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'status',
+                          child: Row(
+                            children: [
+                              Icon(Icons.tune, size: 16),
+                              SizedBox(width: 10),
+                              Text(
+                                'Change Status',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.red.shade400,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Delete',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.red.shade400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -892,9 +1075,11 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: progress,
-                          backgroundColor: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200,
+                          backgroundColor: isDark
+                              ? AppTheme.AppColors.grayDark
+                              : Colors.grey.shade200,
                           valueColor: AlwaysStoppedAnimation(statusColor),
-                          minHeight: 6,
+                          minHeight: 4,
                         ),
                       ),
                     ),
@@ -902,166 +1087,61 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
                     Text(
                       '${(progress * 100).toStringAsFixed(0)}%',
                       style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${t.spent}: \$${spent.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                      ),
-                    ),
-                    Text(
-                      '${t.budget}: \$${budget.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : const Color(0xFF1A1B3E),
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 12,
-                      color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${_formatDate(campaign['start_date'])} - ${_formatDate(campaign['end_date'])}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _actionButton(
-                      icon: Icons.edit_outlined,
-                      label: t.edit,
-                      color: theme.colorScheme.primary,
-                      onTap: () => _showEditDialog(campaign),
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: 8),
-                    _actionButton(
-                      icon: Icons.tune,
-                      label: t.changeStatus,
-                      color: const Color(0xFFF59E0B),
-                      onTap: () => _showStatusDialog(campaign),
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: 8),
-                    if (status == 'active')
-                      _actionButton(
-                        icon: Icons.pause,
-                        label: t.pause,
-                        color: const Color(0xFFF59E0B),
-                        onTap: () => _changeCampaignStatus(campaign['id'], 'paused'),
-                        isDark: isDark,
-                      ),
-                    if (status == 'paused')
-                      _actionButton(
-                        icon: Icons.play_arrow,
-                        label: t.resume,
-                        color: const Color(0xFF14A800),
-                        onTap: () => _changeCampaignStatus(campaign['id'], 'active'),
-                        isDark: isDark,
-                      ),
-                    const Spacer(),
-                    _actionButton(
-                      icon: Icons.delete_outline,
-                      label: t.delete,
-                      color: Colors.red,
-                      onTap: () => _deleteCampaign(campaign['id'], campaign['name'] ?? t.campaign),
-                      isOutlined: true,
-                      isDark: isDark,
                     ),
                   ],
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _infoChip(IconData icon, String value, String label, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.AppColors.darkSurface : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+  Widget _buildEmpty(AppLocalizations t, bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 12, color: isDark ? Colors.grey.shade500 : Colors.grey.shade600),
-          const SizedBox(width: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : Colors.black87,
+          Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF0F2F8),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.campaign_outlined,
+              size: 44,
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
             ),
           ),
+          const SizedBox(height: 16),
           Text(
-            ' $label',
-            style: TextStyle(fontSize: 10, color: isDark ? Colors.grey.shade500 : Colors.grey.shade500),
+            t.noCampaignsFound,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Try adjusting your filters',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _actionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-    bool isOutlined = false,
-    required bool isDark,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isOutlined ? Colors.transparent : color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: isOutlined ? Border.all(color: color.withOpacity(0.3)) : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1071,12 +1151,21 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _pageBtn(
-            Icons.chevron_left,
+            Icons.chevron_left_rounded,
             _currentPage > 1
                 ? () {
                     setState(() => _currentPage--);
@@ -1087,13 +1176,15 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
           ),
           const SizedBox(width: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF0F2F8),
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF0F2F8),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '${t.page} $_currentPage ${t.ofWord} $_totalPages',
+              'Page $_currentPage of $_totalPages',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -1103,7 +1194,7 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
           ),
           const SizedBox(width: 12),
           _pageBtn(
-            Icons.chevron_right,
+            Icons.chevron_right_rounded,
             _currentPage < _totalPages
                 ? () {
                     setState(() => _currentPage++);
@@ -1117,10 +1208,28 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     );
   }
 
+  Widget _statusChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
   Widget _pageBtn(IconData icon, VoidCallback? onTap, bool isDark) {
     final theme = Theme.of(context);
     final isEnabled = onTap != null;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1148,21 +1257,73 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     );
   }
 
+  Future<void> _exportCampaigns() async {
+    final t = AppLocalizations.of(context);
+    try {
+      final csvData = <List<String>>[];
+      csvData.add([
+        'Campaign Name',
+        'Advertiser',
+        'Status',
+        'Budget',
+        'Spent',
+        'Impressions',
+        'Clicks',
+        'CTR',
+        'Created Date',
+      ]);
+
+      for (var campaign in _campaigns) {
+        final advertiser = campaign['advertiser'] ?? {};
+        final impressions = campaign['impressions'] ?? 0;
+        final clicks = campaign['clicks'] ?? 0;
+        final ctr = impressions > 0
+            ? (clicks / impressions * 100).toStringAsFixed(2)
+            : '0';
+
+        csvData.add([
+          campaign['name']?.toString() ?? '',
+          advertiser['name']?.toString() ?? '',
+          campaign['status']?.toString() ?? '',
+          '\$${campaign['total_budget'] ?? 0}',
+          '\$${campaign['spent_amount'] ?? 0}',
+          impressions.toString(),
+          clicks.toString(),
+          '$ctr%',
+          campaign['createdAt'] != null
+              ? DateFormat(
+                  'yyyy-MM-dd HH:mm',
+                ).format(DateTime.parse(campaign['createdAt']))
+              : '',
+        ]);
+      }
+
+      Fluttertoast.showToast(
+        msg: 'Export started: ${_campaigns.length} campaigns',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Export failed: $e',
+        backgroundColor: Colors.red,
+      );
+    }
+  }
+
   Widget _buildAnalyticsTab(AppLocalizations t, bool isDark) {
     final theme = Theme.of(context);
 
     if (_loadingAnalytics) {
       return Center(
-        child: CircularProgressIndicator(
-          color: theme.colorScheme.primary,
-        ),
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
       );
     }
 
     final summary = _convertToMapString(_analytics['summary']) ?? {};
-  final typeStats = _convertToListOfMaps(_analytics['type_stats']) ?? [];
-  final topAdvertisers = _convertToListOfMaps(_analytics['top_advertisers']) ?? [];
-  final dailyStats = _convertToListOfMaps(_analytics['daily_stats']) ?? [];
+    final typeStats = _convertToListOfMaps(_analytics['type_stats']) ?? [];
+    final topAdvertisers =
+        _convertToListOfMaps(_analytics['top_advertisers']) ?? [];
+    final dailyStats = _convertToListOfMaps(_analytics['daily_stats']) ?? [];
 
     final Map<String, Map<String, double>> chartData = {};
     for (var stat in dailyStats) {
@@ -1185,8 +1346,12 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     }
 
     final dates = chartData.keys.toList()..sort();
-    final impressionsData = dates.map((d) => chartData[d]!['impressions']!.toDouble()).toList();
-    final clicksData = dates.map((d) => chartData[d]!['clicks']!.toDouble()).toList();
+    final impressionsData = dates
+        .map((d) => chartData[d]!['impressions']!.toDouble())
+        .toList();
+    final clicksData = dates
+        .map((d) => chartData[d]!['clicks']!.toDouble())
+        .toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -1201,15 +1366,43 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 4,
+            crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
             childAspectRatio: 1.5,
             children: [
-              _kpiCard(t.totalRevenue, '\$${_toDouble(summary['total_revenue']).toStringAsFixed(0)}', Icons.monetization_on, const Color(0xFF14A800), '+12%', isDark),
-              _kpiCard(t.platformCommission, '\$${_toDouble(summary['platform_commission']).toStringAsFixed(0)}', Icons.percent, const Color(0xFFF59E0B), '+8%', isDark),
-              _kpiCard(t.activeCampaignsCount, summary['active_campaigns']?.toString() ?? '0', Icons.play_circle, theme.colorScheme.primary, '${(summary['active_campaigns'] ?? 0) * 100 ~/ (summary['total_campaigns'] ?? 1)}%', isDark),
-              _kpiCard(t.ctrAverage, '${_computeAvgCTR(typeStats).toStringAsFixed(1)}%', Icons.trending_up, Colors.blue, '+2.3%', isDark),
+              _kpiCard(
+                t.totalRevenue,
+                '\$${_toDouble(summary['total_revenue']).toStringAsFixed(0)}',
+                Icons.monetization_on,
+                const Color(0xFF14A800),
+                '+12%',
+                isDark,
+              ),
+              _kpiCard(
+                t.platformCommission,
+                '\$${_toDouble(summary['platform_commission']).toStringAsFixed(0)}',
+                Icons.percent,
+                const Color(0xFFF59E0B),
+                '+8%',
+                isDark,
+              ),
+              _kpiCard(
+                t.activeCampaignsCount,
+                summary['active_campaigns']?.toString() ?? '0',
+                Icons.play_circle,
+                theme.colorScheme.primary,
+                '${(summary['active_campaigns'] ?? 0) * 100 ~/ (summary['total_campaigns'] ?? 1)}%',
+                isDark,
+              ),
+              _kpiCard(
+                t.ctrAverage,
+                '${_computeAvgCTR(typeStats).toStringAsFixed(1)}%',
+                Icons.trending_up,
+                Colors.blue,
+                '+2.3%',
+                isDark,
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -1218,14 +1411,10 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
               color: isDark ? AppTheme.AppColors.darkCard : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                color: isDark
+                    ? AppTheme.AppColors.grayDark
+                    : Colors.grey.shade100,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-                  blurRadius: 8,
-                ),
-              ],
             ),
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1258,7 +1447,13 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 300,
-                  child: _buildLineChart(dates, impressionsData, clicksData, isDark, t),
+                  child: _buildLineChart(
+                    dates,
+                    impressionsData,
+                    clicksData,
+                    isDark,
+                    t,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _buildChartLegend(isDark, t),
@@ -1271,7 +1466,9 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
               color: isDark ? AppTheme.AppColors.darkCard : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                color: isDark
+                    ? AppTheme.AppColors.grayDark
+                    : Colors.grey.shade100,
               ),
             ),
             padding: const EdgeInsets.all(16),
@@ -1286,7 +1483,11 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
                         color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.pie_chart, color: Colors.blue, size: 20),
+                      child: const Icon(
+                        Icons.pie_chart,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -1299,9 +1500,15 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
                   ],
                 ),
                 const SizedBox(height: 16),
-                SizedBox(height: 200, child: _buildPieChart(typeStats, isDark, t)),
+                SizedBox(
+                  height: 200,
+                  child: _buildPieChart(typeStats, isDark, t),
+                ),
                 const SizedBox(height: 16),
-                _buildTypeStatsTable(typeStats, t, isDark),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _buildTypeStatsTable(typeStats, t, isDark),
+                ),
               ],
             ),
           ),
@@ -1311,7 +1518,9 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
               color: isDark ? AppTheme.AppColors.darkCard : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                color: isDark
+                    ? AppTheme.AppColors.grayDark
+                    : Colors.grey.shade100,
               ),
             ),
             padding: const EdgeInsets.all(16),
@@ -1326,7 +1535,11 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
                         color: const Color(0xFFF59E0B).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.leaderboard, color: Color(0xFFF59E0B), size: 20),
+                      child: const Icon(
+                        Icons.leaderboard,
+                        color: Color(0xFFF59E0B),
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -1339,9 +1552,15 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
                   ],
                 ),
                 const SizedBox(height: 16),
-                SizedBox(height: 250, child: _buildBarChart(topAdvertisers, isDark, t)),
+                SizedBox(
+                  height: 250,
+                  child: _buildBarChart(topAdvertisers, isDark, t),
+                ),
                 const SizedBox(height: 16),
-                _buildTopAdvertisersTable(topAdvertisers, t, isDark),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _buildTopAdvertisersTable(topAdvertisers, t, isDark),
+                ),
               ],
             ),
           ),
@@ -1367,45 +1586,54 @@ class _AdminAdsManagementScreenState extends State<AdminAdsManagementScreen>
     return count > 0 ? totalCTR / count : 0.0;
   }
 
-Map<String, dynamic>? _convertToMapString(dynamic data) {
-  if (data == null) return null;
-  if (data is Map<String, dynamic>) return data;
-  if (data is Map) {
-    return Map<String, dynamic>.fromEntries(
-      data.entries.map((entry) => MapEntry(entry.key.toString(), entry.value))
-    );
+  Map<String, dynamic>? _convertToMapString(dynamic data) {
+    if (data == null) return null;
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) {
+      return Map<String, dynamic>.fromEntries(
+        data.entries.map(
+          (entry) => MapEntry(entry.key.toString(), entry.value),
+        ),
+      );
+    }
+    return null;
   }
-  return null;
-}
 
-List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
-  if (data == null) return [];
-  if (data is List) {
-    return data.map((item) {
-      if (item is Map<String, dynamic>) return item;
-      if (item is Map) {
-        return Map<String, dynamic>.fromEntries(
-          item.entries.map((entry) => MapEntry(entry.key.toString(), entry.value))
-        );
-      }
-      return <String, dynamic>{};
-    }).toList();
+  List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
+    if (data == null) return [];
+    if (data is List) {
+      return data.map((item) {
+        if (item is Map<String, dynamic>) return item;
+        if (item is Map) {
+          return Map<String, dynamic>.fromEntries(
+            item.entries.map(
+              (entry) => MapEntry(entry.key.toString(), entry.value),
+            ),
+          );
+        }
+        return <String, dynamic>{};
+      }).toList();
+    }
+    return [];
   }
-  return [];
-}
 
-  Widget _kpiCard(String title, String value, IconData icon, Color color, String trend, bool isDark) {
+  Widget _kpiCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    String trend,
+    bool isDark,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.2)),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 4)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
@@ -1421,16 +1649,22 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: trend.startsWith('+') ? const Color(0xFF14A800).withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                  color: trend.startsWith('+')
+                      ? const Color(0xFF14A800).withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      trend.startsWith('+') ? Icons.trending_up : Icons.trending_down,
+                      trend.startsWith('+')
+                          ? Icons.trending_up
+                          : Icons.trending_down,
                       size: 10,
-                      color: trend.startsWith('+') ? const Color(0xFF14A800) : Colors.red,
+                      color: trend.startsWith('+')
+                          ? const Color(0xFF14A800)
+                          : Colors.red,
                     ),
                     const SizedBox(width: 2),
                     Text(
@@ -1438,7 +1672,9 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
-                        color: trend.startsWith('+') ? const Color(0xFF14A800) : Colors.red,
+                        color: trend.startsWith('+')
+                            ? const Color(0xFF14A800)
+                            : Colors.red,
                       ),
                     ),
                   ],
@@ -1450,7 +1686,7 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -1460,7 +1696,6 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
             style: TextStyle(
               fontSize: 10,
               color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -1468,12 +1703,20 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
     );
   }
 
-  Widget _buildLineChart(List<String> dates, List<double> impressions, List<double> clicks, bool isDark, dynamic t) {
+  Widget _buildLineChart(
+    List<String> dates,
+    List<double> impressions,
+    List<double> clicks,
+    bool isDark,
+    dynamic t,
+  ) {
     if (dates.isEmpty) {
       return Center(
         child: Text(
           t?.noDataAvailable ?? 'No data available',
-          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+          style: TextStyle(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
         ),
       );
     }
@@ -1498,7 +1741,9 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
                       dates[value.toInt()].substring(5, 10),
                       style: TextStyle(
                         fontSize: 10,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                       ),
                     ),
                   );
@@ -1522,70 +1767,70 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+          border: Border.all(
+            color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200,
+          ),
         ),
         minX: 0,
         maxX: (dates.length - 1).toDouble(),
         minY: 0,
-        maxY: impressions.isEmpty ? 10 : impressions.reduce((a, b) => a > b ? a : b) * 1.2,
+        maxY: impressions.isEmpty
+            ? 10
+            : impressions.reduce((a, b) => a > b ? a : b) * 1.2,
         lineBarsData: [
           LineChartBarData(
-            spots: List.generate(impressions.length, (i) => FlSpot(i.toDouble(), impressions[i])),
+            spots: List.generate(
+              impressions.length,
+              (i) => FlSpot(i.toDouble(), impressions[i]),
+            ),
             isCurved: true,
             color: Colors.blue,
             barWidth: 3,
-            dotData: FlDotData(
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(radius: 4, color: Colors.blue);
-              },
+              color: Colors.blue.withOpacity(0.1),
             ),
-            belowBarData: BarAreaData(show: true, color: Colors.blue.withOpacity(0.1)),
           ),
           LineChartBarData(
-            spots: List.generate(clicks.length, (i) => FlSpot(i.toDouble(), clicks[i])),
+            spots: List.generate(
+              clicks.length,
+              (i) => FlSpot(i.toDouble(), clicks[i]),
+            ),
             isCurved: true,
             color: const Color(0xFF14A800),
             barWidth: 3,
-            dotData: FlDotData(
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(radius: 4, color: const Color(0xFF14A800));
-              },
+              color: const Color(0xFF14A800).withOpacity(0.1),
             ),
-            belowBarData: BarAreaData(show: true, color: const Color(0xFF14A800).withOpacity(0.1)),
           ),
         ],
-        lineTouchData: LineTouchData(
-          enabled: true,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) => LineTooltipItem(
-                '${spot.y.toInt()}',
-                TextStyle(color: spot.bar.color),
-              )).toList();
-            },
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildChartLegend(bool isDark, AppLocalizations t) {  
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      _legendItem(Colors.blue, t.impressions ?? 'Impressions', isDark),  
-      const SizedBox(width: 16),
-      _legendItem(const Color(0xFF14A800), t.clicks ?? 'Clicks', isDark), 
-    ],
-  );
-}
+  Widget _buildChartLegend(bool isDark, AppLocalizations t) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _legendItem(Colors.blue, t.impressions ?? 'Impressions', isDark),
+        const SizedBox(width: 16),
+        _legendItem(const Color(0xFF14A800), t.clicks ?? 'Clicks', isDark),
+      ],
+    );
+  }
+
   Widget _legendItem(Color color, String label, bool isDark) {
     return Row(
       children: [
@@ -1597,7 +1842,10 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
         const SizedBox(width: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
         ),
       ],
     );
@@ -1620,13 +1868,21 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
       return Center(
         child: Text(
           t?.noDataAvailable ?? 'No data available',
-          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+          style: TextStyle(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
         ),
       );
     }
 
     final total = data.fold(0.0, (sum, item) => sum + item['value']);
-    final colors = [Colors.blue, const Color(0xFF14A800), const Color(0xFFF59E0B), theme.colorScheme.primary, Colors.purple];
+    final colors = [
+      Colors.blue,
+      const Color(0xFF14A800),
+      const Color(0xFFF59E0B),
+      theme.colorScheme.primary,
+      Colors.purple,
+    ];
 
     return PieChart(
       PieChartData(
@@ -1638,7 +1894,11 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
             value: data[i]['value'],
             title: title,
             radius: 80,
-            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+            titleStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           );
         }),
         sectionsSpace: 2,
@@ -1652,13 +1912,20 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
       return Center(
         child: Text(
           t?.noDataAvailable ?? 'No data available',
-          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+          style: TextStyle(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
         ),
       );
     }
 
     final top5 = topAdvertisers.take(5).toList();
-    final maxSpent = top5.fold(0.0, (max, adv) => _toDouble(adv['total_spent']) > max ? _toDouble(adv['total_spent']) : max);
+    final maxSpent = top5.fold(
+      0.0,
+      (max, adv) => _toDouble(adv['total_spent']) > max
+          ? _toDouble(adv['total_spent'])
+          : max,
+    );
 
     return BarChart(
       BarChartData(
@@ -1671,14 +1938,19 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
               reservedSize: 50,
               getTitlesWidget: (value, meta) {
                 if (value.toInt() >= 0 && value.toInt() < top5.length) {
-                  final name = (top5[value.toInt()]['name']?.substring(0, (top5[value.toInt()]['name'].length > 3 ? 3 : top5[value.toInt()]['name'].length)) ?? '?');
+                  final name = top5[value.toInt()]['name']?.toString() ?? '?';
+                  final shortName = name.length > 3
+                      ? name.substring(0, 3)
+                      : name;
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      name,
+                      shortName,
                       style: TextStyle(
                         fontSize: 10,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -1688,9 +1960,15 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
               },
             ),
           ),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 50)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: true, reservedSize: 50),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         barGroups: List.generate(top5.length, (i) {
           return BarChartGroupData(
@@ -1712,23 +1990,39 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
   Widget _buildTypeStatsTable(List typeStats, AppLocalizations t, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: DataTable(
         columnSpacing: 16,
         headingRowColor: WidgetStateProperty.resolveWith<Color>(
-          (states) => isDark ? AppTheme.AppColors.darkSurface : const Color(0xFFF0F2F8),
-        ),
-        headingTextStyle: TextStyle(
-          color: isDark ? Colors.white : Colors.black87,
+          (states) =>
+              isDark ? AppTheme.AppColors.darkSurface : const Color(0xFFF0F2F8),
         ),
         columns: [
-          DataColumn(label: Text(t.type, style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text(t.impressions, style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text(t.clicks, style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text(t.ctr, style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text(t.spent, style: const TextStyle(fontWeight: FontWeight.bold))),
+          const DataColumn(
+            label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const DataColumn(
+            label: Text(
+              'Impressions',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const DataColumn(
+            label: Text(
+              'Clicks',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const DataColumn(
+            label: Text('CTR', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const DataColumn(
+            label: Text('Spent', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
         ],
         rows: typeStats.map((stat) {
           final impressions = _toDouble(stat['total_impressions']);
@@ -1736,11 +2030,15 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
           final ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
           return DataRow(
             cells: [
-              DataCell(Text(stat['ad_type']?.toString().toUpperCase() ?? t.unknown)),
+              DataCell(
+                Text(stat['ad_type']?.toString().toUpperCase() ?? 'Unknown'),
+              ),
               DataCell(Text(impressions.toInt().toString())),
               DataCell(Text(clicks.toInt().toString())),
               DataCell(Text('${ctr.toStringAsFixed(2)}%')),
-              DataCell(Text('\$${_toDouble(stat['total_spent']).toStringAsFixed(2)}')),
+              DataCell(
+                Text('\$${_toDouble(stat['total_spent']).toStringAsFixed(2)}'),
+              ),
             ],
           );
         }).toList(),
@@ -1748,33 +2046,63 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
     );
   }
 
-  Widget _buildTopAdvertisersTable(List topAdvertisers, AppLocalizations t, bool isDark) {
+  Widget _buildTopAdvertisersTable(
+    List topAdvertisers,
+    AppLocalizations t,
+    bool isDark,
+  ) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: DataTable(
         columnSpacing: 16,
         headingRowColor: WidgetStateProperty.resolveWith<Color>(
-          (states) => isDark ? AppTheme.AppColors.darkSurface : const Color(0xFFF0F2F8),
-        ),
-        headingTextStyle: TextStyle(
-          color: isDark ? Colors.white : Colors.black87,
+          (states) =>
+              isDark ? AppTheme.AppColors.darkSurface : const Color(0xFFF0F2F8),
         ),
         columns: [
-          DataColumn(label: Text(t.advertiser, style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text(t.campaignsCount, style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text(t.totalSpentCap, style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text(t.commission, style: const TextStyle(fontWeight: FontWeight.bold))),
+          const DataColumn(
+            label: Text(
+              'Advertiser',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const DataColumn(
+            label: Text(
+              'Campaigns',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const DataColumn(
+            label: Text(
+              'Total Spent',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const DataColumn(
+            label: Text(
+              'Commission',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
         rows: topAdvertisers.take(10).map((adv) {
           return DataRow(
             cells: [
-              DataCell(Text(adv['name'] ?? t.unknown)),
+              DataCell(Text(adv['name']?.toString() ?? 'Unknown')),
               DataCell(Text(adv['campaign_count']?.toString() ?? '0')),
-              DataCell(Text('\$${_toDouble(adv['total_spent']).toStringAsFixed(2)}')),
-              DataCell(Text('\$${_toDouble(adv['platform_commission']).toStringAsFixed(2)}')),
+              DataCell(
+                Text('\$${_toDouble(adv['total_spent']).toStringAsFixed(2)}'),
+              ),
+              DataCell(
+                Text(
+                  '\$${_toDouble(adv['platform_commission']).toStringAsFixed(2)}',
+                ),
+              ),
             ],
           );
         }).toList(),
@@ -1782,14 +2110,21 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
     );
   }
 
-  Widget _buildMetricsGrid(Map<String, dynamic> summary, AppLocalizations t, bool isDark) {
+  Widget _buildMetricsGrid(
+    Map<String, dynamic> summary,
+    AppLocalizations t,
+    bool isDark,
+  ) {
     final theme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withOpacity(0.7),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1808,7 +2143,12 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
           const SizedBox(height: 16),
           Row(
             children: [
-              _metricChip(t.avgCtr, '${_computeAvgCTR(_analytics['type_stats'] ?? []).toStringAsFixed(2)}%', Icons.trending_up, isDark),
+              _metricChip(
+                t.avgCtr,
+                '${_computeAvgCTR(_analytics['type_stats'] ?? []).toStringAsFixed(2)}%',
+                Icons.trending_up,
+                isDark,
+              ),
               const SizedBox(width: 12),
               _metricChip(t.estRoi, '250%', Icons.trending_up, isDark),
               const SizedBox(width: 12),
@@ -1851,8 +2191,6 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
   }
 
   Widget _buildStatsTab(AppLocalizations t, bool isDark) {
-    final theme = Theme.of(context);
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -1863,16 +2201,48 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
               color: isDark ? AppTheme.AppColors.darkCard : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                color: isDark
+                    ? AppTheme.AppColors.grayDark
+                    : Colors.grey.shade100,
               ),
             ),
             child: Column(
               children: [
-                _statListItem(t.totalCampaigns, _stats['total_campaigns']?.toString() ?? '0', Icons.campaign, Colors.purple, isDark),
-                _statListItem(t.activeCampaigns, _stats['active_campaigns']?.toString() ?? '0', Icons.play_circle, const Color(0xFF14A800), isDark),
-                _statListItem(t.pausedCampaigns, _stats['paused_campaigns']?.toString() ?? '0', Icons.pause, const Color(0xFFF59E0B), isDark),
-                _statListItem(t.completedCampaigns, _stats['completed_campaigns']?.toString() ?? '0', Icons.check_circle, Colors.blue, isDark),
-                _statListItem(t.draftCampaigns, _stats['draft_campaigns']?.toString() ?? '0', Icons.edit_note, Colors.grey, isDark),
+                _statListItem(
+                  t.totalCampaigns,
+                  _stats['total_campaigns']?.toString() ?? '0',
+                  Icons.campaign,
+                  Colors.purple,
+                  isDark,
+                ),
+                _statListItem(
+                  t.activeCampaigns,
+                  _stats['active_campaigns']?.toString() ?? '0',
+                  Icons.play_circle,
+                  const Color(0xFF14A800),
+                  isDark,
+                ),
+                _statListItem(
+                  t.pausedCampaigns,
+                  _stats['paused_campaigns']?.toString() ?? '0',
+                  Icons.pause,
+                  const Color(0xFFF59E0B),
+                  isDark,
+                ),
+                _statListItem(
+                  t.completedCampaigns,
+                  _stats['completed_campaigns']?.toString() ?? '0',
+                  Icons.check_circle,
+                  Colors.blue,
+                  isDark,
+                ),
+                _statListItem(
+                  t.draftCampaigns,
+                  _stats['draft_campaigns']?.toString() ?? '0',
+                  Icons.edit_note,
+                  Colors.grey,
+                  isDark,
+                ),
               ],
             ),
           ),
@@ -1882,16 +2252,48 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
               color: isDark ? AppTheme.AppColors.darkCard : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                color: isDark
+                    ? AppTheme.AppColors.grayDark
+                    : Colors.grey.shade100,
               ),
             ),
             child: Column(
               children: [
-                _statListItem(t.totalImpressions, _stats['total_impressions']?.toString() ?? '0', Icons.visibility, Colors.blue, isDark),
-                _statListItem(t.totalClicks, _stats['total_clicks']?.toString() ?? '0', Icons.touch_app, const Color(0xFF14A800), isDark),
-                _statListItem(t.clickThroughRate, '${_stats['click_through_rate'] ?? 0}%', Icons.trending_up, const Color(0xFFF59E0B), isDark),
-                _statListItem(t.totalSpend, '\$${(_stats['total_spent'] ?? 0).toDouble().toStringAsFixed(2)}', Icons.attach_money, Colors.red, isDark),
-                _statListItem(t.totalBudgetSum, '\$${(_stats['total_budget'] ?? 0).toDouble().toStringAsFixed(2)}', Icons.account_balance_wallet, Colors.teal, isDark),
+                _statListItem(
+                  t.totalImpressions,
+                  _stats['total_impressions']?.toString() ?? '0',
+                  Icons.visibility,
+                  Colors.blue,
+                  isDark,
+                ),
+                _statListItem(
+                  t.totalClicks,
+                  _stats['total_clicks']?.toString() ?? '0',
+                  Icons.touch_app,
+                  const Color(0xFF14A800),
+                  isDark,
+                ),
+                _statListItem(
+                  t.clickThroughRate,
+                  '${_stats['click_through_rate'] ?? 0}%',
+                  Icons.trending_up,
+                  const Color(0xFFF59E0B),
+                  isDark,
+                ),
+                _statListItem(
+                  t.totalSpend,
+                  '\$${(_stats['total_spent'] ?? 0).toDouble().toStringAsFixed(2)}',
+                  Icons.attach_money,
+                  Colors.red,
+                  isDark,
+                ),
+                _statListItem(
+                  t.totalBudgetSum,
+                  '\$${(_stats['total_budget'] ?? 0).toDouble().toStringAsFixed(2)}',
+                  Icons.account_balance_wallet,
+                  Colors.teal,
+                  isDark,
+                ),
               ],
             ),
           ),
@@ -1902,7 +2304,9 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
               decoration: BoxDecoration(
                 color: const Color(0xFFF59E0B).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withOpacity(0.3),
+                ),
               ),
               child: Row(
                 children: [
@@ -1912,7 +2316,11 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
                       color: const Color(0xFFF59E0B),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.payment, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.payment,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -1939,7 +2347,13 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
     );
   }
 
-  Widget _statListItem(String title, String value, IconData icon, Color color, bool isDark) {
+  Widget _statListItem(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isDark,
+  ) {
     String displayValue = value;
     if (value.startsWith('\$')) {
       final numValue = _toDouble(value.replaceAll('\$', ''));
@@ -1978,6 +2392,522 @@ List<Map<String, dynamic>> _convertToListOfMaps(dynamic data) {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CampaignFiltersDialog extends StatefulWidget {
+  final bool isDark;
+  final String initialStatus;
+  final String initialBudgetRange;
+  final DateTime? initialStartDate;
+  final DateTime? initialEndDate;
+  final void Function(
+    String status,
+    String budget,
+    DateTime? start,
+    DateTime? end,
+  )
+  onApply;
+  final VoidCallback onReset;
+
+  const _CampaignFiltersDialog({
+    required this.isDark,
+    required this.initialStatus,
+    required this.initialBudgetRange,
+    required this.initialStartDate,
+    required this.initialEndDate,
+    required this.onApply,
+    required this.onReset,
+  });
+
+  @override
+  State<_CampaignFiltersDialog> createState() => _CampaignFiltersDialogState();
+}
+
+class _CampaignFiltersDialogState extends State<_CampaignFiltersDialog> {
+  late String _status;
+  late String _budgetRange;
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.initialStatus;
+    _budgetRange = widget.initialBudgetRange;
+    _startDate = widget.initialStartDate;
+    _endDate = widget.initialEndDate;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = widget.isDark;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.tune_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Filters',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1A1B3E),
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppTheme.AppColors.darkCard
+                          : Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: isDark ? Colors.white70 : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _sectionLabel('Status', isDark),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _filterChip('All', 'all', _status, theme, isDark),
+                _filterChip('Active', 'active', _status, theme, isDark),
+                _filterChip('Paused', 'paused', _status, theme, isDark),
+                _filterChip('Completed', 'completed', _status, theme, isDark),
+                _filterChip('Cancelled', 'cancelled', _status, theme, isDark),
+                _filterChip('Draft', 'draft', _status, theme, isDark),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _sectionLabel('Budget Range', isDark),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _filterChip('All', 'all', _budgetRange, theme, isDark),
+                _filterChip('\$0–100', '0-100', _budgetRange, theme, isDark),
+                _filterChip(
+                  '\$100–500',
+                  '100-500',
+                  _budgetRange,
+                  theme,
+                  isDark,
+                ),
+                _filterChip(
+                  '\$500–1K',
+                  '500-1000',
+                  _budgetRange,
+                  theme,
+                  isDark,
+                ),
+                _filterChip(
+                  '\$1K–5K',
+                  '1000-5000',
+                  _budgetRange,
+                  theme,
+                  isDark,
+                ),
+                _filterChip('\$5K+', '5000+', _budgetRange, theme, isDark),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _sectionLabel('Date Range', isDark),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _DatePickerBtn(
+                    isDark: isDark,
+                    label: 'Start Date',
+                    date: _startDate,
+                    onTap: () => _pickDate(true),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    '→',
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade500,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _DatePickerBtn(
+                    isDark: isDark,
+                    label: 'End Date',
+                    date: _endDate,
+                    onTap: () => _pickDate(false),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onReset();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      side: BorderSide(
+                        color: isDark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade300,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Reset',
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.grey.shade300
+                            : Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onApply(
+                        _status,
+                        _budgetRange,
+                        _startDate,
+                        _endDate,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Apply Filters',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text, bool isDark) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+        letterSpacing: 0.3,
+      ),
+    );
+  }
+
+  Widget _filterChip(
+    String label,
+    String value,
+    String selected,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    final isSelected = selected == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (label == 'All') {
+            _status = value;
+          } else if (label.contains('\$')) {
+            _budgetRange = value;
+          } else {
+            _status = value;
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary
+              : (isDark
+                    ? AppTheme.AppColors.darkCard
+                    : const Color(0xFFF5F6FA)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : (isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate(bool isStart) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart
+          ? _startDate ?? DateTime.now()
+          : _endDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+        } else {
+          _endDate = picked;
+        }
+      });
+    }
+  }
+}
+
+class _IconBtn extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _IconBtn({
+    required this.icon,
+    required this.tooltip,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.AppColors.darkCard : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool isDark;
+  final bool bold;
+
+  const _MetaItem({
+    required this.icon,
+    required this.text,
+    required this.isDark,
+    this.bold = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 12,
+          color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+        ),
+        const SizedBox(width: 3),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+  final bool isDark;
+
+  const _StatPill({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            '$label ($count)',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DatePickerBtn extends StatelessWidget {
+  final bool isDark;
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+
+  const _DatePickerBtn({
+    required this.isDark,
+    required this.label,
+    required this.date,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasDate = date != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: hasDate
+              ? theme.colorScheme.primary.withOpacity(0.06)
+              : (isDark
+                    ? AppTheme.AppColors.darkCard
+                    : const Color(0xFFF5F6FA)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: hasDate
+                ? theme.colorScheme.primary.withOpacity(0.3)
+                : (isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_month_rounded,
+              size: 14,
+              color: hasDate ? theme.colorScheme.primary : Colors.grey.shade400,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                hasDate ? DateFormat('MMM dd, yyyy').format(date!) : label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: hasDate ? FontWeight.w600 : FontWeight.w400,
+                  color: hasDate
+                      ? (isDark ? Colors.white : const Color(0xFF1A1B3E))
+                      : Colors.grey.shade400,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

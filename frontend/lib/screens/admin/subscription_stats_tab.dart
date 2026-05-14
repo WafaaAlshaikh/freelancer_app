@@ -40,7 +40,9 @@ class _SubscriptionStatsTabState extends State<SubscriptionStatsTab> {
         });
       } else {
         setState(() {
-          _error = AppLocalizations.of(context)?.failedToLoadStats ?? 'Failed to load statistics';
+          _error =
+              AppLocalizations.of(context)?.failedToLoadStats ??
+              'Failed to load statistics';
           _loading = false;
         });
       }
@@ -60,9 +62,7 @@ class _SubscriptionStatsTabState extends State<SubscriptionStatsTab> {
 
     if (_loading) {
       return Center(
-        child: CircularProgressIndicator(
-          color: theme.colorScheme.primary,
-        ),
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
       );
     }
 
@@ -146,44 +146,124 @@ class _SubscriptionStatsTabState extends State<SubscriptionStatsTab> {
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (ctx, constraints) {
-              final cols = constraints.maxWidth > 600 ? 4 : 2;
-              return GridView.count(
+              final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+              final childAspectRatio = constraints.maxWidth > 600 ? 1.2 : 1.0;
+
+              return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: cols,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.3,
-                children: [
-                  _metricCard(
-                    t.total,
-                    _stats!.totalSubscriptions.toString(),
-                    Icons.subscriptions_rounded,
-                    [const Color(0xFF6C63FF), const Color(0xFF4B45C9)],
-                    isDark,
-                  ),
-                  _metricCard(
-                    t.active,
-                    _stats!.activeSubscriptions.toString(),
-                    Icons.check_circle_rounded,
-                    [const Color(0xFF14A800), const Color(0xFF0A6E00)],
-                    isDark,
-                  ),
-                  _metricCard(
-                    t.trialing,
-                    _stats!.trialingSubscriptions.toString(),
-                    Icons.free_breakfast_rounded,
-                    [const Color(0xFFF59E0B), const Color(0xFFB45309)],
-                    isDark,
-                  ),
-                  _metricCard(
-                    t.canceled,
-                    _stats!.canceledSubscriptions.toString(),
-                    Icons.cancel_rounded,
-                    [const Color(0xFFEF4444), const Color(0xFFB91C1C)],
-                    isDark,
-                  ),
-                ],
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: childAspectRatio,
+                ),
+                itemCount: 4,
+                itemBuilder: (ctx, index) {
+                  final items = [
+                    {
+                      'title': t.total,
+                      'value': _stats!.totalSubscriptions.toString(),
+                      'icon': Icons.subscriptions_rounded,
+                      'colors': [
+                        const Color(0xFF6C63FF),
+                        const Color(0xFF4B45C9),
+                      ],
+                    },
+                    {
+                      'title': t.active,
+                      'value': _stats!.activeSubscriptions.toString(),
+                      'icon': Icons.check_circle_rounded,
+                      'colors': [
+                        const Color(0xFF14A800),
+                        const Color(0xFF0A6E00),
+                      ],
+                    },
+                    {
+                      'title': t.trialing,
+                      'value': _stats!.trialingSubscriptions.toString(),
+                      'icon': Icons.free_breakfast_rounded,
+                      'colors': [
+                        const Color(0xFFF59E0B),
+                        const Color(0xFFB45309),
+                      ],
+                    },
+                    {
+                      'title': t.canceled,
+                      'value': _stats!.canceledSubscriptions.toString(),
+                      'icon': Icons.cancel_rounded,
+                      'colors': [
+                        const Color(0xFFEF4444),
+                        const Color(0xFFB91C1C),
+                      ],
+                    },
+                  ];
+                  final item = items[index];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppTheme.AppColors.darkCard
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                          blurRadius: 8,
+                        ),
+                      ],
+                      border: Border.all(
+                        color: isDark
+                            ? AppTheme.AppColors.grayDark
+                            : Colors.grey.shade100,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: item['colors'] as List<Color>,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            item['icon'] as IconData,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          item['value'] as String,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1A1B3E),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item['title'] as String,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isDark
+                                ? Colors.grey.shade500
+                                : Colors.grey.shade500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -442,9 +522,7 @@ class _SubscriptionStatsTabState extends State<SubscriptionStatsTab> {
           ),
           const SizedBox(height: 10),
           Text(
-            isCount
-                ? value.toInt().toString()
-                : '${value.toStringAsFixed(1)}%',
+            isCount ? value.toInt().toString() : '${value.toStringAsFixed(1)}%',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -628,7 +706,9 @@ class _SubscriptionStatsTabState extends State<SubscriptionStatsTab> {
                         '${(pct * 100).toStringAsFixed(0)}%',
                         style: TextStyle(
                           fontSize: 11,
-                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                          color: isDark
+                              ? Colors.grey.shade500
+                              : Colors.grey.shade500,
                         ),
                       ),
                     ),
@@ -639,7 +719,9 @@ class _SubscriptionStatsTabState extends State<SubscriptionStatsTab> {
                   borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
                     value: pct,
-                    backgroundColor: isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade100,
+                    backgroundColor: isDark
+                        ? AppTheme.AppColors.grayDark
+                        : Colors.grey.shade100,
                     valueColor: AlwaysStoppedAnimation(color),
                     minHeight: 6,
                   ),

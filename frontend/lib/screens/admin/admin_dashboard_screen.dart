@@ -15,6 +15,56 @@ import 'package:freelancer_platform/theme/app_theme.dart' as AppTheme;
 import '../../../models/admin_stats.dart';
 import '../../../services/api_service.dart';
 import 'package:freelancer_platform/widgets/ad_banner.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:intl/intl.dart';
+
+class ListToCsvConverter {
+  String convert(List<List<dynamic>> data) {
+    final StringBuffer buffer = StringBuffer();
+    for (var row in data) {
+      for (var i = 0; i < row.length; i++) {
+        if (i > 0) buffer.write(',');
+        buffer.write('"${row[i].toString().replaceAll('"', '""')}"');
+      }
+      buffer.write('\n');
+    }
+    return buffer.toString();
+  }
+}
+
+class AdminDashboardStyles {
+  static const double cardBorderRadius = 16;
+  static const double smallCardBorderRadius = 12;
+  static const double sidebarWidth = 260;
+  static const double mobileBreakpoint = 800;
+  static const double tabletBreakpoint = 1100;
+  static const double desktopBreakpoint = 1400;
+
+  static BoxDecoration getCardDecoration(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return BoxDecoration(
+      color: isDark
+          ? AppTheme.AppColors.darkCard
+          : AppTheme.AppColors.lightCard,
+      borderRadius: BorderRadius.circular(cardBorderRadius),
+      border: Border.all(
+        color: isDark
+            ? AppTheme.AppColors.primaryDark
+            : AppTheme.AppColors.borderLight,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+}
 
 class _NavItem {
   final IconData icon;
@@ -31,8 +81,13 @@ class _NavItem {
 class _AdminSidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemTap;
+  final bool isMobile;
 
-  const _AdminSidebar({required this.selectedIndex, required this.onItemTap});
+  const _AdminSidebar({
+    required this.selectedIndex,
+    required this.onItemTap,
+    this.isMobile = false,
+  });
 
   static const _items = [
     _NavItem(
@@ -91,133 +146,122 @@ class _AdminSidebar extends StatelessWidget {
         : Colors.white70;
 
     final sidebarTextColorActive = Colors.white;
-    final accentColor = isDark ? AppTheme.AppColors.accentLight : AppTheme.AppColors.accent;
+    final accentColor = isDark
+        ? AppTheme.AppColors.accentLight
+        : AppTheme.AppColors.accent;
 
-    return Container(
-      width: 220,
-      color: sidebarColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(27, 15, 20, 2),
-            child: Row(
-              children: [
-                Image.asset('assets/images/logoo.png', height: 50, width: 50),
-              ],
-            ),
+    final sidebarContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(27, 15, 20, 2),
+          child: Row(
+            children: [
+              Image.asset('assets/images/logoo.png', height: 50, width: 50),
+            ],
           ),
-
-          const SizedBox(height: 8),
-
-          Divider(
-            color: Colors.white.withOpacity(0.1),
-            height: 1,
-            indent: 20,
-            endIndent: 20,
-          ),
-
-          const SizedBox(height: 12),
-
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              itemCount: _items.length,
-              itemBuilder: (_, i) {
-                final item = _items[i];
-                final isActive = selectedIndex == i;
-                return GestureDetector(
-                  onTap: () => onItemTap(i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: const EdgeInsets.only(bottom: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? accentColor.withOpacity(0.25)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: isActive
-                          ? Border(
-                              left: BorderSide(
-                                color: accentColor,
-                                width: 3,
-                              ),
-                            )
-                          : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isActive ? item.selectedIcon : item.icon,
-                          size: 19,
+        ),
+        const SizedBox(height: 8),
+        Divider(
+          color: Colors.white.withOpacity(0.1),
+          height: 1,
+          indent: 20,
+          endIndent: 20,
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            itemCount: _items.length,
+            itemBuilder: (_, i) {
+              final item = _items[i];
+              final isActive = selectedIndex == i;
+              return GestureDetector(
+                onTap: () => onItemTap(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? accentColor.withOpacity(0.25)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: isActive
+                        ? Border(left: BorderSide(color: accentColor, width: 3))
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isActive ? item.selectedIcon : item.icon,
+                        size: 19,
+                        color: isActive
+                            ? sidebarTextColorActive
+                            : sidebarTextColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 13,
                           color: isActive
                               ? sidebarTextColorActive
                               : sidebarTextColor,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isActive
-                                ? sidebarTextColorActive
-                                : sidebarTextColor,
-                            fontWeight: isActive
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: AdBanner(
-              placement: 'sidebar_bottom',
-              height: 200,
-              margin: EdgeInsets.zero,
-            ),
-          ),
-
-          Divider(
-            color: Colors.white.withOpacity(0.1),
-            height: 1,
-            indent: 20,
-            endIndent: 20,
-          ),
-          
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _sidebarActionBtn(
-                  context,
-                  Icons.settings_outlined,
-                  'settings',
-                  onTap: () => Navigator.pushNamed(context, '/settings'),
                 ),
-                const SizedBox(height: 8),
-                _sidebarActionBtn(
-                  context,
-                  Icons.logout,
-                  'logout',
-                  color: Colors.red.shade300,
-                  onTap: () => _showLogoutDialog(context),
-                ),
-              ],
-            ),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: AdBanner(
+            placement: 'sidebar_bottom',
+            height: 200,
+            margin: EdgeInsets.zero,
+          ),
+        ),
+        Divider(
+          color: Colors.white.withOpacity(0.1),
+          height: 1,
+          indent: 20,
+          endIndent: 20,
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _sidebarActionBtn(
+                context,
+                Icons.logout,
+                'logout',
+                color: Colors.red.shade300,
+                onTap: () => _showLogoutDialog(context),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (isMobile) {
+      return Drawer(child: sidebarContent);
+    }
+
+    return Container(
+      width: AdminDashboardStyles.sidebarWidth,
+      color: sidebarColor,
+      child: sidebarContent,
     );
   }
 
@@ -262,14 +306,15 @@ class _AdminSidebar extends StatelessWidget {
   }
 
   Future<void> _showLogoutDialog(BuildContext context) async {
-    final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(t?.logout ?? 'Logout'),
-        content: Text(t?.logoutConfirmation ?? 'Are you sure you want to logout?'),
+        content: Text(
+          t?.logoutConfirmation ?? 'Are you sure you want to logout?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -298,7 +343,8 @@ class AdminDashboardScreen extends StatefulWidget {
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+class _AdminDashboardScreenState extends State<AdminDashboardScreen>
+    with AutomaticKeepAliveClientMixin {
   AdminStats? stats;
   bool loading = true;
   List<Map<String, dynamic>> monthlyStats = [];
@@ -307,13 +353,85 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   String? errorMessage;
   double _adRevenue = 0;
 
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedDateFilter = 'Last 30 days';
+  final List<String> _dateFilters = [
+    'Last 7 days',
+    'Last 30 days',
+    'Last 3 months',
+    'Last 6 months',
+    'This year',
+  ];
+  bool _isRefreshing = false;
+  List<Map<String, dynamic>> _adminActivities = [];
+
+  Map<String, dynamic>? _cachedData;
+  DateTime? _lastCacheTime;
+  final Duration _cacheDuration = const Duration(minutes: 5);
+
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadAdminActivities();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _logAdminAction(
+    String action, {
+    Map<String, dynamic>? details,
+  }) async {
+    try {
+      final activity = {
+        'action': action,
+        'details': details ?? {},
+        'timestamp': DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now()),
+      };
+      setState(() {
+        _adminActivities.insert(0, activity);
+        if (_adminActivities.length > 50) {
+          _adminActivities.removeLast();
+        }
+      });
+    } catch (e) {
+      print('Failed to log admin action: $e');
+    }
+  }
+
+  Future<void> _loadAdminActivities() async {
+    setState(() {
+      _adminActivities = [
+        {
+          'action': 'Dashboard viewed',
+          'timestamp': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+        },
+      ];
+    });
   }
 
   Future<void> _loadStats() async {
+    if (_cachedData != null && _lastCacheTime != null) {
+      final age = DateTime.now().difference(_lastCacheTime!);
+      if (age < _cacheDuration) {
+        setState(() {
+          stats = _cachedData!['stats'];
+          monthlyStats = _cachedData!['monthlyStats'];
+          _adRevenue = _cachedData!['adRevenue'];
+          loading = false;
+        });
+        return;
+      }
+    }
+
     setState(() {
       loading = true;
       errorMessage = null;
@@ -326,56 +444,126 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       if (response != null && response.isNotEmpty) {
         final statsData = response['stats'] ?? {};
         final monthlyStatsData = response['monthlyStats'] ?? [];
-
         final adRevenue = response['stats']?['adRevenue'] ?? 0;
+
+        _cachedData = {
+          'stats': AdminStats.fromJson(statsData),
+          'monthlyStats': List<Map<String, dynamic>>.from(monthlyStatsData),
+          'adRevenue': adRevenue.toDouble(),
+        };
+        _lastCacheTime = DateTime.now();
 
         setState(() {
           stats = AdminStats.fromJson(statsData);
-          monthlyStats = List<Map<String, dynamic>>.from(monthlyStatsData);
+          monthlyStats = _applyDateFilter(
+            List<Map<String, dynamic>>.from(monthlyStatsData),
+          );
           _adRevenue = adRevenue.toDouble();
           loading = false;
         });
+
+        await _logAdminAction('view_dashboard');
       } else {
-        setState(() {
-          stats = AdminStats(
-            totalUsers: 0,
-            totalFreelancers: 0,
-            totalClients: 0,
-            totalProjects: 0,
-            totalContracts: 0,
-            totalEarnings: 0,
-            pendingProjects: 0,
-            activeContracts: 0,
-            completedContracts: 0,
-            pendingDisputes: 0,
-          );
-          monthlyStats = [];
-          _adRevenue = 0;
-          loading = false;
-          errorMessage = 'No data available';
-        });
+        _setEmptyStats();
       }
     } catch (e) {
       print('❌ Error loading stats: $e');
       setState(() {
         loading = false;
         errorMessage = 'Failed to load dashboard data: $e';
-        stats = AdminStats(
-          totalUsers: 0,
-          totalFreelancers: 0,
-          totalClients: 0,
-          totalProjects: 0,
-          totalContracts: 0,
-          totalEarnings: 0,
-          pendingProjects: 0,
-          activeContracts: 0,
-          completedContracts: 0,
-          pendingDisputes: 0,
-        );
-        _adRevenue = 0;
-        monthlyStats = [];
+        _setEmptyStats();
       });
     }
+  }
+
+  List<Map<String, dynamic>> _applyDateFilter(List<Map<String, dynamic>> data) {
+    if (data.isEmpty) return data;
+
+    final now = DateTime.now();
+    final filtered = <Map<String, dynamic>>[];
+
+    for (var item in data) {
+      final monthStr = item['month'] ?? '';
+      DateTime itemDate;
+
+      if (monthStr.contains('-')) {
+        itemDate = DateTime.parse('$monthStr-01');
+      } else {
+        itemDate = _parseMonthString(monthStr);
+      }
+
+      bool include = false;
+      switch (_selectedDateFilter) {
+        case 'Last 7 days':
+          include = itemDate.isAfter(now.subtract(const Duration(days: 7)));
+          break;
+        case 'Last 30 days':
+          include = itemDate.isAfter(now.subtract(const Duration(days: 30)));
+          break;
+        case 'Last 3 months':
+          include = itemDate.isAfter(now.subtract(const Duration(days: 90)));
+          break;
+        case 'Last 6 months':
+          include = itemDate.isAfter(now.subtract(const Duration(days: 180)));
+          break;
+        case 'This year':
+          include = itemDate.year == now.year;
+          break;
+        default:
+          include = true;
+      }
+
+      if (include) filtered.add(item);
+    }
+
+    return filtered.isEmpty ? data : filtered;
+  }
+
+  DateTime _parseMonthString(String month) {
+    final months = {
+      'Jan': 1,
+      'Feb': 2,
+      'Mar': 3,
+      'Apr': 4,
+      'May': 5,
+      'Jun': 6,
+      'Jul': 7,
+      'Aug': 8,
+      'Sep': 9,
+      'Oct': 10,
+      'Nov': 11,
+      'Dec': 12,
+    };
+
+    final now = DateTime.now();
+    final monthNum = months[month] ?? 1;
+    return DateTime(now.year, monthNum, 1);
+  }
+
+  void _setEmptyStats() {
+    setState(() {
+      stats = AdminStats(
+        totalUsers: 0,
+        totalFreelancers: 0,
+        totalClients: 0,
+        totalProjects: 0,
+        totalContracts: 0,
+        totalEarnings: 0,
+        pendingProjects: 0,
+        activeContracts: 0,
+        completedContracts: 0,
+        pendingDisputes: 0,
+      );
+      monthlyStats = [];
+      _adRevenue = 0;
+    });
+  }
+
+  Future<void> _refreshData() async {
+    setState(() => _isRefreshing = true);
+    await _loadStats();
+    await _loadAdminActivities();
+    setState(() => _isRefreshing = false);
   }
 
   String _getCurrentDate() {
@@ -404,6 +592,254 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return 'Good Evening';
   }
 
+  double _calculateGrowthRate() {
+    if (monthlyStats.length < 2) return 0;
+    final lastMonth = monthlyStats.last['users'] ?? 0;
+    final prevMonth = monthlyStats[monthlyStats.length - 2]['users'] ?? 0;
+    if (prevMonth == 0) return 0;
+    return ((lastMonth - prevMonth) / prevMonth) * 100;
+  }
+
+  Widget _buildGrowthIndicator() {
+    final rate = _calculateGrowthRate();
+    final isPositive = rate >= 0;
+    if (rate == 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (isPositive ? Colors.green : Colors.red).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPositive ? Icons.trending_up : Icons.trending_down,
+            size: 14,
+            color: isPositive ? Colors.green : Colors.red,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${rate.abs().toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: isPositive ? Colors.green : Colors.red,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportReport(String format) async {
+    await _logAdminAction('export_report', details: {'format': format});
+
+    final reportData = {
+      'stats': stats?.toJson(),
+      'monthlyStats': monthlyStats,
+      'adRevenue': _adRevenue,
+      'date': DateTime.now().toIso8601String(),
+      'admin': 'Current Admin',
+    };
+
+    try {
+      late List<int> bytes;
+      String fileName;
+
+      switch (format) {
+        case 'csv':
+          bytes = await _generateCSV(reportData);
+          fileName =
+              'admin_report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+          break;
+        case 'excel':
+          bytes = await _generateExcel(reportData);
+          fileName =
+              'admin_report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx';
+          break;
+        default:
+          return;
+      }
+
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text:
+            'Admin Dashboard Report - ${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report exported successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to export report: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<List<int>> _generateCSV(Map<String, dynamic> data) async {
+    final csvData = <List<dynamic>>[];
+
+    csvData.add(['Metric', 'Value', 'Date']);
+
+    final statsData = data['stats'] as Map<String, dynamic>?;
+    if (statsData != null) {
+      statsData.forEach((key, value) {
+        csvData.add([key, value.toString(), data['date']]);
+      });
+    }
+
+    csvData.add([]);
+    csvData.add(['Monthly Stats', '', '']);
+    csvData.add(['Month', 'Users', 'Earnings']);
+
+    final monthlyData = data['monthlyStats'] as List<dynamic>?;
+    if (monthlyData != null) {
+      for (var month in monthlyData) {
+        csvData.add([
+          month['month'] ?? '',
+          month['users'] ?? 0,
+          month['earnings'] ?? 0,
+        ]);
+      }
+    }
+
+    final csv = ListToCsvConverter().convert(csvData);
+    return csv.codeUnits;
+  }
+
+  Future<List<int>> _generateExcel(Map<String, dynamic> data) async {
+    return _generateCSV(data);
+  }
+
+  void _performGlobalSearch(String query) {
+    setState(() => _searchQuery = query);
+    if (query.isNotEmpty) {
+      _logAdminAction('global_search', details: {'query': query});
+    }
+  }
+
+  Widget _buildAlertBanner() {
+    final alerts = <String>[];
+
+    if (stats != null) {
+      if (stats!.pendingDisputes > 5) {
+        alerts.add(
+          '⚠️ ${stats!.pendingDisputes} disputes need immediate attention',
+        );
+      }
+      if (stats!.pendingProjects > 10) {
+        alerts.add('📋 ${stats!.pendingProjects} projects pending review');
+      }
+      if (stats!.activeContracts > 100 &&
+          stats!.completedContracts < stats!.activeContracts * 0.3) {
+        alerts.add(
+          '📊 Low completion rate detected: ${((stats!.completedContracts / stats!.activeContracts) * 100).toStringAsFixed(1)}%',
+        );
+      }
+    }
+
+    if (alerts.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.orange[700],
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: alerts
+                  .map(
+                    (alert) => Text(
+                      alert,
+                      style: TextStyle(
+                        color: Colors.orange[800],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _navigateToRelevantSection(alerts),
+            child: const Text('View Details', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToRelevantSection(List<String> alerts) {
+    if (alerts.any((a) => a.contains('disputes'))) {
+      setState(() => _selectedIndex = 4);
+    } else if (alerts.any((a) => a.contains('projects'))) {
+      setState(() => _selectedIndex = 2);
+    }
+  }
+
+  Widget _buildExportButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.download_outlined,
+        color: isDark ? Colors.white70 : Colors.grey[700],
+        size: 20,
+      ),
+      tooltip: 'Export Report',
+      onSelected: (format) => _exportReport(format),
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'csv',
+          child: Row(
+            children: [
+              Icon(Icons.insert_drive_file, size: 18),
+              SizedBox(width: 8),
+              Text('CSV'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'excel',
+          child: Row(
+            children: [
+              Icon(Icons.table_chart, size: 18),
+              SizedBox(width: 8),
+              Text('Excel'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatCard(
     String title,
     String value,
@@ -415,22 +851,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.AppColors.darkCard : AppTheme.AppColors.lightCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppTheme.AppColors.primaryDark : AppTheme.AppColors.borderLight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.2)
-                : const Color(0x0A000000),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AdminDashboardStyles.getCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -465,7 +886,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Text(
             title,
             style: TextStyle(
-              color: isDark ? AppTheme.AppColors.darkTextSecondary : Colors.grey.shade500,
+              color: isDark
+                  ? AppTheme.AppColors.darkTextSecondary
+                  : Colors.grey.shade500,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -478,7 +901,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildTopBar() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accentColor = isDark ? AppTheme.AppColors.accentLight : AppTheme.AppColors.accent;
+    final accentColor = isDark
+        ? AppTheme.AppColors.accentLight
+        : AppTheme.AppColors.accent;
+    final isMobile = MediaQuery.of(context).size.width < 800;
 
     final titles = [
       'Dashboard',
@@ -492,89 +918,355 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.AppColors.darkSurface : AppTheme.AppColors.lightCard,
+        color: isDark
+            ? AppTheme.AppColors.darkSurface
+            : AppTheme.AppColors.lightCard,
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppTheme.AppColors.grayDark : const Color(0xFFEEEEEE),
+            color: isDark
+                ? AppTheme.AppColors.grayDark
+                : const Color(0xFFEEEEEE),
             width: 0.8,
           ),
         ),
       ),
-      child: Row(
-        children: [
-          Text(
-            titles[_selectedIndex],
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isDark
-                  ? AppTheme.AppColors.darkTextPrimary
-                  : const Color(0xFF2D2B55),
-            ),
+      child: isMobile
+          ? _buildMobileTopBar(titles, accentColor, isDark)
+          : _buildDesktopTopBar(titles, accentColor, isDark),
+    );
+  }
+
+  Widget _buildDesktopTopBar(
+    List<String> titles,
+    Color accentColor,
+    bool isDark,
+  ) {
+    return Row(
+      children: [
+        Text(
+          titles[_selectedIndex],
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDark
+                ? AppTheme.AppColors.darkTextPrimary
+                : const Color(0xFF2D2B55),
           ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 13,
-                  color: accentColor,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _getCurrentDate(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: accentColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+        ),
+        const Expanded(child: SizedBox()),
+        _buildExportButton(),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(width: 10),
-          IconButton(
-            onPressed: _loadStats,
-            icon: Icon(
-              Icons.refresh_rounded,
-              color: accentColor,
-              size: 22,
-            ),
-            tooltip: 'Refresh',
-          ),
-          Stack(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
+              Icon(Icons.calendar_today_outlined, size: 12, color: accentColor),
+              const SizedBox(width: 4),
+              Text(
+                _getCurrentDate(),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: accentColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          onPressed: _refreshData,
+          icon: _isRefreshing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(Icons.refresh_rounded, color: accentColor, size: 20),
+          tooltip: 'Refresh',
+        ),
+        Stack(
+          children: [
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(
+                Icons.notifications_none_rounded,
+                size: 20,
+                color: isDark
+                    ? AppTheme.AppColors.darkTextPrimary
+                    : const Color(0xFF2D2B55),
+              ),
+              onPressed: () => _showNotificationsDialog(),
+            ),
+            Positioned(
+              right: 2,
+              top: 2,
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileTopBar(
+    List<String> titles,
+    Color accentColor,
+    bool isDark,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Builder(
+              builder: (context) => IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
                 icon: Icon(
-                  Icons.notifications_none_rounded,
+                  Icons.menu,
+                  color: isDark ? Colors.white70 : Colors.grey[700],
+                  size: 22,
+                ),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                titles[_selectedIndex],
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                   color: isDark
                       ? AppTheme.AppColors.darkTextPrimary
                       : const Color(0xFF2D2B55),
                 ),
-                onPressed: () {},
               ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+            ),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: _refreshData,
+              icon: _isRefreshing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.refresh_rounded, color: accentColor, size: 20),
+              tooltip: 'Refresh',
+            ),
+            const SizedBox(width: 4),
+            Stack(
+              children: [
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    Icons.notifications_none_rounded,
+                    size: 20,
+                    color: isDark
+                        ? AppTheme.AppColors.darkTextPrimary
+                        : const Color(0xFF2D2B55),
                   ),
+                  onPressed: () => _showNotificationsDialog(),
+                ),
+                Positioned(
+                  right: 2,
+                  top: 2,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: [
+              ..._dateFilters.map((filter) {
+                final isSelected = _selectedDateFilter == filter;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: FilterChip(
+                    label: Text(
+                      _getShortFilterName(filter),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _selectedDateFilter = filter);
+                        _loadStats();
+                      }
+                    },
+                    backgroundColor: Colors.transparent,
+                    selectedColor: AppTheme.AppColors.accent.withOpacity(0.2),
+                    checkmarkColor: AppTheme.AppColors.accent,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: BorderSide(
+                      color: isSelected
+                          ? AppTheme.AppColors.accent
+                          : Colors.grey.withOpacity(0.3),
+                      width: 0.8,
+                    ),
+                  ),
+                );
+              }).toList(),
+              const SizedBox(width: 8),
+              _buildExportButton(),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 11,
+                      color: accentColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _getCurrentDate(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: accentColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateFilterChips({bool isMobile = false}) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: _dateFilters.map((filter) {
+          final isSelected = _selectedDateFilter == filter;
+          return Padding(
+            padding: EdgeInsets.only(right: isMobile ? 4 : 8),
+            child: FilterChip(
+              label: Text(
+                isMobile ? _getShortFilterName(filter) : filter,
+                style: TextStyle(fontSize: isMobile ? 11 : 12),
+              ),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() => _selectedDateFilter = filter);
+                  _loadStats();
+                }
+              },
+              backgroundColor: Colors.transparent,
+              selectedColor: AppTheme.AppColors.accent.withOpacity(0.2),
+              checkmarkColor: AppTheme.AppColors.accent,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              side: BorderSide(
+                color: isSelected
+                    ? AppTheme.AppColors.accent
+                    : (Colors.grey.withOpacity(0.3)),
+                width: 0.8,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _getShortFilterName(String filter) {
+    switch (filter) {
+      case 'Last 7 days':
+        return '7d';
+      case 'Last 30 days':
+        return '30d';
+      case 'Last 3 months':
+        return '3m';
+      case 'Last 6 months':
+        return '6m';
+      case 'This year':
+        return 'Year';
+      default:
+        return filter;
+    }
+  }
+
+  void _showNotificationsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Recent Activities'),
+        content: Container(
+          width: 400,
+          height: 400,
+          child: _adminActivities.isEmpty
+              ? const Center(child: Text('No recent activities'))
+              : ListView.builder(
+                  itemCount: _adminActivities.length > 20
+                      ? 20
+                      : _adminActivities.length,
+                  itemBuilder: (context, index) {
+                    final activity = _adminActivities[index];
+                    return ListTile(
+                      leading: const Icon(Icons.info_outline, size: 20),
+                      title: Text(activity['action'] ?? 'Activity'),
+                      subtitle: Text(activity['timestamp'] ?? ''),
+                      dense: true,
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -583,9 +1275,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildWelcomeBanner() {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final greeting = _getGreeting();
-    
+
     final totalUsers = stats?.totalUsers ?? 0;
     final activeContracts = stats?.activeContracts ?? 0;
     final pendingDisputes = stats?.pendingDisputes ?? 0;
@@ -644,13 +1335,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$greeting, Admin! 👋',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          '$greeting, Admin! 👋',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildGrowthIndicator(),
+                      ],
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -666,9 +1363,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               const SizedBox(width: 12),
               Column(
                 children: [
-                  _bannerBtn('Manage Users', () => setState(() => _selectedIndex = 1)),
+                  _bannerBtn(
+                    'Manage Users',
+                    () => setState(() => _selectedIndex = 1),
+                  ),
                   const SizedBox(height: 6),
-                  _bannerBtn('View Reports', () {}),
+                  _bannerBtn('View Reports', () => _exportReport('csv')),
                 ],
               ),
             ],
@@ -700,6 +1400,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  Future<bool> _confirmDangerousAction(String action) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('⚠️ Confirm $action'),
+            content: const Text('This action cannot be undone. Are you sure?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Yes, $action'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   Widget _buildErrorWidget() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -725,7 +1447,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Text(
             errorMessage ?? 'Failed to load dashboard data',
             style: TextStyle(
-              color: isDark ? AppTheme.AppColors.darkTextSecondary : Colors.grey.shade600,
+              color: isDark
+                  ? AppTheme.AppColors.darkTextSecondary
+                  : Colors.grey.shade600,
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
@@ -745,6 +1469,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               elevation: 0,
             ),
           ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            icon: const Icon(Icons.support_agent),
+            label: const Text('Contact Support'),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Support'),
+                  content: const Text(
+                    'Please contact support at: support@freelancerplatform.com',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -753,7 +1499,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildDashboardContent() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accentColor = isDark ? AppTheme.AppColors.accentLight : AppTheme.AppColors.accent;
+    final accentColor = isDark
+        ? AppTheme.AppColors.accentLight
+        : AppTheme.AppColors.accent;
     final textPrimaryColor = isDark
         ? AppTheme.AppColors.darkTextPrimary
         : const Color(0xFF2D2B55);
@@ -765,143 +1513,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final activeContracts = (stats?.activeContracts ?? 0).toDouble();
     final pendingProjects = (stats?.pendingProjects ?? 0).toDouble();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildWelcomeBanner(),
-          const SizedBox(height: 20),
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAlertBanner(),
+            const SizedBox(height: 8),
+            _buildWelcomeBanner(),
+            const SizedBox(height: 20),
 
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Overview',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: textPrimaryColor,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: _getCrossAxisCount(context),
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            childAspectRatio: 1.35,
-            children: [
-              _buildStatCard(
-                'Total Users',
-                stats!.totalUsers.toString(),
-                Icons.people_alt,
-                Colors.blue,
-              ),
-              _buildStatCard(
-                'Freelancers',
-                stats!.totalFreelancers.toString(),
-                Icons.work,
-                AppTheme.AppColors.success,
-              ),
-              _buildStatCard(
-                'Clients',
-                stats!.totalClients.toString(),
-                Icons.business,
-                Colors.orange,
-              ),
-              _buildStatCard(
-                'Projects',
-                stats!.totalProjects.toString(),
-                Icons.folder_open,
-                accentColor,
-              ),
-              _buildStatCard(
-                'Contracts',
-                stats!.totalContracts.toString(),
-                Icons.description,
-                Colors.teal,
-              ),
-              _buildStatCard(
-                'Earnings',
-                '\$${stats!.totalEarnings.toStringAsFixed(0)}',
-                Icons.attach_money,
-                AppTheme.AppColors.success,
-              ),
-              _buildStatCard(
-                'Ad Revenue',
-                '\$${_adRevenue.toStringAsFixed(0)}',
-                Icons.ads_click,
-                Colors.teal,
-              ),
-              _buildStatCard(
-                'Pending Projects',
-                stats!.pendingProjects.toString(),
-                Icons.pending_actions,
-                Colors.orange,
-              ),
-              _buildStatCard(
-                'Active Contracts',
-                stats!.activeContracts.toString(),
-                Icons.play_circle,
-                Colors.blue,
-              ),
-              _buildStatCard(
-                'Completed',
-                stats!.completedContracts.toString(),
-                Icons.check_circle,
-                AppTheme.AppColors.success,
-              ),
-              _buildStatCard(
-                'Disputes',
-                stats!.pendingDisputes.toString(),
-                Icons.warning_amber,
-                Colors.red,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 28),
-
-          Row(
-            children: [
-              _insightTabChip('Overview', 0),
-              const SizedBox(width: 10),
-              _insightTabChip('Performance', 1),
-              const SizedBox(width: 10),
-              _insightTabChip('Trends', 2),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: _buildDashboardTabPanel(
-              totalUsers: totalUsers,
-              freelancers: freelancers,
-              clients: clients,
-              completedContracts: completedContracts,
-              activeContracts: activeContracts,
-              pendingProjects: pendingProjects,
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          if (monthlyStats.isNotEmpty) ...[
             Row(
               children: [
                 Container(
@@ -914,208 +1538,325 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'User Growth Analytics',
+                  'Overview',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: textPrimaryColor,
                   ),
                 ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: accentColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Total Users',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: accentColor,
-                        ),
-                      ),
-                    ],
-                  ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: _getCrossAxisCount(context),
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              childAspectRatio: 1.35,
+              children: [
+                _buildStatCard(
+                  'Total Users',
+                  stats!.totalUsers.toString(),
+                  Icons.people_alt,
+                  Colors.blue,
+                ),
+                _buildStatCard(
+                  'Freelancers',
+                  stats!.totalFreelancers.toString(),
+                  Icons.work,
+                  AppTheme.AppColors.success,
+                ),
+                _buildStatCard(
+                  'Clients',
+                  stats!.totalClients.toString(),
+                  Icons.business,
+                  Colors.orange,
+                ),
+                _buildStatCard(
+                  'Projects',
+                  stats!.totalProjects.toString(),
+                  Icons.folder_open,
+                  accentColor,
+                ),
+                _buildStatCard(
+                  'Contracts',
+                  stats!.totalContracts.toString(),
+                  Icons.description,
+                  Colors.teal,
+                ),
+                _buildStatCard(
+                  'Earnings',
+                  '\$${stats!.totalEarnings.toStringAsFixed(0)}',
+                  Icons.attach_money,
+                  AppTheme.AppColors.success,
+                ),
+                _buildStatCard(
+                  'Ad Revenue',
+                  '\$${_adRevenue.toStringAsFixed(0)}',
+                  Icons.ads_click,
+                  Colors.teal,
+                ),
+                _buildStatCard(
+                  'Pending Projects',
+                  stats!.pendingProjects.toString(),
+                  Icons.pending_actions,
+                  Colors.orange,
+                ),
+                _buildStatCard(
+                  'Active Contracts',
+                  stats!.activeContracts.toString(),
+                  Icons.play_circle,
+                  Colors.blue,
+                ),
+                _buildStatCard(
+                  'Completed',
+                  stats!.completedContracts.toString(),
+                  Icons.check_circle,
+                  AppTheme.AppColors.success,
+                ),
+                _buildStatCard(
+                  'Disputes',
+                  stats!.pendingDisputes.toString(),
+                  Icons.warning_amber,
+                  Colors.red,
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.AppColors.darkCard : AppTheme.AppColors.lightCard,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppTheme.AppColors.primaryDark : AppTheme.AppColors.borderLight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? Colors.black.withOpacity(0.2)
-                        : const Color(0x0A000000),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+
+            const SizedBox(height: 28),
+
+            Row(
+              children: [
+                _insightTabChip('Overview', 0),
+                const SizedBox(width: 10),
+                _insightTabChip('Performance', 1),
+                const SizedBox(width: 10),
+                _insightTabChip('Trends', 2),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: _buildDashboardTabPanel(
+                totalUsers: totalUsers,
+                freelancers: freelancers,
+                clients: clients,
+                completedContracts: completedContracts,
+                activeContracts: activeContracts,
+                pendingProjects: pendingProjects,
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            if (monthlyStats.isNotEmpty) ...[
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'User Growth Analytics',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimaryColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: accentColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Total Users',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              child: SizedBox(
-                height: 300,
-                child: LineChart(
-                  LineChartData(
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: 20,
-                      getDrawingHorizontalLine: (value) =>
-                          FlLine(color: Colors.grey.shade100, strokeWidth: 1),
-                    ),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 30,
-                          getTitlesWidget: (value, meta) {
-                            if (value.toInt() < monthlyStats.length) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  monthlyStats[value.toInt()]['month'] ?? '',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: isDark
-                                        ? AppTheme.AppColors.darkTextSecondary
-                                        : Colors.grey.shade500,
-                                  ),
-                                ),
-                              );
-                            }
-                            return const Text('');
-                          },
-                        ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: AdminDashboardStyles.getCardDecoration(context),
+                child: SizedBox(
+                  height: 300,
+                  child: LineChart(
+                    LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 20,
+                        getDrawingHorizontalLine: (value) =>
+                            FlLine(color: Colors.grey.shade100, strokeWidth: 1),
                       ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 40,
-                          getTitlesWidget: (value, meta) => Text(
-                            value.toInt().toString(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isDark
-                                  ? AppTheme.AppColors.darkTextSecondary
-                                  : Colors.grey.shade500,
+                      titlesData: FlTitlesData(
+                        show: true,
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            getTitlesWidget: (value, meta) {
+                              if (value.toInt() < monthlyStats.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    monthlyStats[value.toInt()]['month']
+                                            ?.toString() ??
+                                        '',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: isDark
+                                          ? AppTheme.AppColors.darkTextSecondary
+                                          : Colors.grey.shade500,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const Text('');
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            getTitlesWidget: (value, meta) => Text(
+                              value.toInt().toString(),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark
+                                    ? AppTheme.AppColors.darkTextSecondary
+                                    : Colors.grey.shade500,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    borderData: FlBorderData(
-                      show: true,
-                      border: Border.all(color: Colors.grey.shade100, width: 1),
-                    ),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: monthlyStats.asMap().entries.map((entry) {
-                          final users =
-                              entry.value['users'] ??
-                              entry.value['freelancers'] ??
-                              0;
-                          return FlSpot(entry.key.toDouble(), users.toDouble());
-                        }).toList(),
-                        isCurved: true,
-                        color: accentColor,
-                        barWidth: 3,
-                        isStrokeCapRound: true,
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, bar, index) =>
-                              FlDotCirclePainter(
-                                radius: 4,
-                                color: Colors.white,
-                                strokeWidth: 2,
-                                strokeColor: accentColor,
-                              ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
                         ),
-                        belowBarData: BarAreaData(
-                          show: true,
-                          gradient: LinearGradient(
-                            colors: [
-                              accentColor.withOpacity(0.15),
-                              accentColor.withOpacity(0.0),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                      ),
+                      borderData: FlBorderData(
+                        show: true,
+                        border: Border.all(
+                          color: Colors.grey.shade100,
+                          width: 1,
+                        ),
+                      ),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: monthlyStats.asMap().entries.map((entry) {
+                            final users =
+                                entry.value['users'] ??
+                                entry.value['freelancers'] ??
+                                0;
+                            return FlSpot(
+                              entry.key.toDouble(),
+                              users.toDouble(),
+                            );
+                          }).toList(),
+                          isCurved: true,
+                          color: accentColor,
+                          barWidth: 3,
+                          isStrokeCapRound: true,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, bar, index) =>
+                                FlDotCirclePainter(
+                                  radius: 4,
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                  strokeColor: accentColor,
+                                ),
                           ),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            gradient: LinearGradient(
+                              colors: [
+                                accentColor.withOpacity(0.15),
+                                accentColor.withOpacity(0.0),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ] else if (!loading)
+              Container(
+                padding: const EdgeInsets.all(40),
+                decoration: AdminDashboardStyles.getCardDecoration(context),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.show_chart,
+                        size: 48,
+                        color: isDark
+                            ? AppTheme.AppColors.darkTextSecondary
+                            : Colors.grey.shade300,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No chart data available',
+                        style: TextStyle(
+                          color: isDark
+                              ? AppTheme.AppColors.darkTextSecondary
+                              : Colors.grey.shade500,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-          ] else if (!loading)
-            Container(
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.AppColors.darkCard : AppTheme.AppColors.lightCard,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppTheme.AppColors.primaryDark : AppTheme.AppColors.borderLight,
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.show_chart,
-                      size: 48,
-                      color: isDark
-                          ? AppTheme.AppColors.darkTextSecondary
-                          : Colors.grey.shade300,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No chart data available',
-                      style: TextStyle(
-                        color: isDark
-                            ? AppTheme.AppColors.darkTextSecondary
-                            : Colors.grey.shade500,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          
-          const SizedBox(height: 20),
-          AdBanner(placement: 'home_bottom', height: 100),
-          const SizedBox(height: 20),
-        ],
+
+            const SizedBox(height: 20),
+            AdBanner(placement: 'home_bottom', height: 100),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -1123,9 +1864,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _insightTabChip(String label, int index) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accentColor = isDark ? AppTheme.AppColors.accentLight : AppTheme.AppColors.accent;
+    final accentColor = isDark
+        ? AppTheme.AppColors.accentLight
+        : AppTheme.AppColors.accent;
     final selected = _dashboardTab == index;
-    
+
     return InkWell(
       onTap: () => setState(() => _dashboardTab = index),
       borderRadius: BorderRadius.circular(20),
@@ -1136,7 +1879,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           color: selected ? accentColor.withOpacity(0.14) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? accentColor : (isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
+            color: selected
+                ? accentColor
+                : (isDark ? AppTheme.AppColors.grayDark : Colors.grey.shade200),
           ),
         ),
         child: Text(
@@ -1144,7 +1889,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? accentColor : (isDark ? AppTheme.AppColors.darkTextSecondary : Colors.grey.shade700),
+            color: selected
+                ? accentColor
+                : (isDark
+                      ? AppTheme.AppColors.darkTextSecondary
+                      : Colors.grey.shade700),
           ),
         ),
       ),
@@ -1159,56 +1908,57 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     required double activeContracts,
     required double pendingProjects,
   }) {
-    if (_dashboardTab == 1) {
-      return _buildPerformancePanel(
-        completedContracts: completedContracts,
-        activeContracts: activeContracts,
-        pendingProjects: pendingProjects,
-      );
+    switch (_dashboardTab) {
+      case 0:
+        return _buildOverviewPanel(
+          totalUsers: totalUsers.toInt(),
+          freelancers: freelancers.toInt(),
+          clients: clients.toInt(),
+          completedContracts: completedContracts.toInt(),
+          activeContracts: activeContracts.toInt(),
+          pendingProjects: pendingProjects.toInt(),
+        );
+      case 1:
+        return _buildPerformancePanel(
+          completedContracts: completedContracts,
+          activeContracts: activeContracts,
+          pendingProjects: pendingProjects,
+        );
+      case 2:
+        return _buildTrendsPanel();
+      default:
+        return _buildOverviewPanel(
+          totalUsers: totalUsers.toInt(),
+          freelancers: freelancers.toInt(),
+          clients: clients.toInt(),
+          completedContracts: completedContracts.toInt(),
+          activeContracts: activeContracts.toInt(),
+          pendingProjects: pendingProjects.toInt(),
+        );
     }
-
-    if (_dashboardTab == 2) {
-      return _buildTrendPanel();
-    }
-
-    return _buildOverviewPanel(
-      totalUsers: totalUsers,
-      freelancers: freelancers,
-      clients: clients,
-    );
   }
 
   Widget _buildOverviewPanel({
-    required double totalUsers,
-    required double freelancers,
-    required double clients,
+    required int totalUsers,
+    required int freelancers,
+    required int clients,
+    required int completedContracts,
+    required int activeContracts,
+    required int pendingProjects,
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accentColor = isDark ? AppTheme.AppColors.accentLight : AppTheme.AppColors.accent;
-    
+    final accentColor = isDark
+        ? AppTheme.AppColors.accentLight
+        : AppTheme.AppColors.accent;
+
     final freelancerPct = totalUsers > 0 ? (freelancers / totalUsers) * 100 : 0;
     final clientPct = totalUsers > 0 ? (clients / totalUsers) * 100 : 0;
 
     return Container(
       key: const ValueKey('overview'),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.AppColors.darkCard : AppTheme.AppColors.lightCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppTheme.AppColors.primaryDark : AppTheme.AppColors.borderLight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.2)
-                : const Color(0x0A000000),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AdminDashboardStyles.getCardDecoration(context),
       child: Row(
         children: [
           SizedBox(
@@ -1220,7 +1970,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 centerSpaceRadius: 38,
                 sections: [
                   PieChartSectionData(
-                    value: freelancers <= 0 ? 0.01 : freelancers,
+                    value: freelancers <= 0 ? 0.01 : freelancers.toDouble(),
                     color: AppTheme.AppColors.success,
                     title: '${freelancerPct.toStringAsFixed(0)}%',
                     radius: 50,
@@ -1231,7 +1981,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   ),
                   PieChartSectionData(
-                    value: clients <= 0 ? 0.01 : clients,
+                    value: clients <= 0 ? 0.01 : clients.toDouble(),
                     color: accentColor,
                     title: '${clientPct.toStringAsFixed(0)}%',
                     radius: 50,
@@ -1261,16 +2011,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                _legendRow('Freelancers', AppTheme.AppColors.success, freelancers.toInt()),
+                _legendRow(
+                  'Freelancers',
+                  AppTheme.AppColors.success,
+                  freelancers.toInt(),
+                ),
                 const SizedBox(height: 8),
                 _legendRow('Clients', accentColor, clients.toInt()),
                 const SizedBox(height: 12),
                 Text(
-                  'Balanced marketplace with ${totalUsers.toInt()} total accounts.',
+                  'Balanced marketplace with ${totalUsers.toInt()} total accounts. ${_calculateGrowthRate().toStringAsFixed(1)}% growth rate.',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark
-                        ? AppTheme.AppColors.darkTextSecondary                        : Colors.grey.shade600,
+                        ? AppTheme.AppColors.darkTextSecondary
+                        : Colors.grey.shade600,
                   ),
                 ),
               ],
@@ -1299,22 +2054,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       key: const ValueKey('performance'),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.AppColors.darkCard : AppTheme.AppColors.lightCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppTheme.AppColors.primaryDark : AppTheme.AppColors.borderLight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.2)
-                : const Color(0x0A000000),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AdminDashboardStyles.getCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1428,11 +2168,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildTrendPanel() {
+  Widget _buildTrendsPanel() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accentColor = isDark ? AppTheme.AppColors.accentLight : AppTheme.AppColors.accent;
-    
+    final accentColor = isDark
+        ? AppTheme.AppColors.accentLight
+        : AppTheme.AppColors.accent;
+
     final lastMonth = monthlyStats.isNotEmpty ? monthlyStats.last : {};
     final monthUsers = (lastMonth['users'] ?? lastMonth['freelancers'] ?? 0)
         .toInt();
@@ -1441,22 +2183,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       key: const ValueKey('trend'),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.AppColors.darkCard : AppTheme.AppColors.lightCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppTheme.AppColors.primaryDark : AppTheme.AppColors.borderLight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.2)
-                : const Color(0x0A000000),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AdminDashboardStyles.getCardDecoration(context),
       child: Row(
         children: [
           Expanded(
@@ -1498,7 +2225,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1523,7 +2250,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             title,
             style: TextStyle(
               fontSize: 11,
-              color: isDark ? AppTheme.AppColors.darkTextSecondary : Colors.grey.shade700,
+              color: isDark
+                  ? AppTheme.AppColors.darkTextSecondary
+                  : Colors.grey.shade700,
             ),
           ),
         ],
@@ -1534,7 +2263,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _legendRow(String label, Color color, int value) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Row(
       children: [
         Container(
@@ -1548,7 +2277,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isDark ? AppTheme.AppColors.darkTextSecondary : Colors.grey.shade700,
+              color: isDark
+                  ? AppTheme.AppColors.darkTextSecondary
+                  : Colors.grey.shade700,
             ),
           ),
         ),
@@ -1557,7 +2288,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: isDark ? AppTheme.AppColors.darkTextPrimary : const Color(0xFF2D2B55),
+            color: isDark
+                ? AppTheme.AppColors.darkTextPrimary
+                : const Color(0xFF2D2B55),
           ),
         ),
       ],
@@ -1574,9 +2307,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   int _getCrossAxisCount(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    if (width > 1400) return 5;
-    if (width > 1100) return 4;
-    if (width > 800) return 3;
+    if (width > AdminDashboardStyles.desktopBreakpoint) return 5;
+    if (width > AdminDashboardStyles.tabletBreakpoint) return 4;
+    if (width > AdminDashboardStyles.mobileBreakpoint) return 3;
     return 2;
   }
 
@@ -1625,24 +2358,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isMobile =
+        MediaQuery.of(context).size.width <
+        AdminDashboardStyles.mobileBreakpoint;
 
     if (errorMessage != null && stats?.totalUsers == 0 && !loading) {
       return Scaffold(
-        backgroundColor: isDark ? AppTheme.AppColors.darkBackground : AppTheme.AppColors.lightBackground,
+        backgroundColor: isDark
+            ? AppTheme.AppColors.darkBackground
+            : AppTheme.AppColors.lightBackground,
         body: _buildErrorWidget(),
       );
     }
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.AppColors.darkBackground : AppTheme.AppColors.lightBackground,
+      backgroundColor: isDark
+          ? AppTheme.AppColors.darkBackground
+          : AppTheme.AppColors.lightBackground,
+      drawer: isMobile
+          ? _AdminSidebar(
+              selectedIndex: _selectedIndex,
+              onItemTap: (i) => setState(() => _selectedIndex = i),
+              isMobile: true,
+            )
+          : null,
       body: Row(
         children: [
-          _AdminSidebar(
-            selectedIndex: _selectedIndex,
-            onItemTap: (i) => setState(() => _selectedIndex = i),
-          ),
-
+          if (!isMobile)
+            _AdminSidebar(
+              selectedIndex: _selectedIndex,
+              onItemTap: (i) => setState(() => _selectedIndex = i),
+            ),
           Expanded(
             child: Column(
               children: [

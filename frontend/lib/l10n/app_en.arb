@@ -2140,7 +2140,19 @@
 "freelancersCount": "{count} freelancer",
 "freelancersCount_plural": "{count} freelancers",
 "clientsCount": "{count} client",
-"clientsCount_plural": "{count} clients"
+"clientsCount_plural": "{count} clients",
+  "exportStarted": "Export started successfully",
+  "exportFailed": "Export failed",
+    "searchContracts": "Search contracts...",
+    "campaignsManagement":"campaigns Management",
+"usersManagement": "Users Management",
+"advancedFilters": "Advanced Filters",
+"moreOptions": "more Options",
+"joinedDate":"Joined date",
+"from":"from",
+"to":"to",
+"phone":"Phone",
+"actions":"Actions"
 
 }
 

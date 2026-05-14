@@ -17,6 +17,7 @@ import {
   getDisputeDetails,
   resolveDisputeAdmin,
   rejectDispute,
+  getUserStats,
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -25,7 +26,7 @@ router.use(protect);
 router.use(authorizeRoles("admin"));
 
 router.get("/dashboard/stats", getDashboardStats);
-
+router.get("/users/stats", getUserStats);
 router.post("/users", createUser);
 router.post("/users/:userId/resend-email", resendAccountEmail);
 router.get("/users", getAllUsers);

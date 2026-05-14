@@ -48,7 +48,9 @@ class _AdStatsScreenState extends State<AdStatsScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.AppColors.darkBackground : const Color(0xFFF5F6F8),
+      backgroundColor: isDark
+          ? AppTheme.AppColors.darkBackground
+          : const Color(0xFFF5F6F8),
       appBar: AppBar(
         title: Text(
           t.adRevenueStats,
@@ -131,7 +133,13 @@ class _AdStatsScreenState extends State<AdStatsScreen> {
     );
   }
 
-  Widget _statCard(String title, String value, IconData icon, Color color, bool isDark) {
+  Widget _statCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isDark,
+  ) {
     final theme = Theme.of(context);
 
     return Container(
@@ -156,7 +164,9 @@ class _AdStatsScreenState extends State<AdStatsScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppTheme.AppColors.lightTextPrimary,
+              color: isDark
+                  ? Colors.white
+                  : AppTheme.AppColors.lightTextPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -196,7 +206,9 @@ class _AdStatsScreenState extends State<AdStatsScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppTheme.AppColors.lightTextPrimary,
+                color: isDark
+                    ? Colors.white
+                    : AppTheme.AppColors.lightTextPrimary,
               ),
             ),
           ),

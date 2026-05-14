@@ -2045,21 +2045,55 @@ class ApiService {
     String search = '',
     int page = 1,
     int limit = 20,
+    DateTime? fromDate,
+    DateTime? toDate,
   }) async {
     try {
+      final uri = Uri.parse(
+        '$BASE_URL/admin/users?role=$role&status=$status&search=$search&page=$page&limit=$limit',
+      );
+
+      print('🌐 API Call: ${uri.toString()}');
+
+      final response = await http.get(uri, headers: headers);
+
+      print('📡 Response Status: ${response.statusCode}');
+      print('📦 Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Parsed Data Keys: ${data.keys}');
+        return data;
+      }
+      return {'users': [], 'total': 0, 'totalPages': 1};
+    } catch (e) {
+      print('❌ Error: $e');
+      return {'users': [], 'total': 0, 'totalPages': 1};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserStats() async {
+    try {
       final response = await http.get(
-        Uri.parse(
-          '$BASE_URL/admin/users?role=$role&status=$status&search=$search&page=$page&limit=$limit',
-        ),
+        Uri.parse('$BASE_URL/admin/users/stats'),
         headers: headers,
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
-      return {'users': [], 'total': 0, 'totalPages': 1};
+      return {
+        'totalUsers': 0,
+        'activeUsers': 0,
+        'freelancersCount': 0,
+        'suspendedCount': 0,
+      };
     } catch (e) {
-      print('Error getting admin users: $e');
-      return {'users': [], 'total': 0, 'totalPages': 1};
+      return {
+        'totalUsers': 0,
+        'activeUsers': 0,
+        'freelancersCount': 0,
+        'suspendedCount': 0,
+      };
     }
   }
 
@@ -2219,11 +2253,26 @@ class ApiService {
     String search = '',
     int page = 1,
     int limit = 20,
+    String? startDate,
+    String? endDate,
+    String? budgetRange,
   }) async {
     try {
+      final queryParams = {
+        'status': status,
+        'category': category,
+        'search': search,
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      if (startDate != null) queryParams['startDate'] = startDate;
+      if (endDate != null) queryParams['endDate'] = endDate;
+      if (budgetRange != null) queryParams['budgetRange'] = budgetRange;
+
       final response = await http.get(
         Uri.parse(
-          '$BASE_URL/admin/projects?status=$status&category=$category&search=$search&page=$page&limit=$limit',
+          '$BASE_URL/admin/projects?${Uri(queryParameters: queryParams).query}',
         ),
         headers: headers,
       );
@@ -2252,6 +2301,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getAdminContracts({
     String status = 'all',
+    String search = '',
     int page = 1,
     int limit = 20,
   }) async {
@@ -4316,6 +4366,10 @@ class ApiService {
     String search = '',
     int page = 1,
     int limit = 20,
+    String? startDate,
+    String? endDate,
+    String? budgetRange,
+    String? performanceFilter,
   }) async {
     try {
       final queryParams = {
@@ -4324,6 +4378,12 @@ class ApiService {
         'page': page.toString(),
         'limit': limit.toString(),
       };
+
+      if (startDate != null) queryParams['startDate'] = startDate;
+      if (endDate != null) queryParams['endDate'] = endDate;
+      if (budgetRange != null) queryParams['budgetRange'] = budgetRange;
+      if (performanceFilter != null)
+        queryParams['performanceFilter'] = performanceFilter;
 
       final response = await http.get(
         Uri.parse(

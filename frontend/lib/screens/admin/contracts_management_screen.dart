@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart' as AppTheme;
@@ -18,8 +19,10 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
   List<Map<String, dynamic>> _contracts = [];
   bool _loading = true;
   String _status = 'all';
+  String _search = '';
   int _currentPage = 1;
   int _totalPages = 1;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -27,11 +30,18 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
     _loadContracts();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadContracts() async {
     setState(() => _loading = true);
     try {
       final response = await ApiService.getAdminContracts(
         status: _status,
+        search: _search,
         page: _currentPage,
       );
       if (!mounted) return;
@@ -46,7 +56,9 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       final t = AppLocalizations.of(context);
-      Fluttertoast.showToast(msg: t?.failedToLoadContracts ?? 'Failed to load contracts');
+      Fluttertoast.showToast(
+        msg: t?.failedToLoadContracts ?? 'Failed to load contracts',
+      );
     }
   }
 
@@ -135,9 +147,7 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
       Fluttertoast.showToast(msg: t.disputeResolved);
       _loadContracts();
     } else {
-      Fluttertoast.showToast(
-        msg: res['message']?.toString() ?? t.actionFailed,
-      );
+      Fluttertoast.showToast(msg: res['message']?.toString() ?? t.actionFailed);
     }
   }
 
@@ -148,17 +158,10 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.AppColors.darkBackground : const Color(0xFFF5F6F8),
-      appBar: AppBar(
-        title: Text(
-          t.contractsManagement,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-        backgroundColor: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        elevation: 0,
-      ),
+      backgroundColor: isDark
+          ? AppTheme.AppColors.darkBackground
+          : const Color(0xFFF5F6F8),
+
       body: Column(
         children: [
           _buildFilterBar(t, isDark),
@@ -171,12 +174,16 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
                     ),
                   )
                 : _contracts.isEmpty
-                    ? _buildEmpty(t, isDark)
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: _contracts.length,
-                        itemBuilder: (_, i) => _buildContractCard(_contracts[i], t, isDark),
-                      ),
+                ? _buildEmpty(t, isDark)
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemCount: _contracts.length,
+                    itemBuilder: (_, i) =>
+                        _buildContractCard(_contracts[i], t, isDark),
+                  ),
           ),
           if (_totalPages > 1) _buildPagination(t, isDark),
         ],
@@ -186,35 +193,132 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
 
   Widget _buildFilterBar(AppLocalizations t, bool isDark) {
     final statuses = [
-      'all', 'draft', 'pending_client', 'pending_freelancer',
-      'active', 'completed', 'disputed', 'cancelled'
+      'all',
+      'draft',
+      'pending_client',
+      'pending_freelancer',
+      'active',
+      'completed',
+      'disputed',
+      'cancelled',
     ];
 
     return Container(
       color: isDark ? AppTheme.AppColors.darkSurface : Colors.white,
       padding: const EdgeInsets.all(20),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${t.filterByStatus}:',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : const Color(0xFF1A1B3E),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: statuses.map((s) => _filterChip(
-                  s == 'all' ? t.all : _getStatusLabel(s, t),
-                  s,
-                  isDark,
-                )).toList(),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppTheme.AppColors.darkCard
+                        : const Color(0xFFF0F2F8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? AppTheme.AppColors.grayDark
+                          : Colors.grey.shade200,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white
+                          : AppTheme.AppColors.lightTextPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: t.searchContracts ?? 'Search contracts...',
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? Colors.grey.shade500
+                            : const Color(0xFFAAAAAA),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 18,
+                        color: isDark
+                            ? Colors.grey.shade500
+                            : const Color(0xFFAAAAAA),
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: isDark
+                                    ? Colors.grey.shade500
+                                    : Colors.grey.shade400,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _search = '';
+                                  _currentPage = 1;
+                                });
+                                _loadContracts();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _search = value;
+                        _currentPage = 1;
+                      });
+                      _loadContracts();
+                    },
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              IconButton(
+                onPressed: _exportContracts,
+                icon: Icon(
+                  Icons.download,
+                  color: isDark ? Colors.white70 : Colors.grey.shade700,
+                ),
+                tooltip: 'Export Contracts',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                '${t.filterByStatus}:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : const Color(0xFF1A1B3E),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: statuses
+                        .map(
+                          (s) => _filterChip(
+                            s == 'all' ? t.all : _getStatusLabel(s, t),
+                            s,
+                            isDark,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -223,14 +327,22 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
 
   String _getStatusLabel(String status, AppLocalizations t) {
     switch (status) {
-      case 'draft': return t.draft;
-      case 'pending_client': return t.pendingClient;
-      case 'pending_freelancer': return t.pendingFreelancer;
-      case 'active': return t.active;
-      case 'completed': return t.completed;
-      case 'disputed': return t.disputed;
-      case 'cancelled': return t.cancelled;
-      default: return status;
+      case 'draft':
+        return t.draft;
+      case 'pending_client':
+        return t.pendingClient;
+      case 'pending_freelancer':
+        return t.pendingFreelancer;
+      case 'active':
+        return t.active;
+      case 'completed':
+        return t.completed;
+      case 'disputed':
+        return t.disputed;
+      case 'cancelled':
+        return t.cancelled;
+      default:
+        return status;
     }
   }
 
@@ -253,10 +365,15 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
         decoration: BoxDecoration(
           gradient: selected
               ? LinearGradient(
-                  colors: [theme.colorScheme.primary.withOpacity(0.7), theme.colorScheme.primary],
+                  colors: [
+                    theme.colorScheme.primary.withOpacity(0.7),
+                    theme.colorScheme.primary,
+                  ],
                 )
               : null,
-          color: selected ? null : (isDark ? AppTheme.AppColors.darkCard : Colors.white),
+          color: selected
+              ? null
+              : (isDark ? AppTheme.AppColors.darkCard : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected
@@ -278,7 +395,9 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
+            color: selected
+                ? Colors.white
+                : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
           ),
         ),
       ),
@@ -312,7 +431,11 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
     );
   }
 
-  Widget _buildContractCard(Map<String, dynamic> c, AppLocalizations t, bool isDark) {
+  Widget _buildContractCard(
+    Map<String, dynamic> c,
+    AppLocalizations t,
+    bool isDark,
+  ) {
     final theme = Theme.of(context);
     final project = Map<String, dynamic>.from(c['project'] ?? {});
     final client = Map<String, dynamic>.from(c['client'] ?? {});
@@ -368,38 +491,79 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          project['title']?.toString() ?? '${t.contract} #${c['id']}',
+                          project['title']?.toString() ??
+                              '${t.contract} #${c['id']}',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
-                            color: isDark ? Colors.white : const Color(0xFF1A1B3E),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1A1B3E),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      _statusBadge(_getStatusLabel(status, t), color, bgColor, isDark),
+                      _statusBadge(
+                        _getStatusLabel(status, t),
+                        color,
+                        bgColor,
+                        isDark,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.person_outline, size: 12, color: isDark ? Colors.grey.shade600 : Colors.grey.shade400),
+                      Icon(
+                        Icons.person_outline,
+                        size: 12,
+                        color: isDark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade400,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         client['name'] ?? t.notSpecified,
-                        style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
                       ),
-                      Text(' → ', style: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey.shade400, fontSize: 11)),
-                      Icon(Icons.work_outline, size: 12, color: isDark ? Colors.grey.shade600 : Colors.grey.shade400),
+                      Text(
+                        ' → ',
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.grey.shade600
+                              : Colors.grey.shade400,
+                          fontSize: 11,
+                        ),
+                      ),
+                      Icon(
+                        Icons.work_outline,
+                        size: 12,
+                        color: isDark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade400,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         freelancer['name'] ?? t.notSpecified,
-                        style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF14A800).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
@@ -423,7 +587,10 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
               GestureDetector(
                 onTap: () => _resolveDispute(id),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [Colors.red.shade400, Colors.red.shade700],
@@ -442,7 +609,11 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.gavel_rounded, color: Colors.white, size: 14),
+                      const Icon(
+                        Icons.gavel_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         t.resolve,
@@ -544,7 +715,9 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF0F2F8),
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF0F2F8),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -590,7 +763,9 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.AppColors.darkCard : const Color(0xFFF0F2F8),
+              color: isDark
+                  ? AppTheme.AppColors.darkCard
+                  : const Color(0xFFF0F2F8),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -647,5 +822,66 @@ class _ContractsManagementScreenState extends State<ContractsManagementScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportContracts() async {
+    final t = AppLocalizations.of(context);
+    try {
+      final csvData = <List<String>>[];
+      csvData.add([
+        'Contract ID',
+        'Project Title',
+        'Client',
+        'Freelancer',
+        'Status',
+        'Amount',
+        'Created Date',
+        'Updated Date',
+      ]);
+
+      for (var contract in _contracts) {
+        final project = contract['project'] ?? {};
+        final client = contract['client'] ?? {};
+        final freelancer = contract['freelancer'] ?? {};
+
+        csvData.add([
+          contract['id']?.toString() ?? '',
+          project['title']?.toString() ?? '',
+          client['name']?.toString() ?? '',
+          freelancer['name']?.toString() ?? '',
+          contract['status']?.toString() ?? '',
+          '\$${contract['agreed_amount'] ?? 0}',
+          contract['createdAt'] != null
+              ? DateFormat(
+                  'yyyy-MM-dd HH:mm',
+                ).format(DateTime.parse(contract['createdAt']))
+              : '',
+          contract['updatedAt'] != null
+              ? DateFormat(
+                  'yyyy-MM-dd HH:mm',
+                ).format(DateTime.parse(contract['updatedAt']))
+              : '',
+        ]);
+      }
+
+      final csvString = csvData
+          .map(
+            (row) => row
+                .map((cell) => '"${cell.toString().replaceAll('"', '""')}"')
+                .join(','),
+          )
+          .join('\n');
+
+      Fluttertoast.showToast(
+        msg:
+            '${t?.exportStarted ?? 'Export started'}: ${_contracts.length} contracts exported',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: '${t?.exportFailed ?? 'Export failed'}: $e',
+        backgroundColor: Colors.red,
+      );
+    }
   }
 }
