@@ -1094,21 +1094,30 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> getMyProposals() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$BASE_URL/freelancer/proposals'),
-        headers: headers,
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+
+static Future<List<dynamic>> getMyProposals() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$BASE_URL/freelancer/proposals'),
+      headers: headers,
+    );
+    
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      
+      print('📦 Proposals data: ${data.length} proposals');
+      if (data.isNotEmpty) {
+        print('📦 First proposal: ${data[0]}');
       }
-      return [];
-    } catch (e) {
-      print('Error getting my proposals: $e');
-      return [];
+      
+      return data;
     }
+    return [];
+  } catch (e) {
+    print('❌ Error getting my proposals: $e');
+    return [];
   }
+}
 
   static Future<List<dynamic>> getMyProjects() async {
     try {
@@ -4877,6 +4886,7 @@ static Future<Map<String, dynamic>> createContractFromProposal({
     return {'success': false, 'message': 'Connection error'};
   }
 }
+
 }
 
 class FinancialStatsResponse {
