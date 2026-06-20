@@ -280,7 +280,10 @@ app.use((err, req, res, next) => {
 import listEndpoints from "express-list-routes";
 
 // ==================== START SERVER ====================
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 listEndpoints(app);
 
 // async function startServer() {

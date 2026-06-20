@@ -222,9 +222,13 @@ router.post("/signup", upload, async (req, res) => {
     await Wallet.create({ UserId: newUser.id, balance: 0 });
 
     try {
-  await sendVerificationEmail(email, emailVerificationCode);
+  const emailSent = await sendVerificationEmail(email, emailVerificationCode);
+
+  if (!emailSent) {
+    console.log("⚠️ Email not sent, but signup continues");
+  }
 } catch (err) {
-  console.error("Email error (ignored):", err.message);
+  console.error("Email error ignored:", err.message);
 }
 
     console.log(`✅ User created with ID: ${newUser.id}`);
