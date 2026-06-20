@@ -17,7 +17,7 @@ class VerificationService {
   static async sendEmailViaBrevo(to, subject, html) {
     const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: to }];
-    sendSmtpEmail.sender = { email: "noreply@brevo.com", name: "iPal" };
+    sendSmtpEmail.sender = { email: "wafaj2017@gmail.com", name: "iPal" };
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = html;
     await apiInstance.sendTransacEmail(sendSmtpEmail);

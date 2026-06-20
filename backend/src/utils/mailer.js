@@ -9,7 +9,7 @@ const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 const sendEmail = async (to, subject, html) => {
   const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
   sendSmtpEmail.to = Array.isArray(to) ? to.map(e => ({ email: e })) : [{ email: to }];
-  sendSmtpEmail.sender = { email: "noreply@brevo.com", name: "iPal" };
+  sendSmtpEmail.sender = { email: "wafaj2017@gmail.com", name: "iPal" };
   sendSmtpEmail.subject = subject;
   sendSmtpEmail.htmlContent = html;
   await apiInstance.sendTransacEmail(sendSmtpEmail);

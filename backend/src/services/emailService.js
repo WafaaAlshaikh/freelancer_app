@@ -9,7 +9,7 @@ const sendEmail = async (to, subject, html) => {
 
   await Brevo.transactionalEmails.send({
     to: recipients,
-    sender: { email: "noreply@brevo.com", name: "Your App" },
+    sender: { email: "wafaj2017@gmail.com", name: "iPal" },
     subject,
     htmlContent: html,
   }, {
