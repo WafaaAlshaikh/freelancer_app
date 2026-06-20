@@ -83,7 +83,8 @@ class CalendarService {
       url: invitation.meeting_link,
       organizer: {
         name: "Freelance Platform",
-        email: process.env.SMTP_FROM,
+        email: "noreply@brevo.com",
+
       },
       attendees: [
         { name: invitation.client.name, email: invitation.client.email },
