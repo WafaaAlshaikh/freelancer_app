@@ -3,12 +3,21 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
 
+// ✅ تعديل إعدادات الـ transporter
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false, // true للمنفذ 465, false للمنفذ 587
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  // 🔥 الحل السحري: إجبار استخدام IPv4
+  family: 4,
+  // زيادة وقت الانتظار (اختياري)
+  connectionTimeout: 10000, // 10 ثواني
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 export const sendVerificationEmail = async (to, code) => {
