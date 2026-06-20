@@ -61,20 +61,6 @@ console.log(
 const app = express();
 
 // ==================== MIDDLEWARE ====================
-// app.use(
-//   cors({
-//     origin: process.env.FRONTEND_URL,
-// credentials: true,
-//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-//     allowedHeaders: [
-//       "Content-Type",
-//       "Authorization",
-//       "X-Requested-With",
-//       "Accept",
-//     ],x
-//   }),
-// );
-
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:58940",
@@ -84,11 +70,9 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
@@ -102,20 +86,17 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/stripe", stripeWebhookRoutes);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ==================== CREATE HTTP SERVER ====================
 const server = http.createServer(app);
-
 const io = initWebSocket(server);
 app.set("io", io);
-
 const chatIo = initSocket(server);
-
 SmartReminderService.init();
 
+// إنشاء مجلدات التحميل
 const uploadDirs = [
   "uploads/cvs",
   "uploads/avatars",
@@ -132,7 +113,6 @@ uploadDirs.forEach((dir) => {
 });
 
 app.use("/uploads", express.static("uploads"));
-
 app.get("/", (req, res) => res.send("API is running..."));
 
 // ==================== API ROUTES ====================
@@ -181,7 +161,6 @@ app.get("/api/user/usage", protect, async (req, res) => {
     const subscription = await SubscriptionService.getUserSubscription(
       req.user.id,
     );
-
     let interviewBlock = {};
     if (req.user.role === "client") {
       const iu = await SubscriptionService.getClientInterviewUsage(req.user.id);
@@ -191,7 +170,6 @@ app.get("/api/user/usage", protect, async (req, res) => {
         interviews_remaining: iu.remaining,
       };
     }
-
     res.json({
       success: true,
       usage: {
@@ -277,70 +255,60 @@ app.use((err, req, res, next) => {
   console.error("❌ Unhandled error:", err);
   res.status(500).json({ message: err.message || "Internal server error" });
 });
+
 import listEndpoints from "express-list-routes";
 
 // ==================== START SERVER ====================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-listEndpoints(app);
 
-// async function startServer() {
-//   try {
-//     await sequelize.sync({ alter: false });
-//     console.log("✅ Tables synced with database");
-
-//     CronService.initialize();
-
-//     server.listen(PORT, () => {
-//       console.log(`\n🚀 Server running on port ${PORT}`);
-//       console.log(`🔌 WebSocket (Interview) enabled`);
-//       console.log(`💬 Socket.io (Chat) enabled`);
-//       console.log(`⏰ Smart Reminder Service enabled`);
-//       console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL}`);
-//       console.log(
-//         `💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? "Configured" : "Missing"}`,
-//       );
-//       console.log(`\n✅ All systems operational!\n`);
-//     });
-//   } catch (err) {
-//     console.error("❌ DB connection error:", err);
-//     process.exit(1);
-//   }
-// }
-
-async function startServer() {
-  console.log("DB_HOST:", process.env.DB_HOST);
-  console.log("DB_PORT:", process.env.DB_PORT);
-
-  try {
-    await sequelize.authenticate();
-    console.log("✅ DB connected");
-  } catch (err) {
-    console.error("❌ DB connection failed:", err.message);
-    process.exit(1);
-  }
-
-  server.listen(process.env.PORT || 10000, () => {
-  console.log(`🚀 Server running on ${process.env.PORT || 10000}`);
-});
+function startServer(port) {
+    const serverInstance = app.listen(port, '0.0.0.0', () => {
+        console.log(`✅ Server successfully running on port ${port}`);
+    }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`❌ Port ${port} is busy, trying ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error('❌ Server error:', err);
+            process.exit(1);
+        }
+    });
 }
+
+async function initializeApp() {
+    try {
+        await sequelize.authenticate();
+        console.log("✅ DB connected");
+        
+        startServer(PORT);
+        listEndpoints(app);
+        
+        CronService.initialize();
+        console.log("⏰ Smart Reminder Service enabled");
+        console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL}`);
+        console.log(`💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? "Configured" : "Missing"}`);
+        console.log(`\n✅ All systems operational!\n`);
+        
+    } catch (err) {
+        console.error("❌ DB connection error:", err);
+        process.exit(1);
+    }
+}
+
+initializeApp();
 
 // ==================== CLEANUP JOBS ====================
 setInterval(
-  async () => {
-    try {
-      const deleted = await NotificationService.cleanupOldNotifications();
-      if (deleted > 0)
-        console.log(`🧹 Cleaned up ${deleted} old notifications`);
-    } catch (error) {
-      console.error("Error cleaning notifications:", error);
-    }
-  },
-  24 * 60 * 60 * 1000,
+    async () => {
+        try {
+            const deleted = await NotificationService.cleanupOldNotifications();
+            if (deleted > 0) console.log(`🧹 Cleaned up ${deleted} old notifications`);
+        } catch (error) {
+            console.error("Error cleaning notifications:", error);
+        }
+    },
+    24 * 60 * 60 * 1000,
 );
 
 // ==================== EXPORTS ====================
 export { io, stripe, server };
-startServer();
