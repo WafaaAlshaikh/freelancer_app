@@ -262,27 +262,42 @@ import listEndpoints from "express-list-routes";
 const PORT = process.env.PORT || 5001;
 listEndpoints(app);
 
+// async function startServer() {
+//   try {
+//     await sequelize.sync({ alter: false });
+//     console.log("✅ Tables synced with database");
+
+//     CronService.initialize();
+
+//     server.listen(PORT, () => {
+//       console.log(`\n🚀 Server running on port ${PORT}`);
+//       console.log(`🔌 WebSocket (Interview) enabled`);
+//       console.log(`💬 Socket.io (Chat) enabled`);
+//       console.log(`⏰ Smart Reminder Service enabled`);
+//       console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL}`);
+//       console.log(
+//         `💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? "Configured" : "Missing"}`,
+//       );
+//       console.log(`\n✅ All systems operational!\n`);
+//     });
+//   } catch (err) {
+//     console.error("❌ DB connection error:", err);
+//     process.exit(1);
+//   }
+// }
+
 async function startServer() {
   try {
-    await sequelize.sync({ alter: false });
-    console.log("✅ Tables synced with database");
-
-    CronService.initialize();
+    await sequelize.authenticate()
+      .then(() => console.log("✅ DB connected"))
+      .catch(err => console.log("⚠️ DB failed but continuing:", err.message));
 
     server.listen(PORT, () => {
-      console.log(`\n🚀 Server running on port ${PORT}`);
-      console.log(`🔌 WebSocket (Interview) enabled`);
-      console.log(`💬 Socket.io (Chat) enabled`);
-      console.log(`⏰ Smart Reminder Service enabled`);
-      console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL}`);
-      console.log(
-        `💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? "Configured" : "Missing"}`,
-      );
-      console.log(`\n✅ All systems operational!\n`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
+
   } catch (err) {
-    console.error("❌ DB connection error:", err);
-    process.exit(1);
+    console.error("Server crash:", err);
   }
 }
 
