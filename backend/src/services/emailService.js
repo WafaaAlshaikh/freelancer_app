@@ -1,13 +1,19 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import * as Brevo from "@getbrevo/brevo";
+// ✅ استيراد Brevo بالطريقة الصحيحة
+import { TransactionalEmailsApi, SendSmtpEmail } from "@getbrevo/brevo";
 
-const brevoClient = new Brevo.TransactionalEmailsApi();
-brevoClient.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+// ✅ تهيئة العميل
+const brevoClient = new TransactionalEmailsApi();
+brevoClient.setApiKey(
+  TransactionalEmailsApi.ApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
+// ✅ دالة إرسال البريد
 const sendEmail = async (to, subject, html) => {
-  const email = new Brevo.SendSmtpEmail();
+  const email = new SendSmtpEmail();
   email.to = Array.isArray(to) ? to.map((e) => ({ email: e })) : [{ email: to }];
   email.sender = { email: "noreply@brevo.com", name: "Your App" };
   email.subject = subject;
