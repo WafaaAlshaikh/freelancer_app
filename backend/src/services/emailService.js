@@ -1,59 +1,47 @@
-import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import dns from "dns";
-
 dotenv.config();
 
-// 🔥 إجبار IPv4 على مستوى النظام كله
-dns.setDefaultResultOrder("ipv4first");
+import * as Brevo from "@getbrevo/brevo";
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-}); 
+const brevoClient = new Brevo.TransactionalEmailsApi();
+brevoClient.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+
+const sendEmail = async (to, subject, html) => {
+  const email = new Brevo.SendSmtpEmail();
+  email.to = Array.isArray(to) ? to.map((e) => ({ email: e })) : [{ email: to }];
+  email.sender = { email: "noreply@brevo.com", name: "Your App" };
+  email.subject = subject;
+  email.htmlContent = html;
+  await brevoClient.sendTransacEmail(email);
+};
 
 export const sendVerificationEmail = async (to, code) => {
   try {
     console.log(`📧 Sending verification email to ${to}`);
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM,
+    await sendEmail(
       to,
-      subject: "Verification Code",
-      html: `
+      "Verification Code",
+      `
         <div style="font-family: Arial; max-width: 500px; margin: auto; padding: 20px;">
           <h2 style="color:#14A800;text-align:center;">Verification Code</h2>
-
           <p>Hello,</p>
           <p>Your verification code is:</p>
-
           <div style="text-align:center;margin:20px 0;">
             <h1 style="font-size:40px;color:#14A800;letter-spacing:5px;">
               ${code}
             </h1>
           </div>
-
           <p>This code expires in 10 minutes.</p>
         </div>
-      `,
-    };
+      `
+    );
 
-    const info = await transporter.sendMail(mailOptions);
-
-    console.log("✅ Email sent:", info.messageId);
+    console.log("✅ Email sent successfully");
     return true;
-
   } catch (err) {
-    console.error("❌ SMTP error:", err.message);
-    return false; // مهم حتى لا يكسر signup
+    console.error("❌ Brevo error:", err.message);
+    return false;
   }
 };
 
@@ -98,59 +86,57 @@ export const sendInterviewInvitationEmail = async (
     </div>
   `;
 
-  const mailOptions = {
-    from: process.env.SMTP_FROM,
-    to: freelancer.email,
-    subject: `📅 Interview Invitation: ${project.title}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">Interview Invitation</h1>
-        </div>
-        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
-          <p>Hello <strong>${freelancer.name || freelancer.fullName || "Freelancer"}</strong>,</p>
-          <p><strong>${client.name || client.fullName || "Client"}</strong> has invited you for an interview regarding the project:</p>
-          
-          <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin: 0 0 10px 0; color: #333;">${project.title}</h3>
-            <p style="color: #666; margin: 0;">${project.description ? project.description.substring(0, Math.min(200, project.description.length)) : "No description provided"}...</p>
-          </div>
-          
-          ${timesSection}
-          
-          <p><strong>⏰ Duration:</strong> ${invitation.duration_minutes || 30} minutes</p>
-          
-          ${
-            invitation.message
-              ? `
-            <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin: 15px 0;">
-              <p style="margin: 0;"><strong>💬 Message from client:</strong></p>
-              <p style="margin: 5px 0 0 0; color: #555;">${invitation.message}</p>
-            </div>
-          `
-              : ""
-          }
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/interviews/${invitation.id}" 
-               style="background-color: #764ba2; color: white; padding: 12px 30px; 
-                      text-decoration: none; border-radius: 25px; display: inline-block;">
-              View & Select Time
-            </a>
-          </div>
-          
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-          <p style="font-size: 12px; color: #999;">
-            Please select your preferred time from the options above.<br>
-            This invitation expires on <strong>${invitation.expires_at ? new Date(invitation.expires_at).toLocaleString() : "7 days"}</strong>
-          </p>
-        </div>
-      </div>
-    `,
-  };
-
   try {
-    await transporter.sendMail(mailOptions);
+    await sendEmail(
+      freelancer.email,
+      `📅 Interview Invitation: ${project.title}`,
+      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Interview Invitation</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p>Hello <strong>${freelancer.name || freelancer.fullName || "Freelancer"}</strong>,</p>
+            <p><strong>${client.name || client.fullName || "Client"}</strong> has invited you for an interview regarding the project:</p>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #333;">${project.title}</h3>
+              <p style="color: #666; margin: 0;">${project.description ? project.description.substring(0, Math.min(200, project.description.length)) : "No description provided"}...</p>
+            </div>
+            
+            ${timesSection}
+            
+            <p><strong>⏰ Duration:</strong> ${invitation.duration_minutes || 30} minutes</p>
+            
+            ${
+              invitation.message
+                ? `
+              <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <p style="margin: 0;"><strong>💬 Message from client:</strong></p>
+                <p style="margin: 5px 0 0 0; color: #555;">${invitation.message}</p>
+              </div>
+            `
+                : ""
+            }
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/interviews/${invitation.id}" 
+                 style="background-color: #764ba2; color: white; padding: 12px 30px; 
+                        text-decoration: none; border-radius: 25px; display: inline-block;">
+                View & Select Time
+              </a>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999;">
+              Please select your preferred time from the options above.<br>
+              This invitation expires on <strong>${invitation.expires_at ? new Date(invitation.expires_at).toLocaleString() : "7 days"}</strong>
+            </p>
+          </div>
+        </div>
+      `
+    );
+
     console.log(`📧 Interview invitation email sent to ${freelancer.email}`);
     return true;
   } catch (error) {
@@ -176,11 +162,10 @@ export const sendInterviewConfirmationEmail = async (
   }
 
   try {
-    const mailOptions = {
-      from: process.env.SMTP_FROM,
-      to: `${client.email}, ${freelancer.email}`,
-      subject: `✅ Interview Confirmed: ${project.title}`,
-      html: `
+    await sendEmail(
+      [client.email, freelancer.email],
+      `✅ Interview Confirmed: ${project.title}`,
+      `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #14A800 0%, #0F7A00 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="color: white; margin: 0;">Interview Confirmed ✅</h1>
@@ -214,13 +199,10 @@ export const sendInterviewConfirmationEmail = async (
             </p>
           </div>
         </div>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(
-      `📧 Interview confirmation email sent to ${client.email} and ${freelancer.email}`,
+      `
     );
+
+    console.log(`📧 Interview confirmation email sent to ${client.email} and ${freelancer.email}`);
     return true;
   } catch (error) {
     console.error("❌ Failed to send confirmation email:", error);
@@ -235,45 +217,47 @@ export const sendInterviewReminderEmail = async (
   project,
   hoursBefore,
 ) => {
-  const mailOptions = {
-    from: process.env.SMTP_FROM,
-    to: `${client.email}, ${freelancer.email}`,
-    subject: `⏰ Interview Reminder: ${project.title} in ${hoursBefore} hours`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">Interview Reminder</h1>
-        </div>
-        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
-          <p>Hello <strong>${client.name}</strong> and <strong>${freelancer.name}</strong>,</p>
-          <p>This is a reminder that your interview for <strong>${project.title}</strong> is in <strong>${hoursBefore} hours</strong>.</p>
-          
-          <div style="background: #FEF3C7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>📅 Date & Time:</strong> ${new Date(invitation.selected_time).toLocaleString()}</p>
-            <p><strong>⏰ Duration:</strong> ${invitation.duration_minutes} minutes</p>
-            <p><strong>🎥 Meeting Link:</strong> <a href="${invitation.meeting_link}">${invitation.meeting_link}</a></p>
+  try {
+    await sendEmail(
+      [client.email, freelancer.email],
+      `⏰ Interview Reminder: ${project.title} in ${hoursBefore} hours`,
+      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Interview Reminder</h1>
           </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${invitation.meeting_link}" 
-               style="background-color: #F59E0B; color: white; padding: 12px 30px; 
-                      text-decoration: none; border-radius: 25px; display: inline-block;">
-              Join Meeting Now
-            </a>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p>Hello <strong>${client.name}</strong> and <strong>${freelancer.name}</strong>,</p>
+            <p>This is a reminder that your interview for <strong>${project.title}</strong> is in <strong>${hoursBefore} hours</strong>.</p>
+            
+            <div style="background: #FEF3C7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>📅 Date & Time:</strong> ${new Date(invitation.selected_time).toLocaleString()}</p>
+              <p><strong>⏰ Duration:</strong> ${invitation.duration_minutes} minutes</p>
+              <p><strong>🎥 Meeting Link:</strong> <a href="${invitation.meeting_link}">${invitation.meeting_link}</a></p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${invitation.meeting_link}" 
+                 style="background-color: #F59E0B; color: white; padding: 12px 30px; 
+                        text-decoration: none; border-radius: 25px; display: inline-block;">
+                Join Meeting Now
+              </a>
+            </div>
+            
+            <p style="font-size: 12px; color: #999;">
+              Please make sure you have a stable internet connection and a working camera/microphone.
+            </p>
           </div>
-          
-          <p style="font-size: 12px; color: #999;">
-            Please make sure you have a stable internet connection and a working camera/microphone.
-          </p>
         </div>
-      </div>
-    `,
-  };
+      `
+    );
 
-  await transporter.sendMail(mailOptions);
-  console.log(
-    `📧 Interview reminder email sent to ${client.email} and ${freelancer.email}`,
-  );
+    console.log(`📧 Interview reminder email sent to ${client.email} and ${freelancer.email}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to send reminder email:", error);
+    return false;
+  }
 };
 
 const generateGoogleCalendarLink = (invitation, project) => {
