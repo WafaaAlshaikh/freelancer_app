@@ -1,9 +1,12 @@
-// services/emailService.js
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import dns from "dns";
+
 dotenv.config();
 
-// ✅ إعدادات جديدة مع إجبار IPv4
+// 🔥 إجبار IPv4 على مستوى النظام كله
+dns.setDefaultResultOrder("ipv4first");
+
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
@@ -12,14 +15,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  // 🔥 إجبار IPv4
-  family: 4,
-  // إعدادات إضافية للمساعدة
   connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000,
-  debug: true, // هذا سيطبع تفاصيل الاتصال في اللوجات
-});
+}); 
 
 export const sendVerificationEmail = async (to, code) => {
   try {
