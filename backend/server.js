@@ -63,8 +63,8 @@ const app = express();
 // ==================== MIDDLEWARE ====================
 app.use(
   cors({
-    origin: "*",
-    credentials: true,
+    origin: process.env.FRONTEND_URL,
+credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [
       "Content-Type",

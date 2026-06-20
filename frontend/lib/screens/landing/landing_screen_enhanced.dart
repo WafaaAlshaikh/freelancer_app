@@ -548,18 +548,12 @@ class _LandingScreenEnhancedState extends State<LandingScreenEnhanced>
             padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 48),
             child: Row(
               children: [
-                ShaderMask(
-                  shaderCallback: (bounds) =>
-                      BrandColors.brandGradient.createShader(bounds),
-                  child: const Text(
-                    '⚡ FreelanceX',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                Image.asset(
+  'assets/images/logoo.png',
+  height: 45,
+  width: 45,
+  fit: BoxFit.contain,
+),
                 const Spacer(),
                 if (!isMobile) ...[
                   _navLink('Find Work'),
