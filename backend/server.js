@@ -307,14 +307,20 @@ listEndpoints(app);
 
 async function startServer() {
   console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_PORT:", process.env.DB_PORT);
+  console.log("DB_PORT:", process.env.DB_PORT);
+
   try {
-  await sequelize.authenticate();
-  console.log("✅ DB connected");
-} catch (err) {
-  console.error("❌ DB connection failed:", err.message);
-  process.exit(1);
-}
+    await sequelize.authenticate();
+    console.log("✅ DB connected");
+  } catch (err) {
+    console.error("❌ DB connection failed:", err.message);
+    process.exit(1);
+  }
+
+  // 🔥 IMPORTANT: لازم تشغيل السيرفر هنا
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
 }
 
 // ==================== CLEANUP JOBS ====================
