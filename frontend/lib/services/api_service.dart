@@ -24,13 +24,7 @@ import 'package:dio/dio.dart';
 
 class ApiService {
   static String get BASE_URL {
-    if (kIsWeb) {
-      return 'http://localhost:5001/api';
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5001/api';
-    }
-    return 'http://localhost:5001/api';
+    return 'https://freelancer-backend-poh2.onrender.com/api';
   }
 
   static String? _token;
@@ -48,13 +42,7 @@ class ApiService {
   );
 
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5001/api';
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5001/api';
-    }
-    return 'http://localhost:5001/api';
+    return 'https://freelancer-backend-poh2.onrender.com/api';
   }
 
   static Map<String, String> get headers => {

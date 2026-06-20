@@ -1,5 +1,5 @@
 //lib\constants.dart
-const String BASE_URL = "http://localhost:5001/api";
+const String BASE_URL = "https://freelancer-backend-poh2.onrender.com/api";
 
 String apiMediaUrl(String? path) {
   if (path == null || path.isEmpty) return '';

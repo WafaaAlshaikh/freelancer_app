@@ -61,18 +61,37 @@ console.log(
 const app = express();
 
 // ==================== MIDDLEWARE ====================
+// app.use(
+//   cors({
+//     origin: process.env.FRONTEND_URL,
+// credentials: true,
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+//     allowedHeaders: [
+//       "Content-Type",
+//       "Authorization",
+//       "X-Requested-With",
+//       "Accept",
+//     ],x
+//   }),
+// );
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:58940",
+  "https://freelancer-web-woad.vercel.app"
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
-credentials: true,
+  origin: [
+    process.env.FRONTEND_URL,
+    "http://localhost:3000",
+    "http://localhost:58940"
+  ],
+  credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "X-Requested-With",
-      "Accept",
-    ],
-  }),
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
 );
 
 app.use((req, res, next) => {
@@ -287,18 +306,15 @@ listEndpoints(app);
 // }
 
 async function startServer() {
+  console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_PORT:", process.env.DB_PORT);
   try {
-    await sequelize.authenticate()
-      .then(() => console.log("✅ DB connected"))
-      .catch(err => console.log("⚠️ DB failed but continuing:", err.message));
-
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-
-  } catch (err) {
-    console.error("Server crash:", err);
-  }
+  await sequelize.authenticate();
+  console.log("✅ DB connected");
+} catch (err) {
+  console.error("❌ DB connection failed:", err.message);
+  process.exit(1);
+}
 }
 
 // ==================== CLEANUP JOBS ====================
