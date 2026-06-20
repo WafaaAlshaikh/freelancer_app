@@ -1,6 +1,10 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const SibApiV3Sdk = require("sib-api-v3-sdk");
+
+console.log("🔑 BREVO KEY:", process.env.BREVO_API_KEY?.substring(0, 20));
 
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 defaultClient.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
