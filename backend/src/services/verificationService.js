@@ -3,31 +3,32 @@ import ClientProfile from "../models/ClientProfile.js";
 import User from "../models/User.js";
 import Badge from "../models/Badge.js";
 import UserBadge from "../models/UserBadge.js";
-// import nodemailer from "nodemailer";
 
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const SibApiV3Sdk = require("sib-api-v3-sdk");
+const sendEmailViaBrevo = async (to, subject, html) => {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": process.env.BREVO_API_KEY,
+    },
+    body: JSON.stringify({
+      sender: { email: "wafaj2017@gmail.com", name: "iPal" },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
 
-const defaultClient = SibApiV3Sdk.ApiClient.instance;
-defaultClient.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(JSON.stringify(error));
+  }
+};
 
 class VerificationService {
   static async sendEmailViaBrevo(to, subject, html) {
-    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-    sendSmtpEmail.to = [{ email: to }];
-    sendSmtpEmail.sender = { email: "wafaj2017@gmail.com", name: "iPal" };
-    sendSmtpEmail.subject = subject;
-    sendSmtpEmail.htmlContent = html;
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
-  }  // static transporter = nodemailer.createTransport({
-  //   service: "gmail",
-  //   auth: {
-  //     user: process.env.EMAIL_USER,
-  //     pass: process.env.EMAIL_PASS,
-  //   },
-  // });
+    await sendEmailViaBrevo(to, subject, html);
+  }
 
   static async initializeDefaultBadges() {
     try {

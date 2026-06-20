@@ -1,22 +1,29 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const { Brevo } = require("@getbrevo/brevo");
+import dotenv from "dotenv";
+dotenv.config();
 
 const sendEmail = async (to, subject, html) => {
   const recipients = Array.isArray(to)
     ? to.map((e) => ({ email: e }))
     : [{ email: to }];
 
-  await Brevo.transactionalEmails.send({
-    to: recipients,
-    sender: { email: "wafaj2017@gmail.com", name: "iPal" },
-    subject,
-    htmlContent: html,
-  }, {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
     headers: {
+      "Content-Type": "application/json",
       "api-key": process.env.BREVO_API_KEY,
-    }
+    },
+    body: JSON.stringify({
+      sender: { email: "wafaj2017@gmail.com", name: "iPal" },
+      to: recipients,
+      subject,
+      htmlContent: html,
+    }),
   });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(JSON.stringify(error));
+  }
 };
 
 export const sendVerificationEmail = async (to, code) => {
