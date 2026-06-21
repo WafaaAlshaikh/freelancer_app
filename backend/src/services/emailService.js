@@ -13,7 +13,7 @@ const sendEmail = async (to, subject, html) => {
       "api-key": process.env.BREVO_API_KEY,
     },
     body: JSON.stringify({
-      sender: { email: "wafaj2017@gmail.com", name: "iPal" },
+      sender: { email: "s12113961@stu.najah.edu", name: "iPal" },
       to: recipients,
       subject,
       htmlContent: html,
