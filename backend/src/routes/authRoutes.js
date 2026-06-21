@@ -222,14 +222,17 @@ router.post("/signup", upload, async (req, res) => {
     await Wallet.create({ UserId: newUser.id, balance: 0 });
 
     try {
-  const emailSent = await sendVerificationEmail(email, emailVerificationCode);
+      const emailSent = await sendVerificationEmail(
+        email,
+        emailVerificationCode,
+      );
 
-  if (!emailSent) {
-    console.log("⚠️ Email not sent, but signup continues");
-  }
-} catch (err) {
-  console.error("Email error ignored:", err.message);
-}
+      if (!emailSent) {
+        console.log("⚠️ Email not sent, but signup continues");
+      }
+    } catch (err) {
+      console.error("Email error ignored:", err.message);
+    }
 
     console.log(`✅ User created with ID: ${newUser.id}`);
 
@@ -320,6 +323,9 @@ router.post("/login", async (req, res) => {
 
   try {
     const user = await User.findOne({ where: { email } });
+    console.log("🔍 User found:", user ? "yes" : "no");
+    console.log("✅ Is verified:", user?.is_verified);
+
     if (!user) {
       return res.status(401).json({ message: "❌ Invalid credentials" });
     }
@@ -333,6 +339,8 @@ router.post("/login", async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("🔑 Password match:", isMatch);
+
     if (!isMatch) {
       return res.status(401).json({ message: "❌ Invalid credentials" });
     }
@@ -365,6 +373,7 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "❌ Server error" });
   }
 });
+
 
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
@@ -505,12 +514,16 @@ export const changePassword = async (req, res) => {
 
     const user = await User.findByPk(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Current password is incorrect" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Current password is incorrect" });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
