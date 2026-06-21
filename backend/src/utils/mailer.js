@@ -44,9 +44,10 @@ export const sendVerificationEmail = async (to, code) => {
       </div>
     `);
     console.log("✅ Verification email sent to", to);
+    return true;
   } catch (err) {
     console.error("❌ Failed to send verification email:", err.message);
-    throw err;
+    return false;
   }
 };
 
